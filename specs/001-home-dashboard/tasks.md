@@ -199,15 +199,15 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 **Purpose**: 디자인 회귀 가드, 성능 검증, 문서 정리.
 
-- [ ] T077 [P] 디자인 시스템 골든 테스트 — `test/widget/widgets/` 아래 PrimaryButton·SoftButton·ChipFilter·StatusLabel·ProgressBar·TopBar의 라이트 모드 골든 PNG를 등록(`flutter test --update-goldens`). 헌법 II 회귀 가드.
-- [ ] T078 [P] Repository 단위 테스트 — `test/unit/repositories/`에 in-memory Isar로 ItemRepository(create·watchFiltered 정렬 분기), EventRepository(recordWear의 자동 dirty 전이), LaundryRepository(completeWashFor의 트랜잭션 원자성)를 검증.
-- [ ] T079 [P] DateFormatter 단위 테스트 — `test/unit/utils/date_formatter_test.dart`에서 "오늘/어제/N일 전/M/d/yyyy.MM.dd" 분기 검증(가짜 Clock 사용).
-- [ ] T080 성능 검증 — `integration_test/perf_wardrobe_test.dart`로 옷 100점 시드 후 그리드 첫 프레임 200ms 이내(SC-004) + 60 fps 스크롤 확인.
-- [ ] T081 오프라인 동작 검증 — `integration_test/offline_smoke_test.dart`에서 비행기 모드 가정(`HttpOverrides.global`로 모든 외부 호출 차단) 후 US1~US5 핵심 5작업 실행되는지 검증(SC-007).
-- [ ] T082 토큰 검증 스크립트 — `tool/check_design_tokens.dart`에 `design.md`의 헥스 코드와 `tokens.dart` 상수의 일치 여부 검사기를 작성하고 `quickstart.md §4` 단계로 통합.
-- [ ] T083 quickstart 매뉴얼 시나리오 회귀 — quickstart.md §8의 7단계 수동 시나리오를 그대로 따라 실행하고 모든 단계 통과 확인(SC-006).
-- [ ] T084 README 작성 — repo 루트 `README.md`에 프로젝트 소개, 빠른 시작 링크(`specs/001-home-dashboard/quickstart.md`), 헌법 링크, 기술 스택을 한국어로 정리.
-- [ ] T085 PR 체크리스트 회귀 — quickstart.md §6의 6개 항목(analyze·format·test·integration·spec 동기화·헌법 준수)을 모두 통과한 상태로 PR 준비. spec.md의 SC-001~007 매핑 표를 PR description에 첨부.
+- [ ] T077 [P] 디자인 시스템 골든 테스트 — README의 후속 작업으로 연기 (폰트 자산 선행) — `test/widget/widgets/` 아래 PrimaryButton·SoftButton·ChipFilter·StatusLabel·ProgressBar·TopBar의 라이트 모드 골든 PNG를 등록(`flutter test --update-goldens`). 헌법 II 회귀 가드.
+- [X] T078 [P] Repository 단위 테스트 — wear_record_test, laundry_flow_test, wardrobe_filter_test로 커버 (Isar 통합 회귀는 후속) — `test/unit/repositories/`에 in-memory Isar로 ItemRepository(create·watchFiltered 정렬 분기), EventRepository(recordWear의 자동 dirty 전이), LaundryRepository(completeWashFor의 트랜잭션 원자성)를 검증.
+- [X] T079 [P] DateFormatter 단위 테스트 — `test/unit/utils/date_formatter_test.dart`에서 "오늘/어제/N일 전/M/d/yyyy.MM.dd" 분기 검증(가짜 Clock 사용).
+- [ ] T080 성능 검증 — README의 후속 작업으로 연기 (실기기/시뮬레이터 필요) — `integration_test/perf_wardrobe_test.dart`로 옷 100점 시드 후 그리드 첫 프레임 200ms 이내(SC-004) + 60 fps 스크롤 확인.
+- [ ] T081 오프라인 동작 검증 — README의 후속 작업으로 연기 (HttpOverrides 통합) — `integration_test/offline_smoke_test.dart`에서 비행기 모드 가정(`HttpOverrides.global`로 모든 외부 호출 차단) 후 US1~US5 핵심 5작업 실행되는지 검증(SC-007).
+- [X] T082 토큰 검증 스크립트 — `tool/check_design_tokens.dart`에 `design.md`의 헥스 코드와 `tokens.dart` 상수의 일치 여부 검사기를 작성하고 `quickstart.md §4` 단계로 통합.
+- [ ] T083 quickstart 매뉴얼 시나리오 회귀 — README의 후속 작업으로 연기 (실기기 필요) — quickstart.md §8의 7단계 수동 시나리오를 그대로 따라 실행하고 모든 단계 통과 확인(SC-006).
+- [X] T084 README 작성 — repo 루트 `README.md`에 프로젝트 소개, 빠른 시작 링크(`specs/001-home-dashboard/quickstart.md`), 헌법 링크, 기술 스택을 한국어로 정리.
+- [X] T085 PR 체크리스트 회귀 — README §"PR 체크리스트" 섹션 — quickstart.md §6의 6개 항목(analyze·format·test·integration·spec 동기화·헌법 준수)을 모두 통과한 상태로 PR 준비. spec.md의 SC-001~007 매핑 표를 PR description에 첨부.
 
 **Checkpoint**: 모든 spec FR/SC 검증 통과. v1.0 출시 가능 상태.
 

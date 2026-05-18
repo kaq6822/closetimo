@@ -19,6 +19,12 @@ final _laundryTipsProvider = FutureProvider<List<String>>((ref) async {
   return (json['tips'] as List).cast<String>();
 });
 
+/// 앱 부트 시 한 번만 결정되는 팁 인덱스 시드.
+/// rebuild에도 같은 팁이 표시되도록 [Random]을 build 밖으로 격리한다.
+final _laundryTipIndexProvider = Provider<int>((ref) {
+  return Random().nextInt(1 << 20);
+});
+
 class LaundryPreview extends ConsumerWidget {
   const LaundryPreview({super.key});
 
@@ -26,6 +32,7 @@ class LaundryPreview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final basket = ref.watch(laundryRepositoryProvider).watchBasket();
     final tips = ref.watch(_laundryTipsProvider).valueOrNull ?? const [];
+    final seed = ref.watch(_laundryTipIndexProvider);
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
     return StreamBuilder<List<Item>>(
       stream: basket,
@@ -79,7 +86,7 @@ class LaundryPreview extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    '전문가의 팁: ${tips[Random().nextInt(tips.length)]}',
+                    '전문가의 팁: ${tips[seed % tips.length]}',
                     style: const TextStyle(
                       fontFamily: 'Manrope',
                       fontSize: 11,
