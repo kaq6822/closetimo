@@ -1,0 +1,20 @@
+targets:
+  $default:
+    builders:
+      isar_generator:isar_generator:
+        enabled: true
+        generate_for:
+          include:
+            - lib/data/models/**.dart
+      freezed:freezed:
+        enabled: true
+        generate_for:
+          include:
+            - lib/features/**/*.dart
+            - lib/data/models/**.dart
+            - lib/core/**/*.dart
+      json_serializable:json_serializable:
+        enabled: true
+        generate_for:
+          include:
+            - lib/**/*.dart

@@ -1,0 +1,82 @@
+name: closetimo_app
+description: "옷장이모(Closetimo) — 큐레이팅하는 디지털 옷장"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Local NoSQL DB (Isar)
+  # NOTE: 공식 isar 3.1.0+1을 사용 (Rust 기반 4.x는 아직 정식 release 전).
+  # data-model.md / research.md의 @collection·@Index API는 3.x와 호환되며, 4.x로
+  # 이전 시점에 마이그레이션 spec을 별도 작성한다.
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+
+  # Image picker + path provider
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
+
+  # Internationalization
+  intl: ^0.20.2
+
+  # Immutable models
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # Code generation
+  build_runner: ^2.4.13
+  isar_generator: ^3.1.0+1
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/tips/
+
+  # NOTE: 실제 .ttf/.otf 폰트 파일은 assets/fonts/README.md의 가이드를 따라
+  # 직접 다운로드한다. 파일이 추가되면 아래 주석을 해제한다.
+  # fonts:
+  #   - family: Manrope
+  #     fonts:
+  #       - asset: assets/fonts/Manrope/Manrope-Regular.ttf
+  #       - asset: assets/fonts/Manrope/Manrope-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Manrope/Manrope-Bold.ttf
+  #         weight: 700
+  #   - family: Inter
+  #     fonts:
+  #       - asset: assets/fonts/Inter/Inter-Regular.ttf
+  #       - asset: assets/fonts/Inter/Inter-Medium.ttf
+  #         weight: 500
+  #   - family: Pretendard
+  #     fonts:
+  #       - asset: assets/fonts/Pretendard/Pretendard-Regular.otf
+  #       - asset: assets/fonts/Pretendard/Pretendard-Medium.otf
+  #         weight: 500
+  #       - asset: assets/fonts/Pretendard/Pretendard-Bold.otf
+  #         weight: 700

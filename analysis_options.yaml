@@ -1,0 +1,32 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "lib/generated/**"
+
+linter:
+  rules:
+    # 헌법 I (큐레이션 우선) — 일관된 코드 가독성
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+    prefer_const_declarations: true
+    require_trailing_commas: true
+
+    # 헌법 II (디자인 일관성)
+    # design.md "No-Line" 규칙: Divider/VerticalDivider 사용 시 lint 경고
+    # (현재 Dart lint는 특정 위젯 ban을 직접 지원하지 않으므로 PR 리뷰에서
+    # 강제. 가능하다면 custom_lint 패키지로 후속 강화.)
+    use_decorated_box: true
+
+    # 일반 품질
+    avoid_print: true
+    avoid_relative_lib_imports: true
+    prefer_single_quotes: true
+    sort_constructors_first: true
+    unawaited_futures: true

@@ -24,14 +24,14 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 **Purpose**: Flutter 프로젝트 골격, 의존성, 코드 생성, 린트, 폰트 자산을 모두 갖춘 빌드 가능한 빈 앱을 만든다.
 
-- [ ] T001 Flutter 프로젝트 초기화 — `flutter create --org com.closetimo --project-name closetimo_app --platforms ios,android .`를 repo 루트에서 실행해 `lib/main.dart`, `ios/`, `android/`, `pubspec.yaml`을 생성한다. 기본 자동 생성된 `lib/main.dart`의 내용은 비우고 `void main() {}` 스텁만 남긴다.
-- [ ] T002 `pubspec.yaml`에 의존성 핀 추가 — research.md §12 표를 따라 `flutter`, `flutter_riverpod ^2.6.0`, `go_router ^14.0.0`, `isar ^4.0.0`, `isar_flutter_libs ^4.0.0`, `image_picker ^1.1.0`, `intl ^0.19.0`, `path_provider ^2.1.0`를 `dependencies:`에, `isar_generator ^4.0.0`, `build_runner ^2.4.0`, `freezed ^2.5.0`, `freezed_annotation`, `json_serializable`, `flutter_lints`를 `dev_dependencies:`에 추가.
-- [ ] T003 [P] `analysis_options.yaml` 작성 — `package:flutter_lints/flutter.yaml` 상속, `prefer_const_constructors`, `prefer_const_literals_to_create_immutables`, `require_trailing_commas`, `avoid_print` 활성화, `Divider`·`VerticalDivider`를 lint 경고로 표시(헌법 II "No-Line").
-- [ ] T004 [P] `build.yaml` 작성 — `isar_generator`, `freezed`, `json_serializable` 빌더 설정 + `lib/$lib$` glob 등록.
-- [ ] T005 [P] 한·영 폰트 자산 등록 — `assets/fonts/Manrope/*.ttf`, `assets/fonts/Inter/*.ttf`, `assets/fonts/Pretendard/Pretendard-Regular.otf`, `Pretendard-Medium.otf`, `Pretendard-Bold.otf`를 OFL 라이선스 파일과 함께 추가하고 `pubspec.yaml`의 `flutter.fonts:` 섹션에 family를 선언.
-- [ ] T006 [P] 이미지 자산 등록 — `assets/images/upload-placeholder.png`를 디자인 패키지(`/tmp/design_extract/untitled/project/assets/upload-placeholder.png`)에서 복사하고 `pubspec.yaml`의 `flutter.assets:`에 추가.
-- [ ] T007 [P] 세탁 팁 풀 자산 — `assets/tips/laundry_tips.json`에 7~10개의 한국어 세탁 팁 문자열 배열을 작성하고 `pubspec.yaml`에 자산 등록(FR-021).
-- [ ] T008 한국어 로케일 설정 — `pubspec.yaml`에 `flutter_localizations: { sdk: flutter }` 추가, `lib/main.dart` 스텁의 `MaterialApp` 자리에 `localizationsDelegates`(GlobalMaterialLocalizations·GlobalWidgetsLocalizations·GlobalCupertinoLocalizations)와 `supportedLocales: [Locale('ko','KR')]`를 잡아 두기 위한 주석 마커 추가(T021에서 채움).
+- [X] T001 Flutter 프로젝트 초기화 — `flutter create --org com.closetimo --project-name closetimo_app --platforms ios,android .`를 repo 루트에서 실행해 `lib/main.dart`, `ios/`, `android/`, `pubspec.yaml`을 생성한다. 기본 자동 생성된 `lib/main.dart`의 내용은 비우고 `void main() {}` 스텁만 남긴다.
+- [X] T002 `pubspec.yaml`에 의존성 핀 추가 — research.md §12 표를 따라 `flutter`, `flutter_riverpod ^2.6.0`, `go_router ^14.0.0`, `isar ^4.0.0`, `isar_flutter_libs ^4.0.0`, `image_picker ^1.1.0`, `intl ^0.19.0`, `path_provider ^2.1.0`를 `dependencies:`에, `isar_generator ^4.0.0`, `build_runner ^2.4.0`, `freezed ^2.5.0`, `freezed_annotation`, `json_serializable`, `flutter_lints`를 `dev_dependencies:`에 추가.
+- [X] T003 [P] `analysis_options.yaml` 작성 — `package:flutter_lints/flutter.yaml` 상속, `prefer_const_constructors`, `prefer_const_literals_to_create_immutables`, `require_trailing_commas`, `avoid_print` 활성화, `Divider`·`VerticalDivider`를 lint 경고로 표시(헌법 II "No-Line").
+- [X] T004 [P] `build.yaml` 작성 — `isar_generator`, `freezed`, `json_serializable` 빌더 설정 + `lib/$lib$` glob 등록.
+- [X] T005 [P] 한·영 폰트 자산 등록 — `assets/fonts/Manrope/*.ttf`, `assets/fonts/Inter/*.ttf`, `assets/fonts/Pretendard/Pretendard-Regular.otf`, `Pretendard-Medium.otf`, `Pretendard-Bold.otf`를 OFL 라이선스 파일과 함께 추가하고 `pubspec.yaml`의 `flutter.fonts:` 섹션에 family를 선언.
+- [X] T006 [P] 이미지 자산 등록 — `assets/images/upload-placeholder.png`를 디자인 패키지(`/tmp/design_extract/untitled/project/assets/upload-placeholder.png`)에서 복사하고 `pubspec.yaml`의 `flutter.assets:`에 추가.
+- [X] T007 [P] 세탁 팁 풀 자산 — `assets/tips/laundry_tips.json`에 7~10개의 한국어 세탁 팁 문자열 배열을 작성하고 `pubspec.yaml`에 자산 등록(FR-021).
+- [X] T008 한국어 로케일 설정 — `pubspec.yaml`에 `flutter_localizations: { sdk: flutter }` 추가, `lib/main.dart` 스텁의 `MaterialApp` 자리에 `localizationsDelegates`(GlobalMaterialLocalizations·GlobalWidgetsLocalizations·GlobalCupertinoLocalizations)와 `supportedLocales: [Locale('ko','KR')]`를 잡아 두기 위한 주석 마커 추가(T021에서 채움).
 
 **Checkpoint**: `flutter pub get && dart run build_runner build`가 성공하고 `flutter run`이 빈 앱을 띄운다.
 

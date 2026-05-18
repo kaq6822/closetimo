@@ -1,2 +1,39 @@
 # OMC (oh-my-claudecode) local state
 .omc/
+
+# Flutter / Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+*.iml
+*.ipr
+*.iws
+
+# Build outputs
+**/Generated.xcconfig
+**/Pods/
+**/Podfile.lock
+**/*.g.dart.bak
+
+# Local config
+**/local.properties
+*.lock
+
+# Asset fonts (downloaded per assets/fonts/README.md, not committed)
+assets/fonts/Manrope/*.ttf
+assets/fonts/Inter/*.ttf
+assets/fonts/Pretendard/*.otf
+
+# macOS / Editor
+.DS_Store
+.idea/
+.vscode/
+
+# Symbols / debug
+**/*.dSYM
+**/ios/Flutter/flutter_export_environment.sh
