@@ -91,17 +91,17 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 ### Implementation for User Story 1
 
-- [ ] T030 [P] [US1] NewItemDraft 모델 — `lib/features/add_item/new_item_draft.dart`에 `@freezed class NewItemDraft`로 name, brand, category, washCycle(기본 5), careMethod(기본 machine), purchasedAt, tempPhoto(File?) 필드 정의 + `canSave => name.trim().isNotEmpty` 게터.
-- [ ] T031 [US1] ItemRepository 인터페이스 — `lib/data/repositories/item_repository.dart`에 contracts/repositories.md §1 시그니처 그대로의 `abstract interface class ItemRepository` 선언.
-- [ ] T032 [US1] ItemRepository 구현(생성만) — `lib/data/repositories/isar_item_repository.dart`에 `class IsarItemRepository implements ItemRepository`로 `Future<int> create(NewItemDraft)`만 우선 구현. 사진은 `ImageStore.copyTo` 호출 후 상대 경로 저장. `name.isEmpty`이면 `ArgumentError`.
-- [ ] T033 [US1] Repository provider — `lib/data/providers/app_providers.dart`에 `final itemRepositoryProvider = Provider<ItemRepository>((ref) => IsarItemRepository(ref.watch(isarProvider).requireValue, ref.watch(imageStoreProvider), ref.watch(clockProvider)));` 정의.
-- [ ] T034 [P] [US1] PhotoPickerCard 위젯 — `lib/features/add_item/widgets/photo_picker_card.dart`. 3:4 비율, `surface-container-low` 배경, `image_picker`로 카메라/갤러리 시트 표시, 선택 시 1600px 다운스케일된 임시 파일 경로를 상위로 콜백.
-- [ ] T035 [P] [US1] WashCycleStepper 위젯 — `lib/features/add_item/widgets/wash_cycle_stepper.dart`. -/+ 라운드 버튼 + 중앙 숫자, 최소값 1 가드(FR-001).
-- [ ] T036 [P] [US1] CareMethodPicker 위젯 — `lib/features/add_item/widgets/care_method_picker.dart`. 3 등분 그리드(DRY CLEAN·MACHINE·HAND WASH), 선택 시 `tertiary-soft` 배경 + `tertiary` 텍스트.
-- [ ] T037 [P] [US1] CategoryPicker 위젯 — `lib/features/add_item/widgets/category_picker.dart`. `Category` enum(9종, "전체" 제외)을 wrap chip으로 표시.
-- [ ] T038 [US1] AddItemScreen — `lib/features/add_item/add_item_screen.dart`에 위 위젯들을 조립한 폼. 상단 TopBar(좌측 백버튼·중앙 "신규 옷 등록"·우측 "저장" 텍스트 버튼), 하단 글래스모피즘 "등록하기" 버튼. `canSave`가 false면 저장 버튼 비활성. 저장 시 `itemRepositoryProvider`의 `create` 호출 → pop + `showClosetimoToast("새 옷이 옷장에 등록됐어요")`.
-- [ ] T039 [US1] /add-item 라우트 결선 — `lib/app/router.dart`의 빈 자리에 `AddItemScreen()`을 연결하고 slide-up transition 설정. 폼 dirty 상태에서 백버튼 시 확인 다이얼로그(routes.md §4).
-- [ ] T040 [US1] 통합 테스트 — `integration_test/add_item_flow_test.dart`에 빈 옷장 → /add-item 진입 → 명칭 입력 → 카테고리 선택 → 저장 → 옷장 그리드 최상단 노출 → 토스트 노출 검증(US1 AC1~3 매핑).
+- [X] T030 [P] [US1] NewItemDraft 모델 — `lib/features/add_item/new_item_draft.dart`에 `@freezed class NewItemDraft`로 name, brand, category, washCycle(기본 5), careMethod(기본 machine), purchasedAt, tempPhoto(File?) 필드 정의 + `canSave => name.trim().isNotEmpty` 게터.
+- [X] T031 [US1] ItemRepository 인터페이스 — `lib/data/repositories/item_repository.dart`에 contracts/repositories.md §1 시그니처 그대로의 `abstract interface class ItemRepository` 선언.
+- [X] T032 [US1] ItemRepository 구현(생성만) — `lib/data/repositories/isar_item_repository.dart`에 `class IsarItemRepository implements ItemRepository`로 `Future<int> create(NewItemDraft)`만 우선 구현. 사진은 `ImageStore.copyTo` 호출 후 상대 경로 저장. `name.isEmpty`이면 `ArgumentError`.
+- [X] T033 [US1] Repository provider — `lib/data/providers/app_providers.dart`에 `final itemRepositoryProvider = Provider<ItemRepository>((ref) => IsarItemRepository(ref.watch(isarProvider).requireValue, ref.watch(imageStoreProvider), ref.watch(clockProvider)));` 정의.
+- [X] T034 [P] [US1] PhotoPickerCard 위젯 — `lib/features/add_item/widgets/photo_picker_card.dart`. 3:4 비율, `surface-container-low` 배경, `image_picker`로 카메라/갤러리 시트 표시, 선택 시 1600px 다운스케일된 임시 파일 경로를 상위로 콜백.
+- [X] T035 [P] [US1] WashCycleStepper 위젯 — `lib/features/add_item/widgets/wash_cycle_stepper.dart`. -/+ 라운드 버튼 + 중앙 숫자, 최소값 1 가드(FR-001).
+- [X] T036 [P] [US1] CareMethodPicker 위젯 — `lib/features/add_item/widgets/care_method_picker.dart`. 3 등분 그리드(DRY CLEAN·MACHINE·HAND WASH), 선택 시 `tertiary-soft` 배경 + `tertiary` 텍스트.
+- [X] T037 [P] [US1] CategoryPicker 위젯 — `lib/features/add_item/widgets/category_picker.dart`. `Category` enum(9종, "전체" 제외)을 wrap chip으로 표시.
+- [X] T038 [US1] AddItemScreen — `lib/features/add_item/add_item_screen.dart`에 위 위젯들을 조립한 폼. 상단 TopBar(좌측 백버튼·중앙 "신규 옷 등록"·우측 "저장" 텍스트 버튼), 하단 글래스모피즘 "등록하기" 버튼. `canSave`가 false면 저장 버튼 비활성. 저장 시 `itemRepositoryProvider`의 `create` 호출 → pop + `showClosetimoToast("새 옷이 옷장에 등록됐어요")`.
+- [X] T039 [US1] /add-item 라우트 결선 — `lib/app/router.dart`의 빈 자리에 `AddItemScreen()`을 연결하고 slide-up transition 설정. 폼 dirty 상태에서 백버튼 시 확인 다이얼로그(routes.md §4).
+- [X] T040 [US1] 통합 테스트 — `integration_test/add_item_flow_test.dart`에 빈 옷장 → /add-item 진입 → 명칭 입력 → 카테고리 선택 → 저장 → 옷장 그리드 최상단 노출 → 토스트 노출 검증(US1 AC1~3 매핑).
 
 **Checkpoint**: US1 단독으로 동작 — 사용자가 첫 옷을 등록할 수 있다. SC-001(30초 4단계 등록), SC-006(전체 사이클의 시작) 부분 검증 가능.
 

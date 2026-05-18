@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../core/widgets/bottom_nav.dart';
 import '../core/widgets/toast.dart';
 import '../core/widgets/top_bar.dart';
+import '../features/add_item/add_item_screen.dart';
 import 'theme/tokens.dart';
 
 /// 라우트 이름 상수. UI 코드는 문자열 리터럴 대신 본 상수만 사용한다.
@@ -104,7 +105,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.addItem,
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (ctx, st) => CustomTransitionPage(
-          child: const _PlaceholderModal(title: '신규 옷 등록'),
+          child: const AddItemScreen(),
           transitionsBuilder: (context, anim, secondaryAnim, child) {
             return SlideTransition(
               position: Tween<Offset>(
