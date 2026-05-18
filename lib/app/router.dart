@@ -10,6 +10,7 @@ import '../core/widgets/toast.dart';
 import '../core/widgets/top_bar.dart';
 import '../data/models/item.dart';
 import '../features/add_item/add_item_screen.dart';
+import '../features/item_detail/item_detail_screen.dart';
 import '../features/wardrobe/wardrobe_screen.dart';
 import 'theme/tokens.dart';
 
@@ -104,9 +105,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/item/:id',
         name: Routes.itemDetail,
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (ctx, st) => _PlaceholderModal(
-          title: '옷 상세 (id: ${st.pathParameters['id']})',
-        ),
+        builder: (ctx, st) {
+          final id = int.tryParse(st.pathParameters['id'] ?? '');
+          if (id == null) return const _PlaceholderModal(title: '옷 상세');
+          return ItemDetailScreen(id: id);
+        },
       ),
       GoRoute(
         path: '/add-item',
