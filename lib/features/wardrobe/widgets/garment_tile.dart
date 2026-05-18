@@ -61,7 +61,12 @@ class GarmentTile extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+              padding: const EdgeInsets.fromLTRB(
+                ClosetimoSpacing.md - 2,
+                ClosetimoSpacing.md - 2,
+                ClosetimoSpacing.md - 2,
+                ClosetimoSpacing.md,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -152,7 +157,9 @@ class _ItemImage extends ConsumerWidget {
         if (snap.data == null) return Container(color: fallback);
         final file = File(snap.data!);
         if (!file.existsSync()) return Container(color: fallback);
-        return Image.file(file, fit: BoxFit.cover);
+        // cacheWidth=480은 2x retina 기준 240lp 그리드 타일에 충분하며
+        // 1600px 원본을 매 스크롤 디코딩하지 않도록 막는다(SC-004 가드).
+        return Image.file(file, fit: BoxFit.cover, cacheWidth: 480);
       },
     );
   }
