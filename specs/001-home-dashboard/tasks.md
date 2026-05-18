@@ -115,12 +115,12 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 ### Implementation for User Story 2
 
-- [ ] T041 [US2] ItemRepository 확장 — `lib/data/repositories/item_repository.dart` 및 `isar_item_repository.dart`에 `watchAll()`, `watchFiltered({Category?, String?, WardrobeSort})` 메서드 추가. 검색은 대소문자 무시(FR-006), 정렬은 status·recent·wears 3종(FR-007). Isar `watchLazy` 기반 stream.
-- [ ] T042 [P] [US2] WardrobeSort enum — `lib/features/wardrobe/wardrobe_sort.dart`에 `statusCleanFirst`, `recentlyWorn`, `mostWorn` 정의(contracts/repositories.md).
-- [ ] T043 [P] [US2] GarmentTile 위젯 — `lib/features/wardrobe/widgets/garment_tile.dart`. `aspectRatio: 1/1.05` 사진 + 좌상단 StatusLabel(wearSinceWash==0 → "깨끗함", status==dirty → "세탁 필요"), 하단 메타(이름·"착용 횟수"·"마지막 세탁"·`wearSinceWash/washCycle`·`lastWashedAt`)(FR-008).
-- [ ] T044 [US2] WardrobeFilterBar 위젯 — `lib/features/wardrobe/widgets/wardrobe_filter_bar.dart`. 검색 입력(언더라인 없음, `surface-container-low` fill, 46px 좌패딩 + 돋보기 아이콘) + 카테고리 칩 wrap + 정렬 `DropdownButton`(테두리 없는 surface-container-low 카드).
-- [ ] T045 [US2] WardrobeScreen — `lib/features/wardrobe/wardrobe_screen.dart`에 TopBar(우상단 + 버튼 → /add-item) + h1 "내 옷장" + 부제 + WardrobeFilterBar + 2 컬럼 GridView로 `watchFiltered` 스트림 렌더. 결과 0건이면 "검색 결과가 없습니다." 빈 상태(FR-006).
-- [ ] T046 [US2] /wardrobe 라우트 결선 — `lib/app/router.dart` shell의 wardrobe 탭에 `WardrobeScreen` 연결. `?category=상의` 쿼리 파라미터 수신 시 초기 필터로 전달.
+- [X] T041 [US2] ItemRepository 확장 — `lib/data/repositories/item_repository.dart` 및 `isar_item_repository.dart`에 `watchAll()`, `watchFiltered({Category?, String?, WardrobeSort})` 메서드 추가. 검색은 대소문자 무시(FR-006), 정렬은 status·recent·wears 3종(FR-007). Isar `watchLazy` 기반 stream.
+- [X] T042 [P] [US2] WardrobeSort enum — `lib/features/wardrobe/wardrobe_sort.dart`에 `statusCleanFirst`, `recentlyWorn`, `mostWorn` 정의(contracts/repositories.md).
+- [X] T043 [P] [US2] GarmentTile 위젯 — `lib/features/wardrobe/widgets/garment_tile.dart`. `aspectRatio: 1/1.05` 사진 + 좌상단 StatusLabel(wearSinceWash==0 → "깨끗함", status==dirty → "세탁 필요"), 하단 메타(이름·"착용 횟수"·"마지막 세탁"·`wearSinceWash/washCycle`·`lastWashedAt`)(FR-008).
+- [X] T044 [US2] WardrobeFilterBar 위젯 — `lib/features/wardrobe/widgets/wardrobe_filter_bar.dart`. 검색 입력(언더라인 없음, `surface-container-low` fill, 46px 좌패딩 + 돋보기 아이콘) + 카테고리 칩 wrap + 정렬 `DropdownButton`(테두리 없는 surface-container-low 카드).
+- [X] T045 [US2] WardrobeScreen — `lib/features/wardrobe/wardrobe_screen.dart`에 TopBar(우상단 + 버튼 → /add-item) + h1 "내 옷장" + 부제 + WardrobeFilterBar + 2 컬럼 GridView로 `watchFiltered` 스트림 렌더. 결과 0건이면 "검색 결과가 없습니다." 빈 상태(FR-006).
+- [X] T046 [US2] /wardrobe 라우트 결선 — `lib/app/router.dart` shell의 wardrobe 탭에 `WardrobeScreen` 연결. `?category=상의` 쿼리 파라미터 수신 시 초기 필터로 전달.
 
 **Checkpoint**: US1 + US2 모두 동작. 사용자가 옷을 등록하고 옷장에서 찾을 수 있다. SC-002(5초 내 옷 탐색), SC-004(100점 200ms 필터링) 측정 가능.
 

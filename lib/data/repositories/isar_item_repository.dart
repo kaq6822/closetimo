@@ -66,8 +66,38 @@ class IsarItemRepository implements ItemRepository {
     String query = '',
     required WardrobeSort sort,
   }) {
-    // Phase 4 (T041)에서 본격 구현. 임시 더미.
-    return watchAll();
+    final q = query.trim().toLowerCase();
+    return watchAll().map((items) {
+      var arr = items;
+      if (category != null) {
+        arr = arr.where((i) => i.category == category).toList();
+      }
+      if (q.isNotEmpty) {
+        arr = arr.where((i) {
+          final name = i.name.toLowerCase();
+          final brand = (i.brand ?? '').toLowerCase();
+          return name.contains(q) || brand.contains(q);
+        }).toList();
+      }
+      final sorted = [...arr];
+      switch (sort) {
+        case WardrobeSort.statusCleanFirst:
+          sorted.sort((a, b) {
+            final aKey = a.status == ItemStatus.clean ? 0 : 1;
+            final bKey = b.status == ItemStatus.clean ? 0 : 1;
+            return aKey.compareTo(bKey);
+          });
+        case WardrobeSort.recentlyWorn:
+          sorted.sort((a, b) {
+            final aT = a.lastWornAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final bT = b.lastWornAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            return bT.compareTo(aT);
+          });
+        case WardrobeSort.mostWorn:
+          sorted.sort((a, b) => b.totalWears.compareTo(a.totalWears));
+      }
+      return sorted;
+    });
   }
 
   @override

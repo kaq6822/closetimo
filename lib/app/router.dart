@@ -8,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import '../core/widgets/bottom_nav.dart';
 import '../core/widgets/toast.dart';
 import '../core/widgets/top_bar.dart';
+import '../data/models/item.dart';
 import '../features/add_item/add_item_screen.dart';
+import '../features/wardrobe/wardrobe_screen.dart';
 import 'theme/tokens.dart';
 
 /// 라우트 이름 상수. UI 코드는 문자열 리터럴 대신 본 상수만 사용한다.
@@ -55,11 +57,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 path: BottomNavTab.wardrobe.path,
                 name: Routes.wardrobe,
                 builder: (ctx, st) {
-                  final cat = st.uri.queryParameters['category'];
-                  return _PlaceholderScreen(
-                    label: '옷장${cat != null ? ' · $cat' : ''}',
-                    tab: BottomNavTab.wardrobe,
-                  );
+                  final raw = st.uri.queryParameters['category'];
+                  Category? cat;
+                  if (raw != null) {
+                    for (final c in Category.values) {
+                      if (c.label == raw || c.name == raw) {
+                        cat = c;
+                        break;
+                      }
+                    }
+                  }
+                  return WardrobeScreen(initialCategory: cat);
                 },
               ),
             ],
