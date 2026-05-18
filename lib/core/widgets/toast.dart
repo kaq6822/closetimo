@@ -9,17 +9,23 @@ import '../../app/theme/tokens.dart';
 void showClosetimoToast(BuildContext context, String message) {
   final overlay = Overlay.maybeOf(context);
   if (overlay == null) return;
-  final entry = OverlayEntry(
-    builder: (ctx) => _ToastBubble(message: message),
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (ctx) => _ToastBubble(
+      message: message,
+      onDismissed: () {
+        if (entry.mounted) entry.remove();
+      },
+    ),
   );
   overlay.insert(entry);
-  Future<void>.delayed(const Duration(milliseconds: 2200), entry.remove);
 }
 
 class _ToastBubble extends StatefulWidget {
-  const _ToastBubble({required this.message});
+  const _ToastBubble({required this.message, required this.onDismissed});
 
   final String message;
+  final VoidCallback onDismissed;
 
   @override
   State<_ToastBubble> createState() => _ToastBubbleState();
@@ -30,12 +36,24 @@ class _ToastBubbleState extends State<_ToastBubble>
   late final AnimationController _ctl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 220),
-  )..forward();
+  );
 
   late final CurvedAnimation _curve = CurvedAnimation(
     parent: _ctl,
     curve: Curves.easeOutCubic,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl.forward();
+    Future<void>.delayed(const Duration(milliseconds: 2000), () async {
+      if (!mounted) return;
+      await _ctl.reverse();
+      if (!mounted) return;
+      widget.onDismissed();
+    });
+  }
 
   @override
   void dispose() {

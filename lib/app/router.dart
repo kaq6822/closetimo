@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/widgets/bottom_nav.dart';
-import '../core/widgets/top_bar.dart';
 import '../core/widgets/toast.dart';
-import '../app/theme/tokens.dart';
+import '../core/widgets/top_bar.dart';
+import 'theme/tokens.dart';
 
 /// 라우트 이름 상수. UI 코드는 문자열 리터럴 대신 본 상수만 사용한다.
 abstract final class Routes {
@@ -21,49 +21,73 @@ abstract final class Routes {
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
+final _shellHomeKey = GlobalKey<NavigatorState>();
+final _shellWardrobeKey = GlobalKey<NavigatorState>();
+final _shellLaundryKey = GlobalKey<NavigatorState>();
+final _shellSettingsKey = GlobalKey<NavigatorState>();
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: BottomNavTab.home.path,
     routes: [
-      ShellRoute(
-        navigatorKey: _shellNavigatorKey,
-        builder: (context, state, child) => _MainShell(
-          location: state.matchedLocation,
-          child: child,
-        ),
-        routes: [
-          GoRoute(
-            path: '/home',
-            name: Routes.home,
-            builder: (ctx, st) =>
-                const _PlaceholderScreen(label: '홈', tab: BottomNavTab.home),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navShell) => _MainShell(navShell: navShell),
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: _shellHomeKey,
+            routes: [
+              GoRoute(
+                path: BottomNavTab.home.path,
+                name: Routes.home,
+                builder: (ctx, st) => const _PlaceholderScreen(
+                  label: '홈',
+                  tab: BottomNavTab.home,
+                ),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/wardrobe',
-            name: Routes.wardrobe,
-            builder: (ctx, st) => _PlaceholderScreen(
-              label: '옷장${st.uri.queryParameters['category'] != null ? ' · ${st.uri.queryParameters['category']}' : ''}',
-              tab: BottomNavTab.wardrobe,
-            ),
+          StatefulShellBranch(
+            navigatorKey: _shellWardrobeKey,
+            routes: [
+              GoRoute(
+                path: BottomNavTab.wardrobe.path,
+                name: Routes.wardrobe,
+                builder: (ctx, st) {
+                  final cat = st.uri.queryParameters['category'];
+                  return _PlaceholderScreen(
+                    label: '옷장${cat != null ? ' · $cat' : ''}',
+                    tab: BottomNavTab.wardrobe,
+                  );
+                },
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/laundry',
-            name: Routes.laundry,
-            builder: (ctx, st) => const _PlaceholderScreen(
-              label: '세탁 바구니',
-              tab: BottomNavTab.laundry,
-            ),
+          StatefulShellBranch(
+            navigatorKey: _shellLaundryKey,
+            routes: [
+              GoRoute(
+                path: BottomNavTab.laundry.path,
+                name: Routes.laundry,
+                builder: (ctx, st) => const _PlaceholderScreen(
+                  label: '세탁 바구니',
+                  tab: BottomNavTab.laundry,
+                ),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/settings',
-            name: Routes.settings,
-            builder: (ctx, st) => const _PlaceholderScreen(
-              label: '설정',
-              tab: BottomNavTab.settings,
-            ),
+          StatefulShellBranch(
+            navigatorKey: _shellSettingsKey,
+            routes: [
+              GoRoute(
+                path: BottomNavTab.settings.path,
+                name: Routes.settings,
+                builder: (ctx, st) => const _PlaceholderScreen(
+                  label: '설정',
+                  tab: BottomNavTab.settings,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -99,38 +123,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 });
 
 class _MainShell extends StatelessWidget {
-  const _MainShell({required this.location, required this.child});
+  const _MainShell({required this.navShell});
 
-  final String location;
-  final Widget child;
-
-  BottomNavTab get _current {
-    if (location.startsWith('/wardrobe')) return BottomNavTab.wardrobe;
-    if (location.startsWith('/laundry')) return BottomNavTab.laundry;
-    if (location.startsWith('/settings')) return BottomNavTab.settings;
-    return BottomNavTab.home;
-  }
-
-  void _onTap(BuildContext context, BottomNavTab t) {
-    switch (t) {
-      case BottomNavTab.home:
-        context.goNamed(Routes.home);
-      case BottomNavTab.wardrobe:
-        context.goNamed(Routes.wardrobe);
-      case BottomNavTab.laundry:
-        context.goNamed(Routes.laundry);
-      case BottomNavTab.settings:
-        context.goNamed(Routes.settings);
-    }
-  }
+  final StatefulNavigationShell navShell;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: child),
+      body: SafeArea(child: navShell),
       bottomNavigationBar: BottomNav(
-        current: _current,
-        onTap: (t) => _onTap(context, t),
+        current: BottomNavTab.values[navShell.currentIndex],
+        onTap: (t) => navShell.goBranch(
+          t.index,
+          initialLocation: t.index == navShell.currentIndex,
+        ),
       ),
     );
   }

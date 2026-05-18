@@ -8,13 +8,28 @@ import 'package:path_provider/path_provider.dart';
 import '../../data/models/item.dart';
 import '../../data/models/user_preferences.dart';
 import '../../data/models/wear_event.dart';
+import '../utils/clock.dart';
 
 final isarProvider = FutureProvider<Isar>((ref) async {
   final dir = await getApplicationDocumentsDirectory();
-  return Isar.open(
+  final isar = await Isar.open(
     [ItemSchema, WearEventSchema, UserPreferencesSchema],
     directory: dir.path,
     name: 'closetimo',
     inspector: false,
   );
+  await _ensureDefaultPreferences(isar, ref.read(clockProvider));
+  return isar;
 });
+
+/// 첫 부트 시 UserPreferences singleton(id=0)이 존재하지 않으면 생성하고,
+/// firstLaunchedAt을 지금 시각으로 시드한다(설정 화면 "N개월 함께한" 카피용).
+Future<void> _ensureDefaultPreferences(Isar isar, Clock clock) async {
+  final existing = await isar.userPreferences.get(UserPreferences.singletonId);
+  if (existing != null) return;
+  await isar.writeTxn(() async {
+    final prefs = UserPreferences.defaults()
+      ..firstLaunchedAt = clock.now();
+    await isar.userPreferences.put(prefs);
+  });
+}

@@ -29,12 +29,14 @@ class Item {
   late String name;
   String? brand;
 
+  @Index()
   @enumerated
   late Category category;
 
   @enumerated
   CareMethod careMethod;
 
+  @Index()
   @enumerated
   ItemStatus status;
 
@@ -48,10 +50,12 @@ class Item {
   DateTime? lastWashedAt;
   DateTime? purchasedAt;
 
+  @Index()
   bool inLaundry;
   String? imagePath;
   int fallbackColor;
 
+  @Index(type: IndexType.value)
   late DateTime createdAt;
 }
 

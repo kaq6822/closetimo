@@ -21,6 +21,21 @@ extension BottomNavTabMeta on BottomNavTab {
         BottomNavTab.laundry => Icons.local_laundry_service_rounded,
         BottomNavTab.settings => Icons.person_rounded,
       };
+
+  /// 단일 출처화 — go_router path와 활성 탭 판정이 본 게터만 참조한다.
+  String get path => switch (this) {
+        BottomNavTab.home => '/home',
+        BottomNavTab.wardrobe => '/wardrobe',
+        BottomNavTab.laundry => '/laundry',
+        BottomNavTab.settings => '/settings',
+      };
+
+  static BottomNavTab fromLocation(String location) {
+    for (final t in BottomNavTab.values) {
+      if (location.startsWith(t.path)) return t;
+    }
+    return BottomNavTab.home;
+  }
 }
 
 class BottomNav extends StatelessWidget {

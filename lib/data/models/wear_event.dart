@@ -18,6 +18,7 @@ class WearEvent {
   @Index()
   late int itemId;
 
+  @Index()
   @enumerated
   late EventKind kind;
 

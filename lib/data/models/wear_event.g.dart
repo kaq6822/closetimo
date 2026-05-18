@@ -58,6 +58,19 @@ const WearEventSchema = CollectionSchema(
         )
       ],
     ),
+    r'kind': IndexSchema(
+      id: 1484550194077596484,
+      name: r'kind',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'kind',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'occurredAt': IndexSchema(
       id: 1229694562040044173,
       name: r'occurredAt',
@@ -178,6 +191,14 @@ extension WearEventQueryWhereSort
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'itemId'),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterWhere> anyKind() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'kind'),
       );
     });
   }
@@ -343,6 +364,96 @@ extension WearEventQueryWhere
         lower: [lowerItemId],
         includeLower: includeLower,
         upper: [upperItemId],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindEqualTo(
+      EventKind kind) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'kind',
+        value: [kind],
+      ));
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindNotEqualTo(
+      EventKind kind) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'kind',
+              lower: [],
+              upper: [kind],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'kind',
+              lower: [kind],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'kind',
+              lower: [kind],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'kind',
+              lower: [],
+              upper: [kind],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindGreaterThan(
+    EventKind kind, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'kind',
+        lower: [kind],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindLessThan(
+    EventKind kind, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'kind',
+        lower: [],
+        upper: [kind],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindBetween(
+    EventKind lowerKind,
+    EventKind upperKind, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'kind',
+        lower: [lowerKind],
+        includeLower: includeLower,
+        upper: [upperKind],
         includeUpper: includeUpper,
       ));
     });
