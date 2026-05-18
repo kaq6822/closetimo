@@ -11,6 +11,7 @@ import '../core/widgets/top_bar.dart';
 import '../data/models/item.dart';
 import '../features/add_item/add_item_screen.dart';
 import '../features/item_detail/item_detail_screen.dart';
+import '../features/laundry/laundry_screen.dart';
 import '../features/wardrobe/wardrobe_screen.dart';
 import 'theme/tokens.dart';
 
@@ -79,10 +80,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: BottomNavTab.laundry.path,
                 name: Routes.laundry,
-                builder: (ctx, st) => const _PlaceholderScreen(
-                  label: '세탁 바구니',
-                  tab: BottomNavTab.laundry,
-                ),
+                builder: (ctx, st) => const LaundryScreen(),
               ),
             ],
           ),

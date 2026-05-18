@@ -158,12 +158,12 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 ### Implementation for User Story 4
 
-- [ ] T058 [US4] LaundryRepository.completeWashFor — `lib/data/repositories/isar_laundry_repository.dart`에 contracts/repositories.md §2 트랜잭션 로직 추가: 각 itemId에 대해 status/wearSinceWash/lastWashedAt/inLaundry 갱신 + WearEvent(kind: wash) insert를 단일 `isar.writeTxnSync`로 묶음.
-- [ ] T059 [P] [US4] LaundryTile 위젯 — `lib/features/laundry/widgets/laundry_tile.dart`. 사진(62x62 라운드) + 이름 + "카테고리 · 세탁 방법" + ProgressBar + 우측 원형 체크 박스. 선택 시 `bg-mint-soft` 배경.
-- [ ] T060 [US4] LaundryScreen — `lib/features/laundry/laundry_screen.dart`. TopBar + h1 "세탁 바구니" + 부제 + PrimaryButton "선택 항목 세탁 완료 처리"(선택 0건이면 비활성, FR-017) + "(N) ... 모두 선택" 행 + LaundryTile 리스트. 빈 상태 "세탁할 옷이 없어요." 표시.
-- [ ] T061 [US4] 선택 상태 관리 — `lib/features/laundry/laundry_selection_provider.dart`에 `final laundrySelectionProvider = NotifierProvider<LaundrySelectionNotifier, Set<int>>(...)`로 화면 단위 선택 집합 유지. `toggleAll`, `toggleOne`, `clear` 메서드.
-- [ ] T062 [US4] /laundry 라우트 결선 — `lib/app/router.dart` shell의 laundry 탭에 `LaundryScreen` 연결.
-- [ ] T063 [US4] 통합 테스트 — `integration_test/laundry_flow_test.dart`에 옷 3점 등록 → 모두 바구니 추가 → 2점만 선택 → 세탁 완료 → 2점만 `clean`+0/N로 초기화, 1점은 그대로(US4 AC1~4).
+- [X] T058 [US4] LaundryRepository.completeWashFor — `lib/data/repositories/isar_laundry_repository.dart`에 contracts/repositories.md §2 트랜잭션 로직 추가: 각 itemId에 대해 status/wearSinceWash/lastWashedAt/inLaundry 갱신 + WearEvent(kind: wash) insert를 단일 `isar.writeTxnSync`로 묶음.
+- [X] T059 [P] [US4] LaundryTile 위젯 — `lib/features/laundry/widgets/laundry_tile.dart`. 사진(62x62 라운드) + 이름 + "카테고리 · 세탁 방법" + ProgressBar + 우측 원형 체크 박스. 선택 시 `bg-mint-soft` 배경.
+- [X] T060 [US4] LaundryScreen — `lib/features/laundry/laundry_screen.dart`. TopBar + h1 "세탁 바구니" + 부제 + PrimaryButton "선택 항목 세탁 완료 처리"(선택 0건이면 비활성, FR-017) + "(N) ... 모두 선택" 행 + LaundryTile 리스트. 빈 상태 "세탁할 옷이 없어요." 표시.
+- [X] T061 [US4] 선택 상태 관리 — `lib/features/laundry/laundry_selection_provider.dart`에 `final laundrySelectionProvider = NotifierProvider<LaundrySelectionNotifier, Set<int>>(...)`로 화면 단위 선택 집합 유지. `toggleAll`, `toggleOne`, `clear` 메서드.
+- [X] T062 [US4] /laundry 라우트 결선 — `lib/app/router.dart` shell의 laundry 탭에 `LaundryScreen` 연결.
+- [X] T063 [US4] 통합 테스트 — `integration_test/laundry_flow_test.dart`에 옷 3점 등록 → 모두 바구니 추가 → 2점만 선택 → 세탁 완료 → 2점만 `clean`+0/N로 초기화, 1점은 그대로(US4 AC1~4).
 
 **Checkpoint**: 착용-세탁 전체 사이클이 닫힌다. SC-006(전체 사이클 90% 성공률), SC-007(오프라인 5가지 작업) 검증 가능.
 
