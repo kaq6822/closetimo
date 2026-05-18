@@ -4,6 +4,8 @@
 
 본 문서는 Isar 컬렉션 스키마(소스 코드의 `lib/data/models/`에 대응)와 엔티티 간 관계, 검증 규칙, 상태 전이를 정의한다. 모든 필드는 spec.md의 Key Entities + FR-001~FR-022에서 도출된다.
 
+**구현 버전**: Isar **3.x** 안정 라인(`isar ^3.1.0+1`)에 맞춰 작성됨. 본 문서의 `@collection`, `@Index`, `Id` 타입은 3.x API 기준. 후속 4.x(Rust core) 마이그레이션은 별도 spec으로 정의한다.
+
 ---
 
 ## ER 다이어그램 (논리)

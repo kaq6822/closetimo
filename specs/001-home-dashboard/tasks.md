@@ -45,39 +45,39 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 ### 디자인 시스템 토큰 (헌법 II)
 
-- [ ] T009 디자인 토큰 상수 — `lib/app/theme/tokens.dart`에 `design.md` §2·§4·§7을 1:1 매핑한 `ClosetimoColors`, `ClosetimoSpacing`, `ClosetimoRadius` 상수 클래스를 정의. 색상은 `Color(0xff...)` 리터럴, 간격은 `double` 상수.
-- [ ] T010 타이포그래피 — `lib/app/theme/typography.dart`에 Manrope/Inter `TextTheme` 정의(display-lg 56px, headline-sm 24px, body-lg 16px, label-md 12px) + `fontFamilyFallback: ['Pretendard']` 지정.
-- [ ] T011 `ThemeData` 통합 — `lib/app/theme/app_theme.dart`에 `ColorScheme` 명시 구성(`ColorScheme.fromSeed` 금지, research.md §4 매핑) + 커스텀 `ThemeExtension<ClosetimoSurfaces>`로 `surfaceContainerLow/Lowest/Container/High/Highest` 노출. `dividerTheme: DividerThemeData(color: Colors.transparent)` 강제.
+- [X] T009 디자인 토큰 상수 — `lib/app/theme/tokens.dart`에 `design.md` §2·§4·§7을 1:1 매핑한 `ClosetimoColors`, `ClosetimoSpacing`, `ClosetimoRadius` 상수 클래스를 정의. 색상은 `Color(0xff...)` 리터럴, 간격은 `double` 상수.
+- [X] T010 타이포그래피 — `lib/app/theme/typography.dart`에 Manrope/Inter `TextTheme` 정의(display-lg 56px, headline-sm 24px, body-lg 16px, label-md 12px) + `fontFamilyFallback: ['Pretendard']` 지정.
+- [X] T011 `ThemeData` 통합 — `lib/app/theme/app_theme.dart`에 `ColorScheme` 명시 구성(`ColorScheme.fromSeed` 금지, research.md §4 매핑) + 커스텀 `ThemeExtension<ClosetimoSurfaces>`로 `surfaceContainerLow/Lowest/Container/High/Highest` 노출. `dividerTheme: DividerThemeData(color: Colors.transparent)` 강제.
 
 ### Isar 데이터 모델 (data-model.md)
 
-- [ ] T012 [P] `Item` 컬렉션 — `lib/data/models/item.dart`에 `@collection class Item`로 data-model.md §1의 14개 필드(id, name, brand, category enum, careMethod enum, status enum, washCycle, wearSinceWash, totalWears, lastWornAt, lastWashedAt, purchasedAt, inLaundry, imagePath, fallbackColor, createdAt) 정의. `Category`, `CareMethod`, `ItemStatus` enum도 같은 파일에 선언.
-- [ ] T013 [P] `WearEvent` 컬렉션 — `lib/data/models/wear_event.dart`에 `@collection class WearEvent`로 id, itemId, kind(EventKind enum), occurredAt, note 필드 정의. `@Index(type: IndexType.value) occurredAt` + `@Index() itemId`.
-- [ ] T014 [P] `UserPreferences` 컬렉션 — `lib/data/models/user_preferences.dart`에 `@collection class UserPreferences`로 id 고정 0, notifWash/Weekly/Unworn(기본값 true/true/false), accent('sage'), lastTab(String?) 필드 + `factory UserPreferences.defaults()`.
-- [ ] T015 코드 생성 실행 — `dart run build_runner build --delete-conflicting-outputs`로 `*.g.dart` 어댑터 생성 및 빌드 통과 확인.
+- [X] T012 [P] `Item` 컬렉션 — `lib/data/models/item.dart`에 `@collection class Item`로 data-model.md §1의 14개 필드(id, name, brand, category enum, careMethod enum, status enum, washCycle, wearSinceWash, totalWears, lastWornAt, lastWashedAt, purchasedAt, inLaundry, imagePath, fallbackColor, createdAt) 정의. `Category`, `CareMethod`, `ItemStatus` enum도 같은 파일에 선언.
+- [X] T013 [P] `WearEvent` 컬렉션 — `lib/data/models/wear_event.dart`에 `@collection class WearEvent`로 id, itemId, kind(EventKind enum), occurredAt, note 필드 정의. `@Index(type: IndexType.value) occurredAt` + `@Index() itemId`.
+- [X] T014 [P] `UserPreferences` 컬렉션 — `lib/data/models/user_preferences.dart`에 `@collection class UserPreferences`로 id 고정 0, notifWash/Weekly/Unworn(기본값 true/true/false), accent('sage'), lastTab(String?) 필드 + `factory UserPreferences.defaults()`.
+- [X] T015 코드 생성 실행 — `dart run build_runner build --delete-conflicting-outputs`로 `*.g.dart` 어댑터 생성 및 빌드 통과 확인.
 
 ### 영속화 & 공용 인프라
 
-- [ ] T016 Isar 단일 인스턴스 provider — `lib/core/persistence/isar_provider.dart`에 `final isarProvider = FutureProvider<Isar>(...)` 정의. `path_provider`로 `getApplicationDocumentsDirectory()`를 얻어 `Isar.open(schemas: [...], directory: dir.path, name: 'closetimo')` 호출. iOS·Android 양 플랫폼 동일 경로.
-- [ ] T017 이미지 저장소 — `lib/core/persistence/image_store.dart`에 `ImageStore.copyTo(File source, String itemId) → Future<String relativePath>` 작성. sandbox `documents/items/{itemId}.jpg`로 복사 후 상대 경로 반환. `ImageStore.absolutePath(String relativePath)` 헬퍼 포함.
-- [ ] T018 Clock provider — `lib/core/utils/clock.dart`에 `abstract interface class Clock { DateTime now(); }` + `SystemClock` 기본 구현 + `clockProvider` Riverpod provider. 테스트에서 가짜 시계 오버라이드용.
-- [ ] T019 날짜 포맷터 — `lib/core/utils/date_formatter.dart`에 research.md §9 규칙을 구현하는 `formatRelative(DateTime, {DateTime now})`, `formatMonthDay(DateTime)`, `formatFullDate(DateTime)` 함수.
+- [X] T016 Isar 단일 인스턴스 provider — `lib/core/persistence/isar_provider.dart`에 `final isarProvider = FutureProvider<Isar>(...)` 정의. `path_provider`로 `getApplicationDocumentsDirectory()`를 얻어 `Isar.open(schemas: [...], directory: dir.path, name: 'closetimo')` 호출. iOS·Android 양 플랫폼 동일 경로.
+- [X] T017 이미지 저장소 — `lib/core/persistence/image_store.dart`에 `ImageStore.copyTo(File source, String itemId) → Future<String relativePath>` 작성. sandbox `documents/items/{itemId}.jpg`로 복사 후 상대 경로 반환. `ImageStore.absolutePath(String relativePath)` 헬퍼 포함.
+- [X] T018 Clock provider — `lib/core/utils/clock.dart`에 `abstract interface class Clock { DateTime now(); }` + `SystemClock` 기본 구현 + `clockProvider` Riverpod provider. 테스트에서 가짜 시계 오버라이드용.
+- [X] T019 날짜 포맷터 — `lib/core/utils/date_formatter.dart`에 research.md §9 규칙을 구현하는 `formatRelative(DateTime, {DateTime now})`, `formatMonthDay(DateTime)`, `formatFullDate(DateTime)` 함수.
 
 ### 공용 디자인 시스템 위젯 (lib/core/widgets/)
 
-- [ ] T020 [P] PrimaryButton — `lib/core/widgets/primary_button.dart`. 알약(`StadiumBorder`) 모양, `colorScheme.primary` 배경, 우측 아이콘 슬롯, `enabled` 토글 시 30% 불투명 처리. design.md §5 "Primary" 사양 준수.
-- [ ] T021 [P] SoftButton — `lib/core/widgets/soft_button.dart`. `surface-container-highest` 배경, 보더 없음, 좌측 아이콘 슬롯.
-- [ ] T022 [P] ChipFilter — `lib/core/widgets/chip_filter.dart`. 활성 시 `primary` 배경 + `on-primary` 텍스트, 비활성 시 `secondary-container` 배경. `lg` 라운딩.
-- [ ] T023 [P] StatusLabel — `lib/core/widgets/status_label.dart`. variant `clean`(녹색 톤)/`dirty`(중성)에 따라 아이콘 + 텍스트(`"깨끗함"`, `"세탁 필요"`)와 라운드 풀 라벨 렌더(FR-008).
-- [ ] T024 [P] ProgressBar — `lib/core/widgets/progress_bar.dart`. 0~1 값과 variant `normal`/`alert`로 색상 분기. 디바이더 없이 토널.
-- [ ] T025 [P] TopBar — `lib/core/widgets/top_bar.dart`. 좌측 뒤로/브랜드 슬롯, 우측 액션 슬롯. design.md "에디토리얼 비대칭" 마진 적용(24L/32R 옵션).
-- [ ] T026 [P] BottomNav — `lib/core/widgets/bottom_nav.dart`. 4탭(`home`, `wardrobe`, `laundry`, `settings`) + 활성 탭 시각 강조. `go_router` `StatefulShellRoute` 연동 콜백.
-- [ ] T027 [P] Toast — `lib/core/widgets/toast.dart`. `Overlay` 기반 커스텀 토스트. `showClosetimoToast(BuildContext, String message)` API로 2초 후 자동 dismiss + 좌측 체크 아이콘(FR-023).
+- [X] T020 [P] PrimaryButton — `lib/core/widgets/primary_button.dart`. 알약(`StadiumBorder`) 모양, `colorScheme.primary` 배경, 우측 아이콘 슬롯, `enabled` 토글 시 30% 불투명 처리. design.md §5 "Primary" 사양 준수.
+- [X] T021 [P] SoftButton — `lib/core/widgets/soft_button.dart`. `surface-container-highest` 배경, 보더 없음, 좌측 아이콘 슬롯.
+- [X] T022 [P] ChipFilter — `lib/core/widgets/chip_filter.dart`. 활성 시 `primary` 배경 + `on-primary` 텍스트, 비활성 시 `secondary-container` 배경. `lg` 라운딩.
+- [X] T023 [P] StatusLabel — `lib/core/widgets/status_label.dart`. variant `clean`(녹색 톤)/`dirty`(중성)에 따라 아이콘 + 텍스트(`"깨끗함"`, `"세탁 필요"`)와 라운드 풀 라벨 렌더(FR-008).
+- [X] T024 [P] ProgressBar — `lib/core/widgets/progress_bar.dart`. 0~1 값과 variant `normal`/`alert`로 색상 분기. 디바이더 없이 토널.
+- [X] T025 [P] TopBar — `lib/core/widgets/top_bar.dart`. 좌측 뒤로/브랜드 슬롯, 우측 액션 슬롯. design.md "에디토리얼 비대칭" 마진 적용(24L/32R 옵션).
+- [X] T026 [P] BottomNav — `lib/core/widgets/bottom_nav.dart`. 4탭(`home`, `wardrobe`, `laundry`, `settings`) + 활성 탭 시각 강조. `go_router` `StatefulShellRoute` 연동 콜백.
+- [X] T027 [P] Toast — `lib/core/widgets/toast.dart`. `Overlay` 기반 커스텀 토스트. `showClosetimoToast(BuildContext, String message)` API로 2초 후 자동 dismiss + 좌측 체크 아이콘(FR-023).
 
 ### 라우터 & 앱 부트
 
-- [ ] T028 라우트 이름 상수 — `lib/app/router.dart`에 `abstract final class Routes { ... }`(routes.md §6) + `final goRouterProvider = Provider<GoRouter>((ref) { ... })` 스켈레톤. `StatefulShellRoute.indexedStack`으로 4탭 + `/item/:id`, `/add-item` push 라우트 등록(스크린은 빈 `Scaffold` 자리 표시).
-- [ ] T029 앱 부트스트랩 — `lib/main.dart`에 `void main() async { WidgetsFlutterBinding.ensureInitialized(); runApp(ProviderScope(child: ClosetimoApp())); }` + `ClosetimoApp` 위젯에서 `isarProvider`를 ref해 초기화 완료 시 `MaterialApp.router(routerConfig: ref.watch(goRouterProvider), theme: appTheme, localizationsDelegates: ..., supportedLocales: [Locale('ko','KR')])` 렌더.
+- [X] T028 라우트 이름 상수 — `lib/app/router.dart`에 `abstract final class Routes { ... }`(routes.md §6) + `final goRouterProvider = Provider<GoRouter>((ref) { ... })` 스켈레톤. `StatefulShellRoute.indexedStack`으로 4탭 + `/item/:id`, `/add-item` push 라우트 등록(스크린은 빈 `Scaffold` 자리 표시).
+- [X] T029 앱 부트스트랩 — `lib/main.dart`에 `void main() async { WidgetsFlutterBinding.ensureInitialized(); runApp(ProviderScope(child: ClosetimoApp())); }` + `ClosetimoApp` 위젯에서 `isarProvider`를 ref해 초기화 완료 시 `MaterialApp.router(routerConfig: ref.watch(goRouterProvider), theme: appTheme, localizationsDelegates: ..., supportedLocales: [Locale('ko','KR')])` 렌더.
 
 **Checkpoint**: `flutter run`이 4탭 빈 화면 셸과 토스트·버튼 등 디자인 시스템 위젯 갤러리(테스트용 임시 화면)를 보여준다. Isar DB 파일이 sandbox에 생성된다.
 

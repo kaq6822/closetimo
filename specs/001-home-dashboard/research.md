@@ -131,15 +131,16 @@
 
 | 패키지 | 버전 핀 | 비고 |
 |---|---|---|
-| flutter | 3.27.x (stable) | Dart 3.5 포함 |
-| isar | ^4.0.0 | isar_flutter_libs 동일 버전 매칭 |
-| flutter_riverpod | ^2.6.0 | |
-| go_router | ^14.0.0 | |
-| image_picker | ^1.1.0 | |
-| intl | ^0.19.0 | |
-| path_provider | ^2.1.0 | |
-| freezed | ^2.5.0 | dev_dep |
-| build_runner | ^2.4.0 | dev_dep |
+| flutter | 3.35.x (stable) | Dart 3.9.2 포함 (개발 환경 기준; plan.md 작성 시 3.27.x였으나 본 환경은 더 신규 안정 라인) |
+| isar | ^3.1.0+1 | 4.x(Rust core)는 정식 release 전이라 안정 라인 3.x를 채택. data-model.md의 `@collection`/`@Index` API 호환. 후속 spec에서 4.x 마이그레이션 |
+| isar_flutter_libs | ^3.1.0+1 | isar와 버전 동기화 |
+| flutter_riverpod | ^2.6.1 | |
+| go_router | ^14.6.2 | |
+| image_picker | ^1.1.2 | |
+| intl | ^0.20.2 | flutter_localizations(3.35 SDK)가 0.20.2를 핀하므로 0.19→0.20.2로 상향 |
+| path_provider | ^2.1.5 | |
+| freezed | ^2.5.2 | dev_dep. isar_generator 3.x의 analyzer ^5/6 호환을 위해 2.5.7→2.5.2로 하향 |
+| build_runner | ^2.4.13 | dev_dep |
 
 `pubspec.yaml`은 `flutter pub upgrade --major-versions` 시점에 일괄 재검토.
 
