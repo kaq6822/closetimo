@@ -102,14 +102,41 @@ class IsarItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchRecentlyWorn({int limit = 2}) {
-    // Phase 7 (T064)에서 구현.
-    return const Stream.empty();
+    return _items
+        .filter()
+        .lastWornAtIsNotNull()
+        .sortByLastWornAtDesc()
+        .limit(limit)
+        .watch(fireImmediately: true);
   }
 
   @override
   Stream<WardrobeStats> watchStats() {
-    // Phase 7 (T064)에서 구현.
-    return const Stream.empty();
+    return watchAll().map((items) {
+      final perBucket = <Category, int>{
+        Category.outer: 0,
+        Category.top: 0,
+        Category.bottom: 0,
+        Category.etc: 0,
+      };
+      var clean = 0;
+      var dirty = 0;
+      for (final i in items) {
+        if (i.status == ItemStatus.clean) {
+          clean++;
+        } else {
+          dirty++;
+        }
+        final bucket = i.category.homeBucket;
+        perBucket[bucket] = (perBucket[bucket] ?? 0) + 1;
+      }
+      return WardrobeStats(
+        total: items.length,
+        clean: clean,
+        dirty: dirty,
+        perBucket: perBucket,
+      );
+    });
   }
 
   @override

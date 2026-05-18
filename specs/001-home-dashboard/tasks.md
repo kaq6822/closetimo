@@ -177,19 +177,19 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 ### Implementation for User Story 5
 
-- [ ] T064 [US5] ItemRepository 통계 확장 — `lib/data/repositories/isar_item_repository.dart`에 `Stream<WardrobeStats> watchStats()`, `Stream<List<Item>> watchRecentlyWorn({int limit = 2})` 구현(contracts/repositories.md §1). "기타" 버킷에 신발·가방·액세서리·원피스·운동복 합산.
-- [ ] T065 [US5] PreferencesRepository — `lib/data/repositories/preferences_repository.dart`(인터페이스) + `lib/data/repositories/isar_preferences_repository.dart`(구현). `watch()`, `setNotifWash/Weekly/Unworn`, `setAccent`, `setLastTab`(FR-022).
-- [ ] T066 [US5] Provider 등록 — `lib/data/providers/app_providers.dart`에 `preferencesRepositoryProvider` + `lastTabProvider`(prefs.watch에서 lastTab 추출) 추가.
-- [ ] T067 [P] [US5] StatsRow 위젯 — `lib/features/home/widgets/stats_row.dart`. 3 컬럼 그리드 "전체 아이템 / 깨끗한 의류 / 관리 필요" + `surface-container-low` 라운드 컨테이너.
-- [ ] T068 [P] [US5] CategoryBento 위젯 — `lib/features/home/widgets/category_bento.dart`. 2x2 카드(아우터·상의·하의·기타). 탭 시 `context.goNamed(Routes.wardrobe, queryParameters: {'category': label})`(FR-019).
-- [ ] T069 [P] [US5] RecentlyWornList 위젯 — `lib/features/home/widgets/recently_worn_list.dart`. `watchRecentlyWorn(limit: 2)` 스트림을 받아 사진·이름·"N일 전 입음"·"X회 착용" 카드 2개 렌더(FR-020).
-- [ ] T070 [P] [US5] LaundryPreview 위젯 — `lib/features/home/widgets/laundry_preview.dart`. 바구니 상위 3점 + ProgressBar(alert variant) + `assets/tips/laundry_tips.json`에서 무작위 1개 표시(FR-021). 빈 바구니면 섹션 숨김.
-- [ ] T071 [US5] HomeScreen — `lib/features/home/home_screen.dart`. TopBar + 아이브로 "좋은 아침입니다, 큐레이터님" + h1 + StatsRow + CategoryBento + RecentlyWornList + LaundryPreview.
-- [ ] T072 [P] [US5] ProfileCard 위젯 — `lib/features/settings/widgets/profile_card.dart`. `primary` 배경 + 원형 이니셜 + "큐레이터님" + "2025.04부터 함께한 지 N개월"(앱 설치일 기준 계산).
-- [ ] T073 [P] [US5] PreferenceRow 위젯 — `lib/features/settings/widgets/preference_row.dart`. 좌측 라벨 + 우측 토글 또는 값 + 시각적 그룹(`surface-container-low` outer + `surface-container-lowest` inner cards, No-Line).
-- [ ] T074 [US5] SettingsScreen — `lib/features/settings/settings_screen.dart`. 프로필·알림·기타 3 섹션. 알림 토글은 `preferencesRepositoryProvider`와 양방향 바인딩. "데이터 백업"·"개인정보 처리방침"·"앱 정보 v1.0.0" 행은 read-only(plan.md 헌법 III 범위 명시).
-- [ ] T075 [US5] /home·/settings 라우트 결선 — `lib/app/router.dart` shell에 두 화면 연결. 탭 전환 시 `setLastTab` 호출(FR-022).
-- [ ] T076 [US5] 부트 시 lastTab 복원 — `lib/main.dart`(또는 router redirect)에서 `preferencesRepositoryProvider.watch()` 값으로 초기 탭 결정(routes.md §2).
+- [X] T064 [US5] ItemRepository 통계 확장 — `lib/data/repositories/isar_item_repository.dart`에 `Stream<WardrobeStats> watchStats()`, `Stream<List<Item>> watchRecentlyWorn({int limit = 2})` 구현(contracts/repositories.md §1). "기타" 버킷에 신발·가방·액세서리·원피스·운동복 합산.
+- [X] T065 [US5] PreferencesRepository — `lib/data/repositories/preferences_repository.dart`(인터페이스) + `lib/data/repositories/isar_preferences_repository.dart`(구현). `watch()`, `setNotifWash/Weekly/Unworn`, `setAccent`, `setLastTab`(FR-022).
+- [X] T066 [US5] Provider 등록 — `lib/data/providers/app_providers.dart`에 `preferencesRepositoryProvider` + `lastTabProvider`(prefs.watch에서 lastTab 추출) 추가.
+- [X] T067 [P] [US5] StatsRow 위젯 — `lib/features/home/widgets/stats_row.dart`. 3 컬럼 그리드 "전체 아이템 / 깨끗한 의류 / 관리 필요" + `surface-container-low` 라운드 컨테이너.
+- [X] T068 [P] [US5] CategoryBento 위젯 — `lib/features/home/widgets/category_bento.dart`. 2x2 카드(아우터·상의·하의·기타). 탭 시 `context.goNamed(Routes.wardrobe, queryParameters: {'category': label})`(FR-019).
+- [X] T069 [P] [US5] RecentlyWornList 위젯 — `lib/features/home/widgets/recently_worn_list.dart`. `watchRecentlyWorn(limit: 2)` 스트림을 받아 사진·이름·"N일 전 입음"·"X회 착용" 카드 2개 렌더(FR-020).
+- [X] T070 [P] [US5] LaundryPreview 위젯 — `lib/features/home/widgets/laundry_preview.dart`. 바구니 상위 3점 + ProgressBar(alert variant) + `assets/tips/laundry_tips.json`에서 무작위 1개 표시(FR-021). 빈 바구니면 섹션 숨김.
+- [X] T071 [US5] HomeScreen — `lib/features/home/home_screen.dart`. TopBar + 아이브로 "좋은 아침입니다, 큐레이터님" + h1 + StatsRow + CategoryBento + RecentlyWornList + LaundryPreview.
+- [X] T072 [P] [US5] ProfileCard 위젯 — `lib/features/settings/widgets/profile_card.dart`. `primary` 배경 + 원형 이니셜 + "큐레이터님" + "2025.04부터 함께한 지 N개월"(앱 설치일 기준 계산).
+- [X] T073 [P] [US5] PreferenceRow 위젯 — `lib/features/settings/widgets/preference_row.dart`. 좌측 라벨 + 우측 토글 또는 값 + 시각적 그룹(`surface-container-low` outer + `surface-container-lowest` inner cards, No-Line).
+- [X] T074 [US5] SettingsScreen — `lib/features/settings/settings_screen.dart`. 프로필·알림·기타 3 섹션. 알림 토글은 `preferencesRepositoryProvider`와 양방향 바인딩. "데이터 백업"·"개인정보 처리방침"·"앱 정보 v1.0.0" 행은 read-only(plan.md 헌법 III 범위 명시).
+- [X] T075 [US5] /home·/settings 라우트 결선 — `lib/app/router.dart` shell에 두 화면 연결. 탭 전환 시 `setLastTab` 호출(FR-022).
+- [X] T076 [US5] 부트 시 lastTab 복원 — `lib/main.dart`(또는 router redirect)에서 `preferencesRepositoryProvider.watch()` 값으로 초기 탭 결정(routes.md §2).
 
 **Checkpoint**: 전체 spec(P1~P5) 동작. SC-005(앱 재시작 100% 복원) 검증 가능.
 

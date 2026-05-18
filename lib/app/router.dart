@@ -1,19 +1,22 @@
 // go_router 정의. contracts/routes.md의 라우트 트리와 1:1 매핑.
 // 각 탭 스크린은 Phase 3~7에서 실제 위젯으로 교체된다.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/widgets/bottom_nav.dart';
-import '../core/widgets/toast.dart';
 import '../core/widgets/top_bar.dart';
 import '../data/models/item.dart';
 import '../features/add_item/add_item_screen.dart';
+import '../features/home/home_screen.dart';
 import '../features/item_detail/item_detail_screen.dart';
 import '../features/laundry/laundry_screen.dart';
+import '../features/settings/settings_screen.dart';
 import '../features/wardrobe/wardrobe_screen.dart';
-import 'theme/tokens.dart';
+import '../data/providers/app_providers.dart';
 
 /// 라우트 이름 상수. UI 코드는 문자열 리터럴 대신 본 상수만 사용한다.
 abstract final class Routes {
@@ -32,9 +35,13 @@ final _shellLaundryKey = GlobalKey<NavigatorState>();
 final _shellSettingsKey = GlobalKey<NavigatorState>();
 
 final goRouterProvider = Provider<GoRouter>((ref) {
+  // FR-022 lastTab 복원: 본 provider 생성 시점은 ClosetimoApp이 prefs를
+  // resolve한 후이므로 `valueOrNull`이 거의 항상 hit (한 번만 평가).
+  final prefs = ref.read(preferencesStreamProvider).valueOrNull;
+  final initial = prefs?.lastTab ?? BottomNavTab.home.path;
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: BottomNavTab.home.path,
+    initialLocation: initial,
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navShell) => _MainShell(navShell: navShell),
@@ -45,10 +52,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: BottomNavTab.home.path,
                 name: Routes.home,
-                builder: (ctx, st) => const _PlaceholderScreen(
-                  label: '홈',
-                  tab: BottomNavTab.home,
-                ),
+                builder: (ctx, st) => const HomeScreen(),
               ),
             ],
           ),
@@ -90,10 +94,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: BottomNavTab.settings.path,
                 name: Routes.settings,
-                builder: (ctx, st) => const _PlaceholderScreen(
-                  label: '설정',
-                  tab: BottomNavTab.settings,
-                ),
+                builder: (ctx, st) => const SettingsScreen(),
               ),
             ],
           ),
@@ -132,72 +133,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _MainShell extends StatelessWidget {
+class _MainShell extends ConsumerWidget {
   const _MainShell({required this.navShell});
 
   final StatefulNavigationShell navShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: SafeArea(child: navShell),
       bottomNavigationBar: BottomNav(
         current: BottomNavTab.values[navShell.currentIndex],
-        onTap: (t) => navShell.goBranch(
-          t.index,
-          initialLocation: t.index == navShell.currentIndex,
-        ),
+        onTap: (t) {
+          navShell.goBranch(
+            t.index,
+            initialLocation: t.index == navShell.currentIndex,
+          );
+          // 탭 전환 시 FR-022에 따라 lastTab을 영속화.
+          unawaited(
+            ref.read(preferencesRepositoryProvider).setLastTab(t.path),
+          );
+        },
       ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.label, required this.tab});
-
-  final String label;
-  final BottomNavTab tab;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TopBar(
-          rightSlot: TopBarPlusAction(
-            onTap: () => context.goNamed(Routes.addItem),
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(ClosetimoSpacing.lg),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.displaySmall,
-                  ),
-                  const SizedBox(height: ClosetimoSpacing.md),
-                  Text(
-                    'Phase 2 셸. ${tab.label} 화면은 후속 phase에서 채워진다.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: ClosetimoSpacing.lg),
-                  TextButton(
-                    onPressed: () => showClosetimoToast(
-                      context,
-                      'Phase 2 토스트 ✓',
-                    ),
-                    child: const Text('토스트 테스트'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

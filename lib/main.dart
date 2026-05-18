@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/router.dart';
 import 'app/theme/app_theme.dart';
 import 'core/persistence/isar_provider.dart';
+import 'data/providers/app_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,28 @@ Future<void> main() async {
 class ClosetimoApp extends ConsumerWidget {
   const ClosetimoApp({super.key});
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Isar 초기화 + prefs 첫 emit이 모두 완료된 후에만 router를 빌드한다.
+    // FR-022(lastTab 복원)는 goRouterProvider 생성 시점에 prefs.value를
+    // 동기적으로 읽어야 하므로 본 게이팅이 필요하다.
+    final isar = ref.watch(isarProvider);
+    return isar.when(
+      loading: () => const MaterialApp(home: _SplashScreen()),
+      error: (e, _) => MaterialApp(home: _ErrorScreen(error: e)),
+      data: (_) {
+        final prefs = ref.watch(preferencesStreamProvider);
+        return prefs.when(
+          loading: () => const MaterialApp(home: _SplashScreen()),
+          error: (e, _) => MaterialApp(home: _ErrorScreen(error: e)),
+          data: (_) => _RouterApp(),
+        );
+      },
+    );
+  }
+}
+
+class _RouterApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
@@ -32,15 +55,6 @@ class ClosetimoApp extends ConsumerWidget {
       ],
       supportedLocales: const [Locale('ko', 'KR')],
       routerConfig: router,
-      builder: (context, child) {
-        // Isar 초기화가 끝날 때까지 스플래시. 완료 후 child(라우터) 렌더.
-        final isar = ref.watch(isarProvider);
-        return isar.when(
-          loading: () => const _SplashScreen(),
-          error: (e, _) => _ErrorScreen(error: e),
-          data: (_) => child ?? const SizedBox.shrink(),
-        );
-      },
     );
   }
 }
