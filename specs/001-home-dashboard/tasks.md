@@ -25,7 +25,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 **Purpose**: Flutter 프로젝트 골격, 의존성, 코드 생성, 린트, 폰트 자산을 모두 갖춘 빌드 가능한 빈 앱을 만든다.
 
 - [X] T001 Flutter 프로젝트 초기화 — `flutter create --org com.closetimo --project-name closetimo_app --platforms ios,android .`를 repo 루트에서 실행해 `lib/main.dart`, `ios/`, `android/`, `pubspec.yaml`을 생성한다. 기본 자동 생성된 `lib/main.dart`의 내용은 비우고 `void main() {}` 스텁만 남긴다.
-- [X] T002 `pubspec.yaml`에 의존성 핀 추가 — research.md §12 표를 따라 `flutter`, `flutter_riverpod ^2.6.0`, `go_router ^14.0.0`, `isar ^4.0.0`, `isar_flutter_libs ^4.0.0`, `image_picker ^1.1.0`, `intl ^0.19.0`, `path_provider ^2.1.0`를 `dependencies:`에, `isar_generator ^4.0.0`, `build_runner ^2.4.0`, `freezed ^2.5.0`, `freezed_annotation`, `json_serializable`, `flutter_lints`를 `dev_dependencies:`에 추가.
+- [X] T002 `pubspec.yaml`에 의존성 핀 추가 — research.md §12 표를 따라 `flutter`, `flutter_riverpod ^2.6.0`, `go_router ^14.0.0`, `isar ^3.1.0+1`, `isar_flutter_libs ^3.1.0+1`, `image_picker ^1.1.0`, `intl ^0.19.0`, `path_provider ^2.1.0`를 `dependencies:`에, `isar_generator ^3.1.0+1`, `build_runner ^2.4.0`, `freezed ^2.5.2`, `freezed_annotation`, `json_serializable`, `flutter_lints`를 `dev_dependencies:`에 추가.
 - [X] T003 [P] `analysis_options.yaml` 작성 — `package:flutter_lints/flutter.yaml` 상속, `prefer_const_constructors`, `prefer_const_literals_to_create_immutables`, `require_trailing_commas`, `avoid_print` 활성화, `Divider`·`VerticalDivider`를 lint 경고로 표시(헌법 II "No-Line").
 - [X] T004 [P] `build.yaml` 작성 — `isar_generator`, `freezed`, `json_serializable` 빌더 설정 + `lib/$lib$` glob 등록.
 - [X] T005 [P] 한·영 폰트 자산 등록 — `assets/fonts/Manrope/*.ttf`, `assets/fonts/Inter/*.ttf`, `assets/fonts/Pretendard/Pretendard-Regular.otf`, `Pretendard-Medium.otf`, `Pretendard-Bold.otf`를 OFL 라이선스 파일과 함께 추가하고 `pubspec.yaml`의 `flutter.fonts:` 섹션에 family를 선언.
@@ -51,7 +51,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 ### Isar 데이터 모델 (data-model.md)
 
-- [X] T012 [P] `Item` 컬렉션 — `lib/data/models/item.dart`에 `@collection class Item`로 data-model.md §1의 14개 필드(id, name, brand, category enum, careMethod enum, status enum, washCycle, wearSinceWash, totalWears, lastWornAt, lastWashedAt, purchasedAt, inLaundry, imagePath, fallbackColor, createdAt) 정의. `Category`, `CareMethod`, `ItemStatus` enum도 같은 파일에 선언.
+- [X] T012 [P] `Item` 컬렉션 — `lib/data/models/item.dart`에 `@collection class Item`로 data-model.md §1의 16개 필드(id, name, brand, category enum, careMethod enum, status enum, washCycle, wearSinceWash, totalWears, lastWornAt, lastWashedAt, purchasedAt, inLaundry, imagePath, fallbackColor, createdAt) 정의. `Category`, `CareMethod`, `ItemStatus` enum도 같은 파일에 선언.
 - [X] T013 [P] `WearEvent` 컬렉션 — `lib/data/models/wear_event.dart`에 `@collection class WearEvent`로 id, itemId, kind(EventKind enum), occurredAt, note 필드 정의. `@Index(type: IndexType.value) occurredAt` + `@Index() itemId`.
 - [X] T014 [P] `UserPreferences` 컬렉션 — `lib/data/models/user_preferences.dart`에 `@collection class UserPreferences`로 id 고정 0, notifWash/Weekly/Unworn(기본값 true/true/false), accent('sage'), lastTab(String?) 필드 + `factory UserPreferences.defaults()`.
 - [X] T015 코드 생성 실행 — `dart run build_runner build --delete-conflicting-outputs`로 `*.g.dart` 어댑터 생성 및 빌드 통과 확인.

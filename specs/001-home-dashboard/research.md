@@ -29,9 +29,9 @@
   - **AutoRoute**: 코드 생성 기반으로 강력하나 빌드 시간 증가. 6 화면 규모엔 과잉.
   - **Navigator 1.0 (push/pop)**: 가장 단순하지만 탭 전환 + 상세 스택 관리에서 누수 위험.
 
-## 3. 로컬 DB: Isar 4.x 채택 (사용자 지정)
+## 3. 로컬 DB: Isar 3.x 채택 (안정 라인)
 
-- **Decision**: 사용자가 지정한 `isar` 4.x 라인을 사용한다. (스키마 v1: `Item`, `WearEvent`, `UserPreferences` 컬렉션. `LaundryBasket`은 `Item.inLaundry: bool` 속성으로 표현.)
+- **Decision**: 안정 라인인 `isar` 3.x(`^3.1.0+1`)를 사용한다. 4.x(Rust core)는 정식 release 전이라 v1에서는 채택하지 않으며, 후속 spec에서 마이그레이션 여부를 검토한다. 스키마 v1: `Item`, `WearEvent`, `UserPreferences` 컬렉션. `LaundryBasket`은 `Item.inLaundry: bool` 속성으로 표현.
 - **Rationale**:
   - mmap 기반 NoSQL로 수만 건 쿼리에서도 ms 단위 응답 → SC-004(100점 200ms) 무난.
   - `@collection` 데코레이터 + `isar_generator` 빌드로 타입 안전.
@@ -41,7 +41,7 @@
   - **drift (SQLite)**: 관계형 쿼리 강점이나 본 도메인은 옷·이벤트 두 집합 중심으로 NoSQL이 더 직관적.
   - **Hive**: 가볍지만 인덱스·복잡 쿼리 약함. 정렬·필터 다양한 본 spec 요구에 부적합.
   - **ObjectBox**: Isar와 유사하나 라이선스(상업적 사용 시 유료) 부담.
-- **버전 주의**: Isar 4.x는 코어가 Rust로 재작성된 라인. iOS·Android 양 플랫폼에서 `isar_flutter_libs` 동적 라이브러리 자동 번들. macOS dev 빌드 시 `isar.dylib` 경로 환경 변수 셋업 필요(quickstart.md 참조).
+- **버전 주의**: Isar 3.x는 C++ core 기반 안정 라인. iOS·Android 양 플랫폼에서 `isar_flutter_libs` 동적 라이브러리 자동 번들. macOS dev 빌드 시 `isar.dylib` 경로 환경 변수 셋업 필요(quickstart.md 참조). Android는 AGP 8+ 빌드에서 `isar_flutter_libs` 3.x에 namespace 주입이 필요(commit `b4bbb0b` 참조).
 
 ## 4. 디자인 시스템 → Flutter 매핑
 
