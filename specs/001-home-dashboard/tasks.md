@@ -185,7 +185,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T069 [P] [US5] RecentlyWornList 위젯 — `lib/features/home/widgets/recently_worn_list.dart`. `watchRecentlyWorn(limit: 2)` 스트림을 받아 사진·이름·"N일 전 입음"·"X회 착용" 카드 2개 렌더(FR-020).
 - [X] T070 [P] [US5] LaundryPreview 위젯 — `lib/features/home/widgets/laundry_preview.dart`. 바구니 상위 3점 + ProgressBar(alert variant) + `assets/tips/laundry_tips.json`에서 무작위 1개 표시(FR-021). 빈 바구니면 섹션 숨김.
 - [X] T071 [US5] HomeScreen — `lib/features/home/home_screen.dart`. TopBar + 아이브로 "좋은 아침입니다, 큐레이터님" + h1 + StatsRow + CategoryBento + RecentlyWornList + LaundryPreview.
-- [X] T072 [P] [US5] ProfileCard 위젯 — `lib/features/settings/widgets/profile_card.dart`. `primary` 배경 + 원형 이니셜 + "큐레이터님" + "2025.04부터 함께한 지 N개월"(앱 설치일 기준 계산).
+- [X] T072 [P] [US5] ProfileCard 위젯 — `lib/features/settings/widgets/profile_card.dart`. `primary` 배경 + 원형 이니셜 + "큐레이터님" + 함께한 기간 카피("N개월 함께한 큐레이터" / N≤0이면 "오늘부터 함께해요"). N은 첫 실행 시각(`firstLaunchedAt`, `isar_provider.dart`에서 시드) 기준 계산.
 - [X] T073 [P] [US5] PreferenceRow 위젯 — `lib/features/settings/widgets/preference_row.dart`. 좌측 라벨 + 우측 토글 또는 값 + 시각적 그룹(`surface-container-low` outer + `surface-container-lowest` inner cards, No-Line).
 - [X] T074 [US5] SettingsScreen — `lib/features/settings/settings_screen.dart`. 프로필·알림·기타 3 섹션. 알림 토글은 `preferencesRepositoryProvider`와 양방향 바인딩. "데이터 백업"·"개인정보 처리방침"·"앱 정보 v1.0.0" 행은 read-only(plan.md 헌법 III 범위 명시).
 - [X] T075 [US5] /home·/settings 라우트 결선 — `lib/app/router.dart` shell에 두 화면 연결. 탭 전환 시 `setLastTab` 호출(FR-022).

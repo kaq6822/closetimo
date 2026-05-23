@@ -12,7 +12,7 @@ extension BottomNavTabMeta on BottomNavTab {
         BottomNavTab.home => '홈',
         BottomNavTab.wardrobe => '옷장',
         BottomNavTab.laundry => '세탁',
-        BottomNavTab.settings => 'My',
+        BottomNavTab.settings => '설정',
       };
 
   IconData get icon => switch (this) {

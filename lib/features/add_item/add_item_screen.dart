@@ -76,7 +76,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
     return PopScope(
-      canPop: false,
+      // 빈 폼이면 자유롭게 pop, dirty일 때만 시스템 back을 가로채 다이얼로그를 띄운다.
+      // canPop:false를 무조건 켜두면 go_router의 명시적 context.pop()까지 차단된다.
+      canPop: _draft == const NewItemDraft(),
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final ok = await _confirmDiscard(context);
