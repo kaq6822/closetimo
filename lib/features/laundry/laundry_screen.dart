@@ -27,7 +27,7 @@ class LaundryScreen extends ConsumerWidget {
       children: [
         TopBar(
           rightSlot: TopBarPlusAction(
-            onTap: () => context.goNamed(Routes.addItem),
+            onTap: () => context.pushNamed(Routes.addItem),
           ),
         ),
         Expanded(

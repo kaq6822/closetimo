@@ -29,7 +29,7 @@ class GarmentTile extends ConsumerWidget {
       borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.goNamed(
+        onTap: () => context.pushNamed(
           Routes.itemDetail,
           pathParameters: {'id': '${item.id}'},
         ),

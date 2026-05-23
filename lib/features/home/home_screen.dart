@@ -24,7 +24,7 @@ class HomeScreen extends ConsumerWidget {
       children: [
         TopBar(
           rightSlot: TopBarPlusAction(
-            onTap: () => context.goNamed(Routes.addItem),
+            onTap: () => context.pushNamed(Routes.addItem),
           ),
         ),
         Expanded(

@@ -41,7 +41,7 @@ class LaundryTile extends ConsumerWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => context.goNamed(
+            onTap: () => context.pushNamed(
               Routes.itemDetail,
               pathParameters: {'id': '${item.id}'},
             ),

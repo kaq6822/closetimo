@@ -143,7 +143,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T053 [P] [US3] HeroImage 위젯 — `lib/features/item_detail/widgets/hero_image.dart`. 3:4 비율 큰 사진 + 좌하단 오프셋 브랜드 라벨(serif·primary 색상).
 - [X] T054 [US3] ItemDetailScreen — `lib/features/item_detail/item_detail_screen.dart`. TopBar(좌 백·우 휴지통 아이콘 v1 비활성) + HeroImage + h2 이름 + 카테고리/care 칩 + StatsGrid + PrimaryButton "착용 기록하기"(`eventRepositoryProvider.recordWear` 호출 → pop + toast) + SoftButton "세탁 바구니"(`laundryRepositoryProvider.toggle` 호출 + toast) + HistoryTimeline.
 - [X] T055 [US3] /item/:id 라우트 결선 — `lib/app/router.dart`에서 path param 파싱, `id` 미존재 시 pop + 토스트 "옷을 찾을 수 없어요"(routes.md §4).
-- [X] T056 [US3] 옷장 → 상세 진입 — `garment_tile.dart`의 `onTap`에서 `context.goNamed(Routes.itemDetail, pathParameters: {'id': '$itemId'})` 호출.
+- [X] T056 [US3] 옷장 → 상세 진입 — `garment_tile.dart`의 `onTap`에서 `context.pushNamed(Routes.itemDetail, pathParameters: {'id': '$itemId'})` 호출(`/item/:id`는 root navigator의 push 라우트이므로 stack에 쌓아야 pop이 가능; `goNamed`는 stack을 교체해 "There is nothing to pop"을 유발).
 - [X] T057 [US3] 통합 테스트 — `integration_test/wear_record_flow_test.dart`에 등록 → 상세 진입 → "착용 기록하기" 5회 → washCycle 도달 시 dirty 라벨 전이 검증(US3 AC1·2).
 
 **Checkpoint**: US1+US2+US3 모두 동작. 사용자가 옷의 라이프사이클을 추적할 수 있다. SC-003(100ms UI 갱신) 측정.
