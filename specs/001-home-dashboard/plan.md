@@ -183,3 +183,19 @@ build.yaml                           # build_runner 설정 (isar_generator, free
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
 해당 없음 — 4개 헌법 원칙 모두 위반 없이 통과.
+
+## Post-Clarification Adjustments (2026-05-23)
+
+`/speckit-clarify` 세션(2026-05-23)에서 결정된 "착용 기록 메모 입력 흐름"이 spec.md US3 / FR-010·FR-010a·FR-010b·FR-013에 반영되었고, 본 plan과 후속 산출물에 다음과 같이 정합 재정렬되었다(downstream 산출물의 추가 변경은 별개 명령으로 발생하지 않고 본 plan 갱신과 동일 PR 범위로 동봉).
+
+| 영역 | 변화 |
+|---|---|
+| Spec | `## Clarifications` 신설 + US3 AC 4→7건 확장 + FR-010 보강 + FR-010a/010b 신설 + FR-013 보강 + Edge Cases 4건 추가 + Key Entities `WearEvent` 갱신 |
+| Research | §13(메모 입력 UX 결정)·§14(후속 spec 후보) 추가 |
+| Data Model | `WearEvent.note` 제약(단일행 ≤80자, 빈→null 정규화) 명시 + 검증 표 2행 추가 + §1.2 상태 전이에 wear 삭제 사이드이펙트 추가 + §2 사후 변경 규칙 + §2.1 `lastWornAt` 재계산 쿼리 |
+| Contracts | `EventRepository`에 `recordWear(int, {String? note})` 시그니처 변경 + 신규 `updateEventNote` / `deleteWearEvent` + 각 메서드 트랜잭션 의사코드 |
+| Tasks | T013 `note` 제약 명시. T054 시트 호출 흐름으로 재정의. T054a~T054d 신설(WearRecordSheet · EditNoteSheet · DeleteEventDialog · EventRepository 메모/삭제 메서드). T057 통합 테스트 시나리오 a~d 확장. T078 단위 테스트 케이스 보강. T054 / T057 / T078은 미완료([ ])로 되돌림 |
+
+**구현 영향 범위 (Phase 5 재진입)**: `lib/features/item_detail/` 신규 위젯 3개, `lib/data/repositories/{event_repository,isar_event_repository}.dart` 시그니처·구현 갱신, `integration_test/wear_record_flow_test.dart` 시나리오 확장, `test/unit/repositories/wear_record_test.dart` 케이스 보강. 시그니처 변경에 따라 기존 Phase 5 호출부(T054 본문 + recently_worn_list 등 read 경로는 영향 없음)도 함께 갱신된다.
+
+**헌법 재확인**: 4/4 통과 유지. (I) 시트 1단계는 평소 1탭 흐름을 보존하면서 선택적 메모 입력만 추가 — 흐름 단순화와 양립. (II) 시트·다이얼로그는 디자인 시스템 위젯(PrimaryButton·TextField 일관)을 재사용. (III) 모든 변경은 로컬 Isar 트랜잭션 내. (IV) Spec → research → contracts → data-model → tasks 순으로 변경이 동기화되었음.

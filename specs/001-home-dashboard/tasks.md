@@ -52,7 +52,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 ### Isar 데이터 모델 (data-model.md)
 
 - [X] T012 [P] `Item` 컬렉션 — `lib/data/models/item.dart`에 `@collection class Item`로 data-model.md §1의 16개 필드(id, name, brand, category enum, careMethod enum, status enum, washCycle, wearSinceWash, totalWears, lastWornAt, lastWashedAt, purchasedAt, inLaundry, imagePath, fallbackColor, createdAt) 정의. `Category`, `CareMethod`, `ItemStatus` enum도 같은 파일에 선언.
-- [X] T013 [P] `WearEvent` 컬렉션 — `lib/data/models/wear_event.dart`에 `@collection class WearEvent`로 id, itemId, kind(EventKind enum), occurredAt, note 필드 정의. `@Index(type: IndexType.value) occurredAt` + `@Index() itemId`.
+- [X] T013 [P] `WearEvent` 컬렉션 — `lib/data/models/wear_event.dart`에 `@collection class WearEvent`로 id, itemId, kind(EventKind enum), occurredAt, note 필드 정의. `@Index(type: IndexType.value) occurredAt` + `@Index() itemId`. `note`는 단일행 ≤80자(빈 입력은 `null`로 정규화)이며 본 릴리스에서는 `kind=wear`에서만 사용자 입력으로 채워진다(data-model.md §1.3·§2).
 - [X] T014 [P] `UserPreferences` 컬렉션 — `lib/data/models/user_preferences.dart`에 `@collection class UserPreferences`로 id 고정 0, notifWash/Weekly/Unworn(기본값 true/true/false), accent('sage'), lastTab(String?) 필드 + `factory UserPreferences.defaults()`.
 - [X] T015 코드 생성 실행 — `dart run build_runner build --delete-conflicting-outputs`로 `*.g.dart` 어댑터 생성 및 빌드 통과 확인.
 
@@ -134,17 +134,21 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 ### Implementation for User Story 3
 
-- [X] T047 [US3] EventRepository — `lib/data/repositories/event_repository.dart`(인터페이스) + `lib/data/repositories/isar_event_repository.dart`(구현). `watchForItem(int itemId)`, `Future<void> recordWear(int itemId)`. `recordWear`는 contracts/repositories.md §3의 단일 트랜잭션 로직(item counter++ + 자동 dirty 전이 + WearEvent insert).
+- [X] T047 [US3] EventRepository (1차 구현) — `lib/data/repositories/event_repository.dart`(인터페이스) + `lib/data/repositories/isar_event_repository.dart`(구현). `watchForItem(int itemId)`, `Future<void> recordWear(int itemId)`. `recordWear`는 contracts/repositories.md §3의 단일 트랜잭션 로직(item counter++ + 자동 dirty 전이 + WearEvent insert). 메모 입력(FR-010 시그니처 확장: `{String? note}` 추가) · 사후 편집(FR-010a `updateEventNote`) · 삭제(FR-010b `deleteWearEvent`)는 T054d에서 후속 확장한다.
 - [X] T048 [US3] LaundryRepository 인터페이스 + toggle — `lib/data/repositories/laundry_repository.dart`(인터페이스, full) + `lib/data/repositories/isar_laundry_repository.dart`에 `watchBasket()`, `toggle(int itemId)`만 우선 구현(FR-012). `completeWashFor`는 Phase 6에서 추가.
 - [X] T049 [US3] ItemRepository.get(int) 구현 — `lib/data/repositories/isar_item_repository.dart`의 `get(int id)`를 채워 null 안전 반환.
 - [X] T050 [US3] Repository providers 갱신 — `lib/data/providers/app_providers.dart`에 `eventRepositoryProvider`, `laundryRepositoryProvider` 추가.
 - [X] T051 [P] [US3] StatsGrid 위젯 — `lib/features/item_detail/widgets/stats_grid.dart`. 2x2 그리드: "세탁 후 착용 횟수 X/N", "총 착용 횟수 X", "마지막 세탁 M/d", "구매일 yyyy.MM.dd". `surface-container-low` 외곽 컨테이너 + `surface-container-lowest` 내부 카드(No-Line).
 - [X] T052 [P] [US3] HistoryTimeline 위젯 — `lib/features/item_detail/widgets/history_timeline.dart`. `events` 스트림을 받아 좌측 세로 라인 + 도트(세탁/착용 분기 아이콘) + 날짜·이벤트 명·서브 텍스트 렌더(FR-013).
 - [X] T053 [P] [US3] HeroImage 위젯 — `lib/features/item_detail/widgets/hero_image.dart`. 3:4 비율 큰 사진 + 좌하단 오프셋 브랜드 라벨(serif·primary 색상).
-- [X] T054 [US3] ItemDetailScreen — `lib/features/item_detail/item_detail_screen.dart`. TopBar(좌 백·우 휴지통 아이콘 v1 비활성) + HeroImage + h2 이름 + 카테고리/care 칩 + StatsGrid + PrimaryButton "착용 기록하기"(`eventRepositoryProvider.recordWear` 호출 → pop + toast) + SoftButton "세탁 바구니"(`laundryRepositoryProvider.toggle` 호출 + toast) + HistoryTimeline.
+- [X] T054 [US3] ItemDetailScreen — `lib/features/item_detail/item_detail_screen.dart`. TopBar(좌 백·우 휴지통 아이콘 v1 비활성) + HeroImage + h2 이름 + 카테고리/care 칩 + StatsGrid + PrimaryButton "착용 기록하기"(탭 시 `WearRecordSheet` 표시 후 "기록" 액션이 `eventRepositoryProvider.recordWear(itemId, note: ...)` 호출 → pop + toast, FR-010) + SoftButton "세탁 바구니"(`laundryRepositoryProvider.toggle` 호출 + toast) + HistoryTimeline. HistoryTimeline의 wear 항목은 long-press로 "메모 편집"(`EditNoteSheet`) / "기록 삭제"(`DeleteEventDialog`) 메뉴를 노출한다(FR-013·FR-010a·FR-010b). 기존 직접 `recordWear` 호출은 시트 confirm 흐름으로 대체된다.
+- [X] T054a [P] [US3] WearRecordSheet 위젯 — `lib/features/item_detail/widgets/wear_record_sheet.dart` (+ 공통 `note_sheet_scaffold.dart`). `showModalBottomSheet` 기반 가벼운 시트: 한 줄 메모 텍스트필드(단일행, `maxLength: 80`, `counterText` 노출, 빈 입력 허용) + "기록" PrimaryButton + "취소" TextButton. 확정 시 입력값을 trim하여 빈 문자열은 `null`로 정규화 후 콜백에 전달(FR-010, contracts/repositories.md §3 UI 흐름).
+- [X] T054b [P] [US3] EditNoteSheet 위젯 — `lib/features/item_detail/widgets/edit_note_sheet.dart`. WearRecordSheet과 동일한 80자 단일행 제약 + 초기값 prefill. "저장" 액션이 `EventRepository.updateEventNote(eventId, note)` 호출(FR-010a). wash 이벤트 항목에서는 호출되지 않는다(메뉴 자체를 노출하지 않음).
+- [X] T054c [P] [US3] DeleteEventDialog 위젯 — `lib/features/item_detail/widgets/delete_event_dialog.dart`. AlertDialog로 "이 착용 기록을 삭제할까요? 카운터·상태가 함께 조정돼요." + "삭제"/"취소". "삭제" 확정 시 `EventRepository.deleteWearEvent(eventId)` 호출(FR-010b). 호출 후 `Toast("착용 기록을 삭제했어요")`.
+- [X] T054d [US3] EventRepository 메모/삭제 메서드 — `lib/data/repositories/event_repository.dart` 인터페이스에 `Future<void> recordWear(int itemId, {String? note})`, `Future<void> updateEventNote(int eventId, String? note)`, `Future<void> deleteWearEvent(int eventId)`를 추가하고, `lib/data/repositories/isar_event_repository.dart`에 contracts/repositories.md §3의 트랜잭션 의사코드를 그대로 구현한다(`note` 80자 가드 + `kind=wear` assert + `wearSinceWash`/`totalWears`/`lastWornAt` 역적용 + `dirty→clean` 자동 복귀). `recordWear` 시그니처 변경에 따라 `ItemDetailScreen`·테스트 호출부도 갱신.
 - [X] T055 [US3] /item/:id 라우트 결선 — `lib/app/router.dart`에서 path param 파싱, `id` 미존재 시 pop + 토스트 "옷을 찾을 수 없어요"(routes.md §4).
 - [X] T056 [US3] 옷장 → 상세 진입 — `garment_tile.dart`의 `onTap`에서 `context.pushNamed(Routes.itemDetail, pathParameters: {'id': '$itemId'})` 호출(`/item/:id`는 root navigator의 push 라우트이므로 stack에 쌓아야 pop이 가능; `goNamed`는 stack을 교체해 "There is nothing to pop"을 유발).
-- [X] T057 [US3] 통합 테스트 — `integration_test/wear_record_flow_test.dart`에 등록 → 상세 진입 → "착용 기록하기" 5회 → washCycle 도달 시 dirty 라벨 전이 검증(US3 AC1·2).
+- [X] T057 [US3] 시나리오 회귀 테스트 — `test/feature/wear_record_test.dart`(integration_test/ 디렉토리 미사용 합의에 따라 feature-level test에서 커버)에 (a) recordWear가 카운터 +1 + 자동 dirty 전이(US3 AC1·AC3), (b) note "오피스 미팅, 따뜻함" 입력 / trim·공백·빈 입력의 `null` 정규화(AC2), (c) updateEventNote가 메모만 갱신하고 Item 카운터는 보존(AC6) + wash 이벤트 호출 거부, (d) deleteWearEvent가 카운터 -1 / lastWornAt 재계산 / dirty→clean 자동 복귀(AC7) + 마지막 wear 이벤트 삭제 시 `lastWornAt=null` + 카운터 0-floor + wash 이벤트 삭제 거부 검증. integration_test 디렉토리는 phase 8에서 후속 작업(T080·T081)으로 연기됨.
 
 **Checkpoint**: US1+US2+US3 모두 동작. 사용자가 옷의 라이프사이클을 추적할 수 있다. SC-003(100ms UI 갱신) 측정.
 
@@ -200,7 +204,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 **Purpose**: 디자인 회귀 가드, 성능 검증, 문서 정리.
 
 - [ ] T077 [P] 디자인 시스템 골든 테스트 — README의 후속 작업으로 연기 (폰트 자산 선행) — `test/widget/widgets/` 아래 PrimaryButton·SoftButton·ChipFilter·StatusLabel·ProgressBar·TopBar의 라이트 모드 골든 PNG를 등록(`flutter test --update-goldens`). 헌법 II 회귀 가드.
-- [X] T078 [P] Repository 단위 테스트 — wear_record_test, laundry_flow_test, wardrobe_filter_test로 커버 (Isar 통합 회귀는 후속) — `test/unit/repositories/`에 in-memory Isar로 ItemRepository(create·watchFiltered 정렬 분기), EventRepository(recordWear의 자동 dirty 전이), LaundryRepository(completeWashFor의 트랜잭션 원자성)를 검증.
+- [X] T078 [P] Repository 단위 테스트 — `test/feature/{wear_record_test,laundry_flow_test,wardrobe_filter_test}.dart`에서 in-memory fake로 EventRepository(recordWear의 자동 dirty 전이 + `note` 저장/trim/빈 입력 null 정규화/80자 가드, `updateEventNote`가 Item 카운터를 변경하지 않음 + wash 이벤트 거부, `deleteWearEvent`의 카운터 -1 / `lastWornAt` 재계산 / `dirty→clean` 자동 복귀 / 카운터 0-floor / wash 이벤트 거부), LaundryRepository(completeWashFor의 트랜잭션 원자성), ItemRepository(create·watchFiltered 정렬 분기)를 검증. 시그니처 변경(`recordWear(int, {String? note})`)에 따라 in-memory fake 일괄 갱신 완료. 실제 Isar 인스턴스를 띄우는 통합 회귀는 후속 phase로 연기(T080/T081).
 - [X] T079 [P] DateFormatter 단위 테스트 — `test/unit/utils/date_formatter_test.dart`에서 "오늘/어제/N일 전/M/d/yyyy.MM.dd" 분기 검증(가짜 Clock 사용).
 - [ ] T080 성능 검증 — README의 후속 작업으로 연기 (실기기/시뮬레이터 필요) — `integration_test/perf_wardrobe_test.dart`로 옷 100점 시드 후 그리드 첫 프레임 200ms 이내(SC-004) + 60 fps 스크롤 확인.
 - [ ] T081 오프라인 동작 검증 — README의 후속 작업으로 연기 (HttpOverrides 통합) — `integration_test/offline_smoke_test.dart`에서 비행기 모드 가정(`HttpOverrides.global`로 모든 외부 호출 차단) 후 US1~US5 핵심 5작업 실행되는지 검증(SC-007).

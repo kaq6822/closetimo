@@ -11,10 +11,14 @@ import '../../core/widgets/soft_button.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
+import '../../data/models/wear_event.dart';
 import '../../data/providers/app_providers.dart';
+import 'widgets/delete_event_dialog.dart';
+import 'widgets/edit_note_sheet.dart';
 import 'widgets/hero_image.dart';
 import 'widgets/history_timeline.dart';
 import 'widgets/stats_grid.dart';
+import 'widgets/wear_record_sheet.dart';
 
 class ItemDetailScreen extends ConsumerStatefulWidget {
   const ItemDetailScreen({required this.id, super.key});
@@ -57,7 +61,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
   // ignore_for_file: use_build_context_synchronously
   Future<void> _recordWear() async {
-    await ref.read(eventRepositoryProvider).recordWear(widget.id);
+    final result = await WearRecordSheet.show(context);
+    if (result == null) return;
+    await ref
+        .read(eventRepositoryProvider)
+        .recordWear(widget.id, note: result.note);
     if (!context.mounted) return;
     showClosetimoToast(context, '오늘의 착용이 기록되었어요');
     context.pop();
@@ -73,6 +81,25 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       context,
       wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요',
     );
+  }
+
+  Future<void> _editEventNote(WearEvent event) async {
+    final result = await EditNoteSheet.show(context, initial: event.note);
+    if (result == null) return;
+    await ref
+        .read(eventRepositoryProvider)
+        .updateEventNote(event.id, result.note);
+    if (!context.mounted) return;
+    showClosetimoToast(context, '메모를 수정했어요');
+  }
+
+  Future<void> _deleteEvent(WearEvent event) async {
+    final ok = await DeleteEventDialog.confirm(context);
+    if (!ok) return;
+    await ref.read(eventRepositoryProvider).deleteWearEvent(event.id);
+    await _refresh();
+    if (!context.mounted) return;
+    showClosetimoToast(context, '착용 기록을 삭제했어요');
   }
 
   @override
@@ -155,7 +182,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: ClosetimoSpacing.md + 2),
-                    HistoryTimeline(itemId: item.id),
+                    HistoryTimeline(
+                      itemId: item.id,
+                      onEdit: _editEventNote,
+                      onDelete: _deleteEvent,
+                    ),
                   ],
                 ),
               ),

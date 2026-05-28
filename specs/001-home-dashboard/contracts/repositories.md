@@ -78,14 +78,18 @@ abstract interface class LaundryRepository {
 
 ```dart
 abstract interface class EventRepository {
-  Stream<List<WearEvent>> watchForItem(int itemId);  // FR-013
-  Future<void> recordWear(int itemId);               // FR-010 → 카운터 갱신 포함
+  Stream<List<WearEvent>> watchForItem(int itemId);                 // FR-013
+  Future<void> recordWear(int itemId, {String? note});              // FR-010 → 카운터 갱신 + note 저장
+  Future<void> updateEventNote(int eventId, String? note);          // FR-010a (wear 이벤트 한정)
+  Future<void> deleteWearEvent(int eventId);                        // FR-010b (사이드이펙트 역적용)
 }
 ```
 
 ### `recordWear` 사이드이펙트 (FR-010 → FR-011)
 
 ```text
+input: itemId, note (단일행, 빈 입력은 null로 정규화, 길이 검증은 UI에서 80자 한도 보장)
+
 txn {
   item = items.get(itemId)
   item.wearSinceWash += 1
@@ -94,11 +98,61 @@ txn {
   if item.wearSinceWash >= item.washCycle:
       item.status = dirty                    # FR-011 자동 전이
   items.put(item)
-  events.put(WearEvent(itemId, kind: wear, occurredAt: now))
+  events.put(WearEvent(itemId, kind: wear, occurredAt: now, note: note))
 }
 ```
 
-호출 후 UI에서 `Toast("오늘의 착용이 기록되었어요")` + 직전 화면으로 pop(US3 AC1).
+UI 흐름: 상세 화면의 "착용 기록하기" 버튼을 누르면 가벼운 바텀시트가 떠 메모 입력란을 노출한다(단일행, 최대 80자, 빈 입력 허용). 시트의 "기록" 액션이 `recordWear(itemId, note: ...)`를 호출하고, 성공 후 `Toast("오늘의 착용이 기록되었어요")` + 직전 화면으로 pop(US3 AC1·AC2). 호출 측에서 `note?.length`가 80자를 넘으면 ArgumentError를 throw해야 한다(UI 가드 회귀 방어).
+
+### `updateEventNote` 사이드이펙트 (FR-010a)
+
+```text
+input: eventId, note (null 또는 ≤80자)
+
+txn {
+  ev = events.get(eventId)
+  assert ev != null
+  assert ev.kind == wear                    # wash 이벤트는 본 메서드 적용 대상 외(FR-010a)
+  ev.note = note
+  events.put(ev)
+}
+```
+
+`Item`의 카운터·상태·날짜는 변경되지 않는다(메모 본문만 갱신). UI 흐름: 타임라인 wear 항목 long-press → "메모 편집" → 별도 시트 → 저장.
+
+### `deleteWearEvent` 사이드이펙트 (FR-010b)
+
+```text
+input: eventId
+
+txn {
+  ev = events.get(eventId)
+  assert ev != null
+  assert ev.kind == wear                    # wash 이벤트 삭제는 본 메서드 범위 외
+  itemId = ev.itemId
+  events.delete(eventId)
+
+  item = items.get(itemId)
+  item.wearSinceWash = max(0, item.wearSinceWash - 1)
+  item.totalWears    = max(0, item.totalWears - 1)
+  # lastWornAt 재계산: 같은 itemId의 남은 wear 이벤트 중 최신 occurredAt, 없으면 null
+  remaining = events
+    .where()
+    .itemIdEqualTo(itemId)
+    .filter().kindEqualTo(wear)
+    .sortByOccurredAtDesc()
+    .findFirst()
+  item.lastWornAt = remaining?.occurredAt
+
+  # dirty → clean 자동 복귀 (FR-011 역방향)
+  if item.status == dirty and item.wearSinceWash < item.washCycle:
+      item.status = clean
+
+  items.put(item)
+}
+```
+
+전체 동작은 단일 `isar.writeTxnSync`로 묶어 원자성을 보장한다. UI 흐름: 타임라인 wear 항목 long-press → "기록 삭제" → 확인 다이얼로그 → `deleteWearEvent`. 호출 후 `Toast("착용 기록을 삭제했어요")`. `inLaundry`는 변경하지 않는다(FR-010b, Edge Case "사용자 토글 전까지 유지").
 
 ---
 
