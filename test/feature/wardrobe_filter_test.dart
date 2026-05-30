@@ -1,7 +1,7 @@
 // US2 acceptance — 카테고리·검색·정렬 분기 단위 테스트.
 
-import 'package:closetimo_app/data/models/item.dart';
-import 'package:closetimo_app/data/repositories/item_repository.dart';
+import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/repositories/item_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRepo implements ItemRepository {

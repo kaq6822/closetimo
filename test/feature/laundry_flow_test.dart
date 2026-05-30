@@ -1,8 +1,8 @@
 // US4 T063 — 세탁 바구니 일괄 완료 처리 검증.
 
-import 'package:closetimo_app/data/models/item.dart';
-import 'package:closetimo_app/data/models/wear_event.dart';
-import 'package:closetimo_app/data/repositories/laundry_repository.dart';
+import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/wear_event.dart';
+import 'package:closetimo/data/repositories/laundry_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _InMemoryLaundryRepo implements LaundryRepository {

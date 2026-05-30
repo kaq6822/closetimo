@@ -1,6 +1,6 @@
 // T079 — DateFormatter 분기 검증.
 
-import 'package:closetimo_app/core/utils/date_formatter.dart';
+import 'package:closetimo/core/utils/date_formatter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 

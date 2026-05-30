@@ -1,8 +1,8 @@
 // US3 T057/T078 — recordWear/updateEventNote/deleteWearEvent의 사이드이펙트.
 
-import 'package:closetimo_app/data/models/item.dart';
-import 'package:closetimo_app/data/models/wear_event.dart';
-import 'package:closetimo_app/data/repositories/event_repository.dart';
+import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/wear_event.dart';
+import 'package:closetimo/data/repositories/event_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _InMemoryEventRepo implements EventRepository {

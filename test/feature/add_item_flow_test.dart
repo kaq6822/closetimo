@@ -2,14 +2,14 @@
 // 진짜 integration_test로 승격하려면 `IntegrationTestWidgetsFlutterBinding`로
 // 바인딩만 교체하면 된다(plan.md T040 deviation 참조).
 
-import 'package:closetimo_app/app/theme/app_theme.dart';
-import 'package:closetimo_app/core/persistence/image_store.dart';
-import 'package:closetimo_app/core/utils/clock.dart';
-import 'package:closetimo_app/data/models/item.dart';
-import 'package:closetimo_app/data/providers/app_providers.dart';
-import 'package:closetimo_app/data/repositories/item_repository.dart';
-import 'package:closetimo_app/features/add_item/add_item_screen.dart';
-import 'package:closetimo_app/features/add_item/new_item_draft.dart';
+import 'package:closetimo/app/theme/app_theme.dart';
+import 'package:closetimo/core/persistence/image_store.dart';
+import 'package:closetimo/core/utils/clock.dart';
+import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/providers/app_providers.dart';
+import 'package:closetimo/data/repositories/item_repository.dart';
+import 'package:closetimo/features/add_item/add_item_screen.dart';
+import 'package:closetimo/features/add_item/new_item_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -63,7 +63,7 @@ flutter run --dart-define=SEED_DEMO=true
 
 첫 실행 시 sandbox에 Isar DB 파일(`closetimo.isar` + `.lock`)이 생성된다. 위치:
 - iOS: `<simulator>/data/Containers/Data/Application/<UUID>/Documents/`
-- Android: `/data/data/com.example.closetimo_app/files/`
+- Android: `/data/data/com.example.closetimo/files/`
 
 ---
 

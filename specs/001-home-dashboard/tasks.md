@@ -24,7 +24,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 **Purpose**: Flutter 프로젝트 골격, 의존성, 코드 생성, 린트, 폰트 자산을 모두 갖춘 빌드 가능한 빈 앱을 만든다.
 
-- [X] T001 Flutter 프로젝트 초기화 — `flutter create --org com.closetimo --project-name closetimo_app --platforms ios,android .`를 repo 루트에서 실행해 `lib/main.dart`, `ios/`, `android/`, `pubspec.yaml`을 생성한다. 기본 자동 생성된 `lib/main.dart`의 내용은 비우고 `void main() {}` 스텁만 남긴다.
+- [X] T001 Flutter 프로젝트 초기화 — `flutter create --org com.closetimo --project-name closetimo --platforms ios,android .`를 repo 루트에서 실행해 `lib/main.dart`, `ios/`, `android/`, `pubspec.yaml`을 생성한다. 기본 자동 생성된 `lib/main.dart`의 내용은 비우고 `void main() {}` 스텁만 남긴다.
 - [X] T002 `pubspec.yaml`에 의존성 핀 추가 — research.md §12 표를 따라 `flutter`, `flutter_riverpod ^2.6.0`, `go_router ^14.0.0`, `isar ^3.1.0+1`, `isar_flutter_libs ^3.1.0+1`, `image_picker ^1.1.0`, `intl ^0.19.0`, `path_provider ^2.1.0`를 `dependencies:`에, `isar_generator ^3.1.0+1`, `build_runner ^2.4.0`, `freezed ^2.5.2`, `freezed_annotation`, `json_serializable`, `flutter_lints`를 `dev_dependencies:`에 추가.
 - [X] T003 [P] `analysis_options.yaml` 작성 — `package:flutter_lints/flutter.yaml` 상속, `prefer_const_constructors`, `prefer_const_literals_to_create_immutables`, `require_trailing_commas`, `avoid_print` 활성화, `Divider`·`VerticalDivider`를 lint 경고로 표시(헌법 II "No-Line").
 - [X] T004 [P] `build.yaml` 작성 — `isar_generator`, `freezed`, `json_serializable` 빌더 설정 + `lib/$lib$` glob 등록.

@@ -1,4 +1,4 @@
-name: closetimo_app
+name: closetimo
 description: "옷장이모(Closetimo) — 큐레이팅하는 디지털 옷장"
 publish_to: 'none'
 version: 1.0.0+1
