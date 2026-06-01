@@ -66,9 +66,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await ref
         .read(eventRepositoryProvider)
         .recordWear(widget.id, note: result.note);
+    await _refresh();
     if (!context.mounted) return;
     showClosetimoToast(context, '오늘의 착용이 기록되었어요');
-    context.pop();
   }
 
   Future<void> _toggleLaundry() async {
