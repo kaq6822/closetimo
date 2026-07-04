@@ -7,6 +7,8 @@ import '../../core/persistence/image_store.dart';
 import '../../core/utils/clock.dart';
 import '../../features/add_item/new_item_draft.dart';
 import '../models/item.dart';
+import '../models/item_patch.dart';
+import '../models/wear_event.dart';
 import 'item_repository.dart';
 
 class IsarItemRepository implements ItemRepository {
@@ -142,5 +144,70 @@ class IsarItemRepository implements ItemRepository {
   @override
   Future<Item?> get(int id) {
     return _items.get(id);
+  }
+
+  @override
+  Future<void> update(int id, ItemPatch patch) async {
+    final trimmedName = patch.name.trim();
+    if (trimmedName.isEmpty) {
+      throw ArgumentError('Item name must be non-empty');
+    }
+    // removePhoto 경로에서 txn 밖 파일 삭제를 위해 이전 경로를 보관한다.
+    String? pathToDelete;
+    await _isar.writeTxn(() async {
+      final item = await _items.get(id);
+      if (item == null) return; // 미존재 no-op(FR: id 미존재 시 무시)
+      item
+        ..name = trimmedName
+        ..brand =
+            patch.brand == null || patch.brand!.trim().isEmpty
+                ? null
+                : patch.brand!.trim()
+        ..category = patch.category
+        ..careMethod = patch.careMethod
+        ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
+        ..purchasedAt = patch.purchasedAt;
+
+      // 사진 3-way 의도(data-model.md §3): 교체 > 제거 > 유지.
+      if (patch.newPhoto != null) {
+        item.imagePath = await _imageStore.copyTo(patch.newPhoto!, '$id');
+      } else if (patch.removePhoto) {
+        pathToDelete = item.imagePath;
+        item.imagePath = null;
+      }
+
+      // status 재평가(FR-004) — wearSinceWash/washCycle 불변식을 다시 맞춘다.
+      item.status = item.wearSinceWash >= item.washCycle
+          ? ItemStatus.dirty
+          : ItemStatus.clean;
+
+      await _items.put(item);
+    });
+    if (pathToDelete != null) {
+      await _imageStore.delete(pathToDelete!); // best-effort(FR-011)
+    }
+  }
+
+  @override
+  Future<void> delete(int id) async {
+    String? pathToDelete;
+    await _isar.writeTxn(() async {
+      final item = await _items.get(id);
+      if (item == null) return; // 미존재 no-op
+      pathToDelete = item.imagePath;
+
+      // 연관 WearEvent 전량 제거(kind 무관) — orphan 방지(SC-004, FR-010).
+      final eventIds = await _isar.wearEvents
+          .filter()
+          .itemIdEqualTo(id)
+          .idProperty()
+          .findAll();
+      await _isar.wearEvents.deleteAll(eventIds);
+
+      await _items.delete(id);
+    });
+    if (pathToDelete != null) {
+      await _imageStore.delete(pathToDelete!); // best-effort(FR-011)
+    }
   }
 }

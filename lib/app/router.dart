@@ -26,6 +26,7 @@ abstract final class Routes {
   static const settings = 'settings';
   static const itemDetail = 'itemDetail';
   static const addItem = 'addItem';
+  static const editItem = 'editItem';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -114,24 +115,39 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/add-item',
         name: Routes.addItem,
         parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (ctx, st) => CustomTransitionPage(
-          child: const AddItemScreen(),
-          transitionsBuilder: (context, anim, secondaryAnim, child) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-              ),
-              child: child,
-            );
-          },
-        ),
+        pageBuilder: (ctx, st) => _slideUpPage(const AddItemScreen()),
+      ),
+      GoRoute(
+        path: '/item/:id/edit',
+        name: Routes.editItem,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (ctx, st) {
+          final id = int.tryParse(st.pathParameters['id'] ?? '');
+          if (id == null) {
+            return _slideUpPage(const _PlaceholderModal(title: '옷 수정'));
+          }
+          return _slideUpPage(AddItemScreen(editId: id));
+        },
       ),
     ],
   );
 });
+
+/// 하단에서 밀려 올라오는 slide-up transition 페이지(등록·수정 모달 공용).
+CustomTransitionPage<void> _slideUpPage(Widget child) {
+  return CustomTransitionPage<void>(
+    child: child,
+    transitionsBuilder: (context, anim, secondaryAnim, child) {
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+        child: child,
+      );
+    },
+  );
+}
 
 class _MainShell extends ConsumerWidget {
   const _MainShell({required this.navShell});

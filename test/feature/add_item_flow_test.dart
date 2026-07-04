@@ -6,6 +6,7 @@ import 'package:closetimo/app/theme/app_theme.dart';
 import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
 import 'package:closetimo/features/add_item/add_item_screen.dart';
@@ -68,6 +69,30 @@ class _InMemoryItemRepository implements ItemRepository {
 
   @override
   Stream<WardrobeStats> watchStats() => const Stream.empty();
+
+  @override
+  Future<void> update(int id, ItemPatch patch) async {
+    final idx = items.indexWhere((i) => i.id == id);
+    if (idx < 0) return;
+    final item = items[idx];
+    item
+      ..name = patch.name.trim()
+      ..brand = patch.brand == null || patch.brand!.trim().isEmpty
+          ? null
+          : patch.brand!.trim()
+      ..category = patch.category
+      ..careMethod = patch.careMethod
+      ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
+      ..purchasedAt = patch.purchasedAt
+      ..status = item.wearSinceWash >= item.washCycle
+          ? ItemStatus.dirty
+          : ItemStatus.clean;
+  }
+
+  @override
+  Future<void> delete(int id) async {
+    items.removeWhere((i) => i.id == id);
+  }
 }
 
 Widget _harness(_InMemoryItemRepository repo) {
