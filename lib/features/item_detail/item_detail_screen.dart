@@ -120,7 +120,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await ref.read(itemRepositoryProvider).delete(widget.id);
     if (!context.mounted) return;
     showClosetimoToast(context, '옷을 옷장에서 삭제했어요');
-    context.pop();
+    // FR-012 — 삭제 후에는 진입 경로(홈·세탁 타일 포함)와 무관하게 옷장 탭으로
+    // 복귀해야 한다. pop()은 진입 스택으로 돌아가므로 goNamed로 탭을 전환한다.
+    context.goNamed(Routes.wardrobe);
   }
 
   @override

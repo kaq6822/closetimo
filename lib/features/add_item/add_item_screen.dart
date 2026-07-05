@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/persistence/image_store.dart';
+import '../../core/utils/clock.dart';
+import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
@@ -105,8 +107,23 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         careMethod: _draft.careMethod,
         purchasedAt: _draft.purchasedAt,
       );
-      _photoCleared = true;
+      // 원본 사진이 있었을 때만 "제거" 의도가 유의미하다. 원본이 없는데
+      // 새로 골랐다 지운 경우는 순변화 없음이므로 dirty로 오판하지 않는다.
+      _photoCleared = _existingImagePath != null;
     });
+  }
+
+  Future<void> _pickPurchaseDate() async {
+    final now = ref.read(clockProvider).now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _draft.purchasedAt ?? now,
+      firstDate: DateTime(2000),
+      lastDate: now,
+    );
+    if (picked != null) {
+      setState(() => _draft = _draft.copyWith(purchasedAt: picked));
+    }
   }
 
   Future<bool> _confirmDiscard(BuildContext context) async {
@@ -143,6 +160,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     try {
       final repo = ref.read(itemRepositoryProvider);
       if (_isEdit) {
+        final photoChanged = _draft.tempPhoto != null || _photoCleared;
         await repo.update(
           widget.editId!,
           ItemPatch(
@@ -156,6 +174,14 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             removePhoto: _photoCleared,
           ),
         );
+        // 사진을 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가
+        // 이전 이미지를 계속 반환한다. 상세·옷장이 새 사진을 즉시 반영하도록
+        // 이미지 캐시를 비운다(FR-006, 파일 경로 기반 캐시 무효화 함정 회피).
+        if (photoChanged) {
+          PaintingBinding.instance.imageCache
+            ..clear()
+            ..clearLiveImages();
+        }
         message = '옷 정보를 수정했어요';
       } else {
         await repo.create(_draft);
@@ -282,6 +308,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                               () => _draft = _draft.copyWith(careMethod: m),
                             ),
                           ),
+                          const SizedBox(height: ClosetimoSpacing.lg),
+                          const _FieldLabel(label: '구매일'),
+                          _DateField(
+                            value: _draft.purchasedAt,
+                            onTap: _pickPurchaseDate,
+                          ),
                         ],
                       ),
                     ),
@@ -351,6 +383,51 @@ class _FieldLabel extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// 구매일 선택 필드. 탭하면 날짜 피커를 띄운다(002 FR-002). 값이 없으면
+/// 안내 문구를 보여준다. _FieldInput과 동일한 surface-container-low 스타일.
+class _DateField extends StatelessWidget {
+  const _DateField({required this.value, required this.onTap});
+
+  final DateTime? value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
+    final hasValue = value != null;
+    return Material(
+      color: surfaces.containerLow,
+      borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  hasValue ? formatFullDate(value!) : '구매일 선택',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 15,
+                    color: hasValue ? ClosetimoColors.ink : ClosetimoColors.muted,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.calendar_today_rounded,
+                size: 18,
+                color: ClosetimoColors.muted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -177,6 +177,22 @@ void main() {
       expect(item.brand, isNull);
     });
 
+    test('washCycle <= 0은 1로 클램프한다', () async {
+      final item = _item(id: 1, washCycle: 5);
+      final repo = _InMemoryItemRepo({1: item}, [], _FakeImageStore());
+
+      await repo.update(1, _patch(washCycle: 0));
+      expect(item.washCycle, 1);
+    });
+
+    test('구매일 편집이 반영된다(FR-002)', () async {
+      final item = _item(id: 1);
+      final repo = _InMemoryItemRepo({1: item}, [], _FakeImageStore());
+
+      await repo.update(1, _patch(purchasedAt: DateTime(2025, 3, 14)));
+      expect(item.purchasedAt, DateTime(2025, 3, 14));
+    });
+
     test('사진 의도: 교체 시 copyTo 호출 + imagePath 갱신', () async {
       final item = _item(id: 1, imagePath: 'items/1.jpg');
       final store = _FakeImageStore();
