@@ -1,7 +1,7 @@
 // 002 리뷰 후속 — 실제 Isar 인스턴스로 IsarItemRepository.update/delete를 검증한다.
 // item_edit_delete_test.dart는 의사코드를 미러링한 fake를 쓰므로, 이번에 새로
 // 도입된 Isar 쿼리 경로(`itemIdEqualTo().idProperty().findAll()` + `deleteAll`)와
-// `writeTxn` 원자성은 실행 검증되지 않았다. lib/data/AGENTS.md 규칙("repository
+// `write` 원자성은 실행 검증되지 않았다. lib/data/AGENTS.md 규칙("repository
 // 로직 변경 시 in-memory Isar 인스턴스로 검증")에 따라 실제 Isar로 cascade·재평가·
 // 사진 파일 처리를 직접 확인한다.
 
@@ -15,7 +15,9 @@ import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/data/models/wear_event.dart';
 import 'package:closetimo/data/repositories/isar_item_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
+
+import '../support/isar_plus_test_support.dart';
 
 class _FixedClock implements Clock {
   const _FixedClock();
@@ -27,9 +29,8 @@ class _FixedClock implements Clock {
 final _fixedNow = DateTime(2026, 7, 1);
 
 void main() {
-  // Isar Core 네이티브 바이너리를 테스트 프로세스로 내려받아 로드한다(최초 1회 네트워크).
   setUpAll(() async {
-    await Isar.initializeIsarCore(download: true);
+    await initializeIsarPlusForTests();
   });
 
   late Directory tmpDir;
@@ -39,8 +40,8 @@ void main() {
 
   setUp(() async {
     tmpDir = Directory.systemTemp.createTempSync('closetimo_isar_test');
-    isar = await Isar.open(
-      [ItemSchema, WearEventSchema, UserPreferencesSchema],
+    isar = Isar.open(
+      schemas: [ItemSchema, WearEventSchema, UserPreferencesSchema],
       directory: tmpDir.path,
       inspector: false,
     );
@@ -54,7 +55,7 @@ void main() {
   });
 
   tearDown(() async {
-    await isar.close(deleteFromDisk: true);
+    isar.close(deleteFromDisk: true);
     if (tmpDir.existsSync()) tmpDir.deleteSync(recursive: true);
   });
 
@@ -77,12 +78,17 @@ void main() {
       totalWears: totalWears,
       imagePath: imagePath,
     )..lastWornAt = lastWornAt;
-    return isar.writeTxn(() => isar.items.put(item));
+    final id = isar.items.autoIncrement();
+    item.id = id;
+    isar.write((isar) => isar.items.put(item));
+    return id;
   }
 
-  Future<int> seedEvent(int itemId, EventKind kind) {
-    final event = WearEvent(itemId: itemId, kind: kind, occurredAt: _fixedNow);
-    return isar.writeTxn(() => isar.wearEvents.put(event));
+  Future<int> seedEvent(int itemId, EventKind kind) async {
+    final event = WearEvent(itemId: itemId, kind: kind, occurredAt: _fixedNow)
+      ..id = isar.wearEvents.autoIncrement();
+    isar.write((isar) => isar.wearEvents.put(event));
+    return event.id;
   }
 
   group('IsarItemRepository.update (real Isar)', () {
@@ -100,7 +106,7 @@ void main() {
         ),
       );
 
-      final saved = (await isar.items.get(id))!;
+      final saved = isar.items.get(id)!;
       expect(saved.name, '겨울 코트');
       expect(saved.brand, 'ZARA');
       expect(saved.category, Category.top);
@@ -122,7 +128,7 @@ void main() {
       );
       await repo.update(id, _basePatch(washCycle: 8));
 
-      expect((await isar.items.get(id))!.status, ItemStatus.clean);
+      expect(isar.items.get(id)!.status, ItemStatus.clean);
     });
 
     test('빈 명칭은 ArgumentError로 거부하고 DB를 변경하지 않는다', () async {
@@ -131,21 +137,22 @@ void main() {
         repo.update(id, _basePatch(name: '   ')),
         throwsArgumentError,
       );
-      expect((await isar.items.get(id))!.name, '원본');
+      expect(isar.items.get(id)!.name, '원본');
     });
 
     test('미존재 id는 조용히 무시한다(no-op)', () async {
       await repo.update(999, _basePatch());
-      expect(await isar.items.count(), 0);
+      expect(isar.items.count(), 0);
     });
 
     test('사진 교체: sandbox 파일이 생성되고 imagePath가 갱신된다', () async {
       final id = await seedItem();
-      final src = File('${tmpDir.path}/source.jpg')..writeAsBytesSync([1, 2, 3]);
+      final src = File('${tmpDir.path}/source.jpg')
+        ..writeAsBytesSync([1, 2, 3]);
 
       await repo.update(id, _basePatch(newPhoto: src));
 
-      final saved = (await isar.items.get(id))!;
+      final saved = isar.items.get(id)!;
       expect(saved.imagePath, 'items/$id.jpg');
       expect(File('${tmpDir.path}/$id.jpg').existsSync(), isTrue);
     });
@@ -157,34 +164,40 @@ void main() {
 
       await repo.update(id, _basePatch(removePhoto: true));
 
-      expect((await isar.items.get(id))!.imagePath, isNull);
+      expect(isar.items.get(id)!.imagePath, isNull);
       expect(file.existsSync(), isFalse); // best-effort 삭제가 실제로 수행됨
     });
   });
 
   group('IsarItemRepository.delete (real Isar)', () {
-    test('SC-004: Item + 연관 WearEvent(wear·wash) 전량 cascade, 타 옷은 잔존',
-        () async {
-      final target = await seedItem(name: '삭제될 코트');
-      final other = await seedItem(name: '남는 셔츠');
-      await seedEvent(target, EventKind.wear);
-      await seedEvent(target, EventKind.wash);
-      await seedEvent(other, EventKind.wear);
+    test(
+      'SC-004: Item + 연관 WearEvent(wear·wash) 전량 cascade, 타 옷은 잔존',
+      () async {
+        final target = await seedItem(name: '삭제될 코트');
+        final other = await seedItem(name: '남는 셔츠');
+        await seedEvent(target, EventKind.wear);
+        await seedEvent(target, EventKind.wash);
+        await seedEvent(other, EventKind.wear);
 
-      await repo.delete(target);
+        await repo.delete(target);
 
-      // 대상 Item 제거
-      expect(await isar.items.get(target), isNull);
-      // 대상의 이벤트 전량 제거(실제 itemIdEqualTo 쿼리 경로 검증)
-      final targetEvents =
-          await isar.wearEvents.filter().itemIdEqualTo(target).findAll();
-      expect(targetEvents, isEmpty);
-      // 타 옷과 그 이벤트는 온전히 잔존
-      expect(await isar.items.get(other), isNotNull);
-      final otherEvents =
-          await isar.wearEvents.filter().itemIdEqualTo(other).findAll();
-      expect(otherEvents, hasLength(1));
-    });
+        // 대상 Item 제거
+        expect(isar.items.get(target), isNull);
+        // 대상의 이벤트 전량 제거(실제 itemIdEqualTo 쿼리 경로 검증)
+        final targetEvents = isar.wearEvents
+            .where()
+            .itemIdEqualTo(target)
+            .findAll();
+        expect(targetEvents, isEmpty);
+        // 타 옷과 그 이벤트는 온전히 잔존
+        expect(isar.items.get(other), isNotNull);
+        final otherEvents = isar.wearEvents
+            .where()
+            .itemIdEqualTo(other)
+            .findAll();
+        expect(otherEvents, hasLength(1));
+      },
+    );
 
     test('FR-011: 이미지 파일도 함께 제거된다', () async {
       final id = await seedItem(imagePath: 'items/1.jpg');
@@ -192,7 +205,7 @@ void main() {
 
       await repo.delete(id);
 
-      expect(await isar.items.get(id), isNull);
+      expect(isar.items.get(id), isNull);
       expect(file.existsSync(), isFalse);
     });
 
@@ -202,8 +215,8 @@ void main() {
 
       await repo.delete(999);
 
-      expect(await isar.items.count(), 1);
-      expect(await isar.wearEvents.count(), 1);
+      expect(isar.items.count(), 1);
+      expect(isar.wearEvents.count(), 1);
     });
   });
 }
@@ -217,14 +230,13 @@ ItemPatch _basePatch({
   DateTime? purchasedAt,
   File? newPhoto,
   bool removePhoto = false,
-}) =>
-    ItemPatch(
-      name: name,
-      brand: brand,
-      category: category,
-      careMethod: careMethod,
-      washCycle: washCycle,
-      purchasedAt: purchasedAt,
-      newPhoto: newPhoto,
-      removePhoto: removePhoto,
-    );
+}) => ItemPatch(
+  name: name,
+  brand: brand,
+  category: category,
+  careMethod: careMethod,
+  washCycle: washCycle,
+  purchasedAt: purchasedAt,
+  newPhoto: newPhoto,
+  removePhoto: removePhoto,
+);

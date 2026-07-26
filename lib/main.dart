@@ -8,8 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/router.dart';
 import 'app/theme/app_theme.dart';
-import 'core/persistence/isar_provider.dart';
 import 'data/providers/app_providers.dart';
+import 'data/providers/isar_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

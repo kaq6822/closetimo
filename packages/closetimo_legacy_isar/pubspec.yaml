@@ -1,0 +1,13 @@
+name: closetimo_legacy_isar
+description: 옷장이모 Isar 3 저장소를 읽기 위한 전환 전용 local package
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  isar:
+    path: ../isar
+  meta: ^1.12.0
+  path: ^1.9.0

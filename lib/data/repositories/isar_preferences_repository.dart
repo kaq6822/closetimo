@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 
 import '../models/user_preferences.dart';
 import 'preferences_repository.dart';
@@ -10,21 +10,21 @@ class IsarPreferencesRepository implements PreferencesRepository {
 
   @override
   Stream<UserPreferences> watch() async* {
-    final initial = await _isar.userPreferences.get(UserPreferences.singletonId);
+    final initial = _isar.userPreferences.get(UserPreferences.singletonId);
     yield initial ?? UserPreferences.defaults();
     await for (final _ in _isar.userPreferences.watchLazy()) {
-      final p = await _isar.userPreferences.get(UserPreferences.singletonId);
+      final p = _isar.userPreferences.get(UserPreferences.singletonId);
       yield p ?? UserPreferences.defaults();
     }
   }
 
   Future<void> _mutate(void Function(UserPreferences) edit) async {
-    await _isar.writeTxn(() async {
+    _isar.write((isar) {
       final cur =
-          await _isar.userPreferences.get(UserPreferences.singletonId) ??
-              UserPreferences.defaults();
+          isar.userPreferences.get(UserPreferences.singletonId) ??
+          UserPreferences.defaults();
       edit(cur);
-      await _isar.userPreferences.put(cur);
+      isar.userPreferences.put(cur);
     });
   }
 

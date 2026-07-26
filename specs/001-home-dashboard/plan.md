@@ -10,11 +10,11 @@
 
 ## Technical Context
 
-**Language/Version**: Dart 3.5+ / Flutter 3.27 (stable)
+**Language/Version**: Dart 3.12+ / Flutter 3.44 (stable)
 
 **Primary Dependencies**:
 - `flutter` (UI 프레임워크)
-- `isar` + `isar_flutter_libs` + `isar_generator` (로컬 NoSQL DB)
+- `isar_plus` + `isar_plus_flutter_libs` (주 로컬 NoSQL DB) + 프로젝트 내 Isar 3 legacy 브리지
 - `flutter_riverpod` (상태 관리)
 - `go_router` (선언적 라우팅)
 - `image_picker` (카메라·앨범 사진 입력)
@@ -26,7 +26,7 @@
 
 **Testing**: `flutter_test` (unit/widget), `integration_test` (e2e on emulator/simulator). Isar는 in-memory 인스턴스로 격리된 단위 테스트 가능.
 
-**Target Platform**: iOS 13+ (iPhone), Android API 21+ / Android 5.0 Lollipop+ (휴대폰 폼팩터 한정). 태블릿 레이아웃은 v1 범위 밖.
+**Target Platform**: iOS 13+ (iPhone), Android API 24+ / Android 7.0 Nougat+ (휴대폰 폼팩터 한정). 태블릿 레이아웃은 v1 범위 밖.
 
 **Project Type**: 모바일 단일 앱 (Flutter cross-platform, 백엔드 없음).
 
@@ -173,7 +173,7 @@ android/
 ios/
 pubspec.yaml
 analysis_options.yaml
-build.yaml                           # build_runner 설정 (isar_generator, freezed)
+build.yaml                           # build_runner 설정 (isar_plus generator, freezed)
 ```
 
 **Structure Decision**: Flutter 표준 단일 프로젝트 레이아웃을 채택한다. `lib/` 아래를 `app/`(부트·테마·라우팅) · `core/`(유틸·DI·공용 위젯) · `features/`(화면 단위 모듈) · `data/`(모델·리포지토리·프로바이더)로 분리한 feature-first 구조다. 백엔드가 없어 mobile + API 분리 옵션은 채택하지 않았다. `core/widgets/`에 디자인 시스템 위젯을 모아 헌법 II(디자인 일관성)를 코드 레벨에서 강제한다.

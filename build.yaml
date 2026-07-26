@@ -1,7 +1,7 @@
 targets:
   $default:
     builders:
-      isar_generator:isar_generator:
+      isar_plus:isar_generator:
         enabled: true
         generate_for:
           include:

@@ -3,679 +3,768 @@
 part of 'user_preferences.dart';
 
 // **************************************************************************
-// IsarCollectionGenerator
+// _IsarCollectionGenerator
 // **************************************************************************
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, invalid_use_of_protected_member, lines_longer_than_80_chars, constant_identifier_names, avoid_js_rounded_ints, no_leading_underscores_for_local_identifiers, require_trailing_commas, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_in_if_null_operators, library_private_types_in_public_api, prefer_const_constructors
+// ignore_for_file: type=lint
 
 extension GetUserPreferencesCollection on Isar {
-  IsarCollection<UserPreferences> get userPreferences => this.collection();
+  IsarCollection<int, UserPreferences> get userPreferences => this.collection();
 }
 
-const UserPreferencesSchema = CollectionSchema(
-  name: r'UserPreferences',
-  id: -7545901164102504045,
-  properties: {
-    r'accent': PropertySchema(
-      id: 0,
-      name: r'accent',
-      type: IsarType.string,
-    ),
-    r'firstLaunchedAt': PropertySchema(
-      id: 1,
-      name: r'firstLaunchedAt',
-      type: IsarType.dateTime,
-    ),
-    r'lastTab': PropertySchema(
-      id: 2,
-      name: r'lastTab',
-      type: IsarType.string,
-    ),
-    r'notifUnworn': PropertySchema(
-      id: 3,
-      name: r'notifUnworn',
-      type: IsarType.bool,
-    ),
-    r'notifWash': PropertySchema(
-      id: 4,
-      name: r'notifWash',
-      type: IsarType.bool,
-    ),
-    r'notifWeekly': PropertySchema(
-      id: 5,
-      name: r'notifWeekly',
-      type: IsarType.bool,
-    )
-  },
-  estimateSize: _userPreferencesEstimateSize,
-  serialize: _userPreferencesSerialize,
-  deserialize: _userPreferencesDeserialize,
-  deserializeProp: _userPreferencesDeserializeProp,
-  idName: r'id',
-  indexes: {},
-  links: {},
-  embeddedSchemas: {},
-  getId: _userPreferencesGetId,
-  getLinks: _userPreferencesGetLinks,
-  attach: _userPreferencesAttach,
-  version: '3.1.0+1',
+final UserPreferencesSchema = IsarGeneratedSchema(
+  schema: IsarSchema(
+    name: 'UserPreferences',
+    idName: 'id',
+    embedded: false,
+    properties: [
+      IsarPropertySchema(name: 'notifWash', type: IsarType.bool),
+      IsarPropertySchema(name: 'notifWeekly', type: IsarType.bool),
+      IsarPropertySchema(name: 'notifUnworn', type: IsarType.bool),
+      IsarPropertySchema(name: 'accent', type: IsarType.string),
+      IsarPropertySchema(name: 'lastTab', type: IsarType.string),
+      IsarPropertySchema(name: 'firstLaunchedAt', type: IsarType.dateTime),
+    ],
+    indexes: [],
+  ),
+  converter: IsarObjectConverter<int, UserPreferences>(
+    serialize: serializeUserPreferences,
+    deserialize: deserializeUserPreferences,
+    deserializeProperty: deserializeUserPreferencesProp,
+  ),
+  getEmbeddedSchemas: () => [],
 );
 
-int _userPreferencesEstimateSize(
-  UserPreferences object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  bytesCount += 3 + object.accent.length * 3;
+@isarProtected
+int serializeUserPreferences(IsarWriter writer, UserPreferences object) {
+  IsarCore.writeBool(writer, 1, value: object.notifWash);
+  IsarCore.writeBool(writer, 2, value: object.notifWeekly);
+  IsarCore.writeBool(writer, 3, value: object.notifUnworn);
+  IsarCore.writeString(writer, 4, object.accent);
   {
     final value = object.lastTab;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
+    if (value == null) {
+      IsarCore.writeNull(writer, 5);
+    } else {
+      IsarCore.writeString(writer, 5, value);
     }
   }
-  return bytesCount;
-}
-
-void _userPreferencesSerialize(
-  UserPreferences object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeString(offsets[0], object.accent);
-  writer.writeDateTime(offsets[1], object.firstLaunchedAt);
-  writer.writeString(offsets[2], object.lastTab);
-  writer.writeBool(offsets[3], object.notifUnworn);
-  writer.writeBool(offsets[4], object.notifWash);
-  writer.writeBool(offsets[5], object.notifWeekly);
-}
-
-UserPreferences _userPreferencesDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = UserPreferences(
-    accent: reader.readStringOrNull(offsets[0]) ?? 'sage',
-    firstLaunchedAt: reader.readDateTimeOrNull(offsets[1]),
-    lastTab: reader.readStringOrNull(offsets[2]),
-    notifUnworn: reader.readBoolOrNull(offsets[3]) ?? false,
-    notifWash: reader.readBoolOrNull(offsets[4]) ?? true,
-    notifWeekly: reader.readBoolOrNull(offsets[5]) ?? true,
+  IsarCore.writeLong(
+    writer,
+    6,
+    object.firstLaunchedAt?.toUtc().microsecondsSinceEpoch ??
+        -9223372036854775808,
   );
-  object.id = id;
-  return object;
-}
-
-P _userPreferencesDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readStringOrNull(offset) ?? 'sage') as P;
-    case 1:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 2:
-      return (reader.readStringOrNull(offset)) as P;
-    case 3:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 4:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
-    case 5:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-Id _userPreferencesGetId(UserPreferences object) {
   return object.id;
 }
 
-List<IsarLinkBase<dynamic>> _userPreferencesGetLinks(UserPreferences object) {
-  return [];
-}
-
-void _userPreferencesAttach(
-    IsarCollection<dynamic> col, Id id, UserPreferences object) {
-  object.id = id;
-}
-
-extension UserPreferencesQueryWhereSort
-    on QueryBuilder<UserPreferences, UserPreferences, QWhere> {
-  QueryBuilder<UserPreferences, UserPreferences, QAfterWhere> anyId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(const IdWhereClause.any());
-    });
+@isarProtected
+UserPreferences deserializeUserPreferences(IsarReader reader) {
+  final bool _notifWash;
+  {
+    if (IsarCore.readNull(reader, 1)) {
+      _notifWash = true;
+    } else {
+      _notifWash = IsarCore.readBool(reader, 1);
+    }
   }
+  final bool _notifWeekly;
+  {
+    if (IsarCore.readNull(reader, 2)) {
+      _notifWeekly = true;
+    } else {
+      _notifWeekly = IsarCore.readBool(reader, 2);
+    }
+  }
+  final bool _notifUnworn;
+  _notifUnworn = IsarCore.readBool(reader, 3);
+  final String _accent;
+  _accent = IsarCore.readString(reader, 4) ?? 'sage';
+  final String? _lastTab;
+  _lastTab = IsarCore.readString(reader, 5);
+  final DateTime? _firstLaunchedAt;
+  {
+    final value = IsarCore.readLong(reader, 6);
+    if (value == -9223372036854775808) {
+      _firstLaunchedAt = null;
+    } else {
+      _firstLaunchedAt = DateTime.fromMicrosecondsSinceEpoch(
+        value,
+        isUtc: true,
+      ).toLocal();
+    }
+  }
+  final object = UserPreferences(
+    notifWash: _notifWash,
+    notifWeekly: _notifWeekly,
+    notifUnworn: _notifUnworn,
+    accent: _accent,
+    lastTab: _lastTab,
+    firstLaunchedAt: _firstLaunchedAt,
+  );
+  object.id = IsarCore.readId(reader);
+  return object;
 }
 
-extension UserPreferencesQueryWhere
-    on QueryBuilder<UserPreferences, UserPreferences, QWhereClause> {
-  QueryBuilder<UserPreferences, UserPreferences, QAfterWhereClause> idEqualTo(
-      Id id) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferences, UserPreferences, QAfterWhereClause>
-      idNotEqualTo(Id id) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(
-              IdWhereClause.lessThan(upper: id, includeUpper: false),
-            )
-            .addWhereClause(
-              IdWhereClause.greaterThan(lower: id, includeLower: false),
-            );
-      } else {
-        return query
-            .addWhereClause(
-              IdWhereClause.greaterThan(lower: id, includeLower: false),
-            )
-            .addWhereClause(
-              IdWhereClause.lessThan(upper: id, includeUpper: false),
-            );
+@isarProtected
+dynamic deserializeUserPreferencesProp(IsarReader reader, int property) {
+  switch (property) {
+    case 0:
+      return IsarCore.readId(reader);
+    case 1:
+      {
+        if (IsarCore.readNull(reader, 1)) {
+          return true;
+        } else {
+          return IsarCore.readBool(reader, 1);
+        }
       }
-    });
+    case 2:
+      {
+        if (IsarCore.readNull(reader, 2)) {
+          return true;
+        } else {
+          return IsarCore.readBool(reader, 2);
+        }
+      }
+    case 3:
+      return IsarCore.readBool(reader, 3);
+    case 4:
+      return IsarCore.readString(reader, 4) ?? 'sage';
+    case 5:
+      return IsarCore.readString(reader, 5);
+    case 6:
+      {
+        final value = IsarCore.readLong(reader, 6);
+        if (value == -9223372036854775808) {
+          return null;
+        } else {
+          return DateTime.fromMicrosecondsSinceEpoch(
+            value,
+            isUtc: true,
+          ).toLocal();
+        }
+      }
+    default:
+      throw ArgumentError('Unknown property: $property');
   }
+}
 
-  QueryBuilder<UserPreferences, UserPreferences, QAfterWhereClause>
-      idGreaterThan(Id id, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IdWhereClause.greaterThan(lower: id, includeLower: include),
-      );
-    });
-  }
+sealed class _UserPreferencesUpdate {
+  bool call({
+    required int id,
+    bool? notifWash,
+    bool? notifWeekly,
+    bool? notifUnworn,
+    String? accent,
+    String? lastTab,
+    DateTime? firstLaunchedAt,
+  });
+}
 
-  QueryBuilder<UserPreferences, UserPreferences, QAfterWhereClause> idLessThan(
-      Id id,
-      {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IdWhereClause.lessThan(upper: id, includeUpper: include),
-      );
-    });
-  }
+class _UserPreferencesUpdateImpl implements _UserPreferencesUpdate {
+  const _UserPreferencesUpdateImpl(this.collection);
 
-  QueryBuilder<UserPreferences, UserPreferences, QAfterWhereClause> idBetween(
-    Id lowerId,
-    Id upperId, {
-    bool includeLower = true,
-    bool includeUpper = true,
+  final IsarCollection<int, UserPreferences> collection;
+
+  @override
+  bool call({
+    required int id,
+    Object? notifWash = ignore,
+    Object? notifWeekly = ignore,
+    Object? notifUnworn = ignore,
+    Object? accent = ignore,
+    Object? lastTab = ignore,
+    Object? firstLaunchedAt = ignore,
   }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+    return collection.updateProperties(
+          [id],
+          {
+            if (notifWash != ignore) 1: notifWash as bool?,
+            if (notifWeekly != ignore) 2: notifWeekly as bool?,
+            if (notifUnworn != ignore) 3: notifUnworn as bool?,
+            if (accent != ignore) 4: accent as String?,
+            if (lastTab != ignore) 5: lastTab as String?,
+            if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
+          },
+        ) >
+        0;
+  }
+}
+
+sealed class _UserPreferencesUpdateAll {
+  int call({
+    required List<int> id,
+    bool? notifWash,
+    bool? notifWeekly,
+    bool? notifUnworn,
+    String? accent,
+    String? lastTab,
+    DateTime? firstLaunchedAt,
+  });
+}
+
+class _UserPreferencesUpdateAllImpl implements _UserPreferencesUpdateAll {
+  const _UserPreferencesUpdateAllImpl(this.collection);
+
+  final IsarCollection<int, UserPreferences> collection;
+
+  @override
+  int call({
+    required List<int> id,
+    Object? notifWash = ignore,
+    Object? notifWeekly = ignore,
+    Object? notifUnworn = ignore,
+    Object? accent = ignore,
+    Object? lastTab = ignore,
+    Object? firstLaunchedAt = ignore,
+  }) {
+    return collection.updateProperties(id, {
+      if (notifWash != ignore) 1: notifWash as bool?,
+      if (notifWeekly != ignore) 2: notifWeekly as bool?,
+      if (notifUnworn != ignore) 3: notifUnworn as bool?,
+      if (accent != ignore) 4: accent as String?,
+      if (lastTab != ignore) 5: lastTab as String?,
+      if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
     });
   }
+}
+
+extension UserPreferencesUpdate on IsarCollection<int, UserPreferences> {
+  _UserPreferencesUpdate get update => _UserPreferencesUpdateImpl(this);
+
+  _UserPreferencesUpdateAll get updateAll =>
+      _UserPreferencesUpdateAllImpl(this);
+}
+
+sealed class _UserPreferencesQueryUpdate {
+  int call({
+    bool? notifWash,
+    bool? notifWeekly,
+    bool? notifUnworn,
+    String? accent,
+    String? lastTab,
+    DateTime? firstLaunchedAt,
+  });
+}
+
+class _UserPreferencesQueryUpdateImpl implements _UserPreferencesQueryUpdate {
+  const _UserPreferencesQueryUpdateImpl(this.query, {this.limit});
+
+  final IsarQuery<UserPreferences> query;
+  final int? limit;
+
+  @override
+  int call({
+    Object? notifWash = ignore,
+    Object? notifWeekly = ignore,
+    Object? notifUnworn = ignore,
+    Object? accent = ignore,
+    Object? lastTab = ignore,
+    Object? firstLaunchedAt = ignore,
+  }) {
+    return query.updateProperties(limit: limit, {
+      if (notifWash != ignore) 1: notifWash as bool?,
+      if (notifWeekly != ignore) 2: notifWeekly as bool?,
+      if (notifUnworn != ignore) 3: notifUnworn as bool?,
+      if (accent != ignore) 4: accent as String?,
+      if (lastTab != ignore) 5: lastTab as String?,
+      if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
+    });
+  }
+}
+
+extension UserPreferencesQueryUpdate on IsarQuery<UserPreferences> {
+  _UserPreferencesQueryUpdate get updateFirst =>
+      _UserPreferencesQueryUpdateImpl(this, limit: 1);
+
+  _UserPreferencesQueryUpdate get updateAll =>
+      _UserPreferencesQueryUpdateImpl(this);
+}
+
+class _UserPreferencesQueryBuilderUpdateImpl
+    implements _UserPreferencesQueryUpdate {
+  const _UserPreferencesQueryBuilderUpdateImpl(this.query, {this.limit});
+
+  final QueryBuilder<UserPreferences, UserPreferences, QOperations> query;
+  final int? limit;
+
+  @override
+  int call({
+    Object? notifWash = ignore,
+    Object? notifWeekly = ignore,
+    Object? notifUnworn = ignore,
+    Object? accent = ignore,
+    Object? lastTab = ignore,
+    Object? firstLaunchedAt = ignore,
+  }) {
+    final q = query.build();
+    try {
+      return q.updateProperties(limit: limit, {
+        if (notifWash != ignore) 1: notifWash as bool?,
+        if (notifWeekly != ignore) 2: notifWeekly as bool?,
+        if (notifUnworn != ignore) 3: notifUnworn as bool?,
+        if (accent != ignore) 4: accent as String?,
+        if (lastTab != ignore) 5: lastTab as String?,
+        if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
+      });
+    } finally {
+      q.close();
+    }
+  }
+}
+
+extension UserPreferencesQueryBuilderUpdate
+    on QueryBuilder<UserPreferences, UserPreferences, QOperations> {
+  _UserPreferencesQueryUpdate get updateFirst =>
+      _UserPreferencesQueryBuilderUpdateImpl(this, limit: 1);
+
+  _UserPreferencesQueryUpdate get updateAll =>
+      _UserPreferencesQueryBuilderUpdateImpl(this);
 }
 
 extension UserPreferencesQueryFilter
     on QueryBuilder<UserPreferences, UserPreferences, QFilterCondition> {
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  idEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'accent',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 0, value: value),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
+  idGreaterThan(int value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'accent',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        GreaterCondition(property: 0, value: value),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
+  idGreaterThanOrEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'accent',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 0, value: value),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
+  idLessThan(int value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'accent',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(LessCondition(property: 0, value: value));
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  idLessThanOrEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'accent',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 0, value: value),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  idBetween(int lower, int upper) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'accent',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        BetweenCondition(property: 0, lower: lower, upper: upper),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentContains(String value, {bool caseSensitive = true}) {
+  notifWashEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'accent',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 1, value: value),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentMatches(String pattern, {bool caseSensitive = true}) {
+  notifWeeklyEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'accent',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 2, value: value),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentIsEmpty() {
+  notifUnwornEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'accent',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 3, value: value),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      accentIsNotEmpty() {
+  accentEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'accent',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 4, value: value, caseSensitive: caseSensitive),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      firstLaunchedAtIsNull() {
+  accentGreaterThan(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'firstLaunchedAt',
-      ));
+      return query.addFilterCondition(
+        GreaterCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      firstLaunchedAtIsNotNull() {
+  accentGreaterThanOrEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'firstLaunchedAt',
-      ));
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      firstLaunchedAtEqualTo(DateTime? value) {
+  accentLessThan(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'firstLaunchedAt',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        LessCondition(property: 4, value: value, caseSensitive: caseSensitive),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      firstLaunchedAtGreaterThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
+  accentLessThanOrEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'firstLaunchedAt',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        LessOrEqualCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      firstLaunchedAtLessThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
+  accentBetween(String lower, String upper, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'firstLaunchedAt',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        BetweenCondition(
+          property: 4,
+          lower: lower,
+          upper: upper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      firstLaunchedAtBetween(
-    DateTime? lower,
-    DateTime? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
+  accentStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'firstLaunchedAt',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        StartsWithCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      idEqualTo(Id value) {
+  accentEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        EndsWithCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+  accentContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        ContainsCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+  accentMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        MatchesCondition(
+          property: 4,
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      idBetween(
-    Id lower,
-    Id upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
+  accentIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        const EqualCondition(property: 4, value: ''),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabIsNull() {
+  accentIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'lastTab',
-      ));
+      return query.addFilterCondition(
+        const GreaterCondition(property: 4, value: ''),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabIsNotNull() {
+  lastTabIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'lastTab',
-      ));
+      return query.addFilterCondition(const IsNullCondition(property: 5));
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'lastTab',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+  lastTabIsNotNull() {
+    return QueryBuilder.apply(not(), (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 5));
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
+  lastTabEqualTo(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'lastTab',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 5, value: value, caseSensitive: caseSensitive),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
+  lastTabGreaterThan(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'lastTab',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        GreaterCondition(
+          property: 5,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
+  lastTabGreaterThanOrEqualTo(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'lastTab',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(
+          property: 5,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  lastTabLessThan(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'lastTab',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        LessCondition(property: 5, value: value, caseSensitive: caseSensitive),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  lastTabLessThanOrEqualTo(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'lastTab',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        LessOrEqualCondition(
+          property: 5,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabContains(String value, {bool caseSensitive = true}) {
+  lastTabBetween(String? lower, String? upper, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'lastTab',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        BetweenCondition(
+          property: 5,
+          lower: lower,
+          upper: upper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabMatches(String pattern, {bool caseSensitive = true}) {
+  lastTabStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'lastTab',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        StartsWithCondition(
+          property: 5,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabIsEmpty() {
+  lastTabEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'lastTab',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        EndsWithCondition(
+          property: 5,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      lastTabIsNotEmpty() {
+  lastTabContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'lastTab',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        ContainsCondition(
+          property: 5,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      notifUnwornEqualTo(bool value) {
+  lastTabMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'notifUnworn',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        MatchesCondition(
+          property: 5,
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      notifWashEqualTo(bool value) {
+  lastTabIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'notifWash',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        const EqualCondition(property: 5, value: ''),
+      );
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
-      notifWeeklyEqualTo(bool value) {
+  lastTabIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'notifWeekly',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        const GreaterCondition(property: 5, value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 6));
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtIsNotNull() {
+    return QueryBuilder.apply(not(), (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 6));
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 6, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtGreaterThan(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 6, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtGreaterThanOrEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 6, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtLessThan(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(LessCondition(property: 6, value: value));
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtLessThanOrEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 6, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  firstLaunchedAtBetween(DateTime? lower, DateTime? upper) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 6, lower: lower, upper: upper),
+      );
     });
   }
 }
@@ -683,278 +772,395 @@ extension UserPreferencesQueryFilter
 extension UserPreferencesQueryObject
     on QueryBuilder<UserPreferences, UserPreferences, QFilterCondition> {}
 
-extension UserPreferencesQueryLinks
-    on QueryBuilder<UserPreferences, UserPreferences, QFilterCondition> {}
-
 extension UserPreferencesQuerySortBy
     on QueryBuilder<UserPreferences, UserPreferences, QSortBy> {
-  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> sortByAccent() {
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> sortById() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accent', Sort.asc);
+      return query.addSortBy(0);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> sortByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(0, sort: Sort.desc);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByAccentDesc() {
+  sortByNotifWash() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accent', Sort.desc);
+      return query.addSortBy(1);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByFirstLaunchedAt() {
+  sortByNotifWashDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'firstLaunchedAt', Sort.asc);
+      return query.addSortBy(1, sort: Sort.desc);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByFirstLaunchedAtDesc() {
+  sortByNotifWeekly() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'firstLaunchedAt', Sort.desc);
-    });
-  }
-
-  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> sortByLastTab() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastTab', Sort.asc);
+      return query.addSortBy(2);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByLastTabDesc() {
+  sortByNotifWeeklyDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastTab', Sort.desc);
+      return query.addSortBy(2, sort: Sort.desc);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByNotifUnworn() {
+  sortByNotifUnworn() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifUnworn', Sort.asc);
+      return query.addSortBy(3);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByNotifUnwornDesc() {
+  sortByNotifUnwornDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifUnworn', Sort.desc);
+      return query.addSortBy(3, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> sortByAccent({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(4, caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByNotifWash() {
+  sortByAccentDesc({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWash', Sort.asc);
+      return query.addSortBy(4, sort: Sort.desc, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> sortByLastTab({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(5, caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByNotifWashDesc() {
+  sortByLastTabDesc({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWash', Sort.desc);
+      return query.addSortBy(5, sort: Sort.desc, caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByNotifWeekly() {
+  sortByFirstLaunchedAt() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWeekly', Sort.asc);
+      return query.addSortBy(6);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      sortByNotifWeeklyDesc() {
+  sortByFirstLaunchedAtDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWeekly', Sort.desc);
+      return query.addSortBy(6, sort: Sort.desc);
     });
   }
 }
 
 extension UserPreferencesQuerySortThenBy
     on QueryBuilder<UserPreferences, UserPreferences, QSortThenBy> {
-  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> thenByAccent() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accent', Sort.asc);
-    });
-  }
-
-  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByAccentDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accent', Sort.desc);
-    });
-  }
-
-  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByFirstLaunchedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'firstLaunchedAt', Sort.asc);
-    });
-  }
-
-  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByFirstLaunchedAtDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'firstLaunchedAt', Sort.desc);
-    });
-  }
-
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'id', Sort.asc);
+      return query.addSortBy(0);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'id', Sort.desc);
-    });
-  }
-
-  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> thenByLastTab() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastTab', Sort.asc);
+      return query.addSortBy(0, sort: Sort.desc);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByLastTabDesc() {
+  thenByNotifWash() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastTab', Sort.desc);
+      return query.addSortBy(1);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByNotifUnworn() {
+  thenByNotifWashDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifUnworn', Sort.asc);
+      return query.addSortBy(1, sort: Sort.desc);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByNotifUnwornDesc() {
+  thenByNotifWeekly() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifUnworn', Sort.desc);
+      return query.addSortBy(2);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByNotifWash() {
+  thenByNotifWeeklyDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWash', Sort.asc);
+      return query.addSortBy(2, sort: Sort.desc);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByNotifWashDesc() {
+  thenByNotifUnworn() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWash', Sort.desc);
+      return query.addSortBy(3);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByNotifWeekly() {
+  thenByNotifUnwornDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWeekly', Sort.asc);
+      return query.addSortBy(3, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> thenByAccent({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(4, caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
-      thenByNotifWeeklyDesc() {
+  thenByAccentDesc({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'notifWeekly', Sort.desc);
+      return query.addSortBy(4, sort: Sort.desc, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy> thenByLastTab({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(5, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  thenByLastTabDesc({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(5, sort: Sort.desc, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  thenByFirstLaunchedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(6);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  thenByFirstLaunchedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(6, sort: Sort.desc);
     });
   }
 }
 
 extension UserPreferencesQueryWhereDistinct
     on QueryBuilder<UserPreferences, UserPreferences, QDistinct> {
-  QueryBuilder<UserPreferences, UserPreferences, QDistinct> distinctByAccent(
-      {bool caseSensitive = true}) {
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByNotifWash() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'accent', caseSensitive: caseSensitive);
+      return query.addDistinctBy(1);
     });
   }
 
-  QueryBuilder<UserPreferences, UserPreferences, QDistinct>
-      distinctByFirstLaunchedAt() {
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByNotifWeekly() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'firstLaunchedAt');
+      return query.addDistinctBy(2);
     });
   }
 
-  QueryBuilder<UserPreferences, UserPreferences, QDistinct> distinctByLastTab(
-      {bool caseSensitive = true}) {
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByNotifUnworn() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'lastTab', caseSensitive: caseSensitive);
+      return query.addDistinctBy(3);
     });
   }
 
-  QueryBuilder<UserPreferences, UserPreferences, QDistinct>
-      distinctByNotifUnworn() {
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByAccent({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'notifUnworn');
+      return query.addDistinctBy(4, caseSensitive: caseSensitive);
     });
   }
 
-  QueryBuilder<UserPreferences, UserPreferences, QDistinct>
-      distinctByNotifWash() {
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByLastTab({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'notifWash');
+      return query.addDistinctBy(5, caseSensitive: caseSensitive);
     });
   }
 
-  QueryBuilder<UserPreferences, UserPreferences, QDistinct>
-      distinctByNotifWeekly() {
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByFirstLaunchedAt() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'notifWeekly');
+      return query.addDistinctBy(6);
     });
   }
 }
 
-extension UserPreferencesQueryProperty
-    on QueryBuilder<UserPreferences, UserPreferences, QQueryProperty> {
-  QueryBuilder<UserPreferences, int, QQueryOperations> idProperty() {
+extension UserPreferencesQueryProperty1
+    on QueryBuilder<UserPreferences, UserPreferences, QProperty> {
+  QueryBuilder<UserPreferences, int, QAfterProperty> idProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'id');
+      return query.addProperty(0);
     });
   }
 
-  QueryBuilder<UserPreferences, String, QQueryOperations> accentProperty() {
+  QueryBuilder<UserPreferences, bool, QAfterProperty> notifWashProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'accent');
+      return query.addProperty(1);
     });
   }
 
-  QueryBuilder<UserPreferences, DateTime?, QQueryOperations>
-      firstLaunchedAtProperty() {
+  QueryBuilder<UserPreferences, bool, QAfterProperty> notifWeeklyProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'firstLaunchedAt');
+      return query.addProperty(2);
     });
   }
 
-  QueryBuilder<UserPreferences, String?, QQueryOperations> lastTabProperty() {
+  QueryBuilder<UserPreferences, bool, QAfterProperty> notifUnwornProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'lastTab');
+      return query.addProperty(3);
     });
   }
 
-  QueryBuilder<UserPreferences, bool, QQueryOperations> notifUnwornProperty() {
+  QueryBuilder<UserPreferences, String, QAfterProperty> accentProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'notifUnworn');
+      return query.addProperty(4);
     });
   }
 
-  QueryBuilder<UserPreferences, bool, QQueryOperations> notifWashProperty() {
+  QueryBuilder<UserPreferences, String?, QAfterProperty> lastTabProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'notifWash');
+      return query.addProperty(5);
     });
   }
 
-  QueryBuilder<UserPreferences, bool, QQueryOperations> notifWeeklyProperty() {
+  QueryBuilder<UserPreferences, DateTime?, QAfterProperty>
+  firstLaunchedAtProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'notifWeekly');
+      return query.addProperty(6);
+    });
+  }
+}
+
+extension UserPreferencesQueryProperty2<R>
+    on QueryBuilder<UserPreferences, R, QAfterProperty> {
+  QueryBuilder<UserPreferences, (R, int), QAfterProperty> idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(0);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R, bool), QAfterProperty> notifWashProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(1);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R, bool), QAfterProperty>
+  notifWeeklyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(2);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R, bool), QAfterProperty>
+  notifUnwornProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(3);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R, String), QAfterProperty> accentProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(4);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R, String?), QAfterProperty>
+  lastTabProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(5);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R, DateTime?), QAfterProperty>
+  firstLaunchedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(6);
+    });
+  }
+}
+
+extension UserPreferencesQueryProperty3<R1, R2>
+    on QueryBuilder<UserPreferences, (R1, R2), QAfterProperty> {
+  QueryBuilder<UserPreferences, (R1, R2, int), QOperations> idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(0);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, bool), QOperations>
+  notifWashProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(1);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, bool), QOperations>
+  notifWeeklyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(2);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, bool), QOperations>
+  notifUnwornProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(3);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, String), QOperations>
+  accentProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(4);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, String?), QOperations>
+  lastTabProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(5);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, DateTime?), QOperations>
+  firstLaunchedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(6);
     });
   }
 }

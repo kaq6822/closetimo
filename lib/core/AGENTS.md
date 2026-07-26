@@ -8,7 +8,6 @@
 ```text
 core/
 ├── persistence/
-│   ├── isar_provider.dart  # Isar 인스턴스 열기/제공
 │   └── image_store.dart    # 이미지 파일 sandbox 저장 (documents/items/)
 ├── utils/
 │   ├── clock.dart          # 시간 추상화 (테스트에서 고정 시간 주입용)

@@ -20,12 +20,15 @@ dependencies:
   # Routing
   go_router: ^14.6.2
 
-  # Local NoSQL DB (Isar)
-  # NOTE: 공식 isar 3.1.0+1을 사용 (Rust 기반 4.x는 아직 정식 release 전).
-  # data-model.md / research.md의 @collection·@Index API는 3.x와 호환되며, 4.x로
-  # 이전 시점에 마이그레이션 spec을 별도 작성한다.
-  isar: ^3.1.0+1
-  isar_flutter_libs: ^3.1.0+1
+  # Local NoSQL DB
+  # 주 저장소는 SwiftPM을 지원하는 Isar Plus를 사용한다. 구형 Isar 3 저장소는
+  # 전환 기간에만 local bridge와 고정 native plugin으로 읽는다.
+  isar_plus: 1.3.7
+  isar_plus_flutter_libs: 1.3.7
+  isar_flutter_libs:
+    path: packages/isar_flutter_libs
+  closetimo_legacy_isar:
+    path: packages/closetimo_legacy_isar
 
   # Image picker + path utilities
   image_picker: ^1.1.2
@@ -36,8 +39,8 @@ dependencies:
   intl: ^0.20.2
 
   # Immutable models
-  freezed_annotation: ^2.4.4
-  json_annotation: ^4.9.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
 
 dev_dependencies:
   flutter_test:
@@ -47,10 +50,10 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
   # Code generation
-  build_runner: ^2.4.13
-  isar_generator: ^3.1.0+1
-  freezed: ^2.5.2
-  json_serializable: ^6.8.0
+  build_runner: 2.15.1
+  # Isar Plus가 요구하는 analyzer 12와 호환되는 첫 Freezed 배포본이다.
+  freezed: 3.2.6-dev.1
+  json_serializable: ^6.14.0
 
 flutter:
   uses-material-design: true

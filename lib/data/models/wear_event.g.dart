@@ -3,727 +3,540 @@
 part of 'wear_event.dart';
 
 // **************************************************************************
-// IsarCollectionGenerator
+// _IsarCollectionGenerator
 // **************************************************************************
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, invalid_use_of_protected_member, lines_longer_than_80_chars, constant_identifier_names, avoid_js_rounded_ints, no_leading_underscores_for_local_identifiers, require_trailing_commas, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_in_if_null_operators, library_private_types_in_public_api, prefer_const_constructors
+// ignore_for_file: type=lint
 
 extension GetWearEventCollection on Isar {
-  IsarCollection<WearEvent> get wearEvents => this.collection();
+  IsarCollection<int, WearEvent> get wearEvents => this.collection();
 }
 
-const WearEventSchema = CollectionSchema(
-  name: r'WearEvent',
-  id: 6394571273057693660,
-  properties: {
-    r'itemId': PropertySchema(
-      id: 0,
-      name: r'itemId',
-      type: IsarType.long,
-    ),
-    r'kind': PropertySchema(
-      id: 1,
-      name: r'kind',
-      type: IsarType.byte,
-      enumMap: _WearEventkindEnumValueMap,
-    ),
-    r'note': PropertySchema(
-      id: 2,
-      name: r'note',
-      type: IsarType.string,
-    ),
-    r'occurredAt': PropertySchema(
-      id: 3,
-      name: r'occurredAt',
-      type: IsarType.dateTime,
-    )
-  },
-  estimateSize: _wearEventEstimateSize,
-  serialize: _wearEventSerialize,
-  deserialize: _wearEventDeserialize,
-  deserializeProp: _wearEventDeserializeProp,
-  idName: r'id',
-  indexes: {
-    r'itemId': IndexSchema(
-      id: -5342806140158601489,
-      name: r'itemId',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'itemId',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
-    r'kind': IndexSchema(
-      id: 1484550194077596484,
-      name: r'kind',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'kind',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
-    r'occurredAt': IndexSchema(
-      id: 1229694562040044173,
-      name: r'occurredAt',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'occurredAt',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    )
-  },
-  links: {},
-  embeddedSchemas: {},
-  getId: _wearEventGetId,
-  getLinks: _wearEventGetLinks,
-  attach: _wearEventAttach,
-  version: '3.1.0+1',
+final WearEventSchema = IsarGeneratedSchema(
+  schema: IsarSchema(
+    name: 'WearEvent',
+    idName: 'id',
+    embedded: false,
+    properties: [
+      IsarPropertySchema(name: 'itemId', type: IsarType.long),
+      IsarPropertySchema(
+        name: 'kind',
+        type: IsarType.byte,
+
+        enumMap: {"wear": 0, "wash": 1},
+      ),
+      IsarPropertySchema(name: 'occurredAt', type: IsarType.dateTime),
+      IsarPropertySchema(name: 'note', type: IsarType.string),
+    ],
+    indexes: [
+      IsarIndexSchema(
+        name: 'itemId',
+        properties: ["itemId"],
+        unique: false,
+        hash: false,
+      ),
+      IsarIndexSchema(
+        name: 'kind',
+        properties: ["kind"],
+        unique: false,
+        hash: false,
+      ),
+      IsarIndexSchema(
+        name: 'occurredAt',
+        properties: ["occurredAt"],
+        unique: false,
+        hash: false,
+      ),
+    ],
+  ),
+  converter: IsarObjectConverter<int, WearEvent>(
+    serialize: serializeWearEvent,
+    deserialize: deserializeWearEvent,
+    deserializeProperty: deserializeWearEventProp,
+  ),
+  getEmbeddedSchemas: () => [],
 );
 
-int _wearEventEstimateSize(
-  WearEvent object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
+@isarProtected
+int serializeWearEvent(IsarWriter writer, WearEvent object) {
+  IsarCore.writeLong(writer, 1, object.itemId);
+  IsarCore.writeByte(writer, 2, object.kind.index);
+  IsarCore.writeLong(
+    writer,
+    3,
+    object.occurredAt.toUtc().microsecondsSinceEpoch,
+  );
   {
     final value = object.note;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
+    if (value == null) {
+      IsarCore.writeNull(writer, 4);
+    } else {
+      IsarCore.writeString(writer, 4, value);
     }
   }
-  return bytesCount;
-}
-
-void _wearEventSerialize(
-  WearEvent object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeLong(offsets[0], object.itemId);
-  writer.writeByte(offsets[1], object.kind.index);
-  writer.writeString(offsets[2], object.note);
-  writer.writeDateTime(offsets[3], object.occurredAt);
-}
-
-WearEvent _wearEventDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = WearEvent(
-    itemId: reader.readLong(offsets[0]),
-    kind: _WearEventkindValueEnumMap[reader.readByteOrNull(offsets[1])] ??
-        EventKind.wear,
-    note: reader.readStringOrNull(offsets[2]),
-    occurredAt: reader.readDateTime(offsets[3]),
-  );
-  object.id = id;
-  return object;
-}
-
-P _wearEventDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readLong(offset)) as P;
-    case 1:
-      return (_WearEventkindValueEnumMap[reader.readByteOrNull(offset)] ??
-          EventKind.wear) as P;
-    case 2:
-      return (reader.readStringOrNull(offset)) as P;
-    case 3:
-      return (reader.readDateTime(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-const _WearEventkindEnumValueMap = {
-  'wear': 0,
-  'wash': 1,
-};
-const _WearEventkindValueEnumMap = {
-  0: EventKind.wear,
-  1: EventKind.wash,
-};
-
-Id _wearEventGetId(WearEvent object) {
   return object.id;
 }
 
-List<IsarLinkBase<dynamic>> _wearEventGetLinks(WearEvent object) {
-  return [];
+@isarProtected
+WearEvent deserializeWearEvent(IsarReader reader) {
+  final int _itemId;
+  _itemId = IsarCore.readLong(reader, 1);
+  final EventKind _kind;
+  {
+    if (IsarCore.readNull(reader, 2)) {
+      _kind = EventKind.wear;
+    } else {
+      _kind = _wearEventKind[IsarCore.readByte(reader, 2)] ?? EventKind.wear;
+    }
+  }
+  final DateTime _occurredAt;
+  {
+    final value = IsarCore.readLong(reader, 3);
+    if (value == -9223372036854775808) {
+      _occurredAt = DateTime.fromMillisecondsSinceEpoch(
+        0,
+        isUtc: true,
+      ).toLocal();
+    } else {
+      _occurredAt = DateTime.fromMicrosecondsSinceEpoch(
+        value,
+        isUtc: true,
+      ).toLocal();
+    }
+  }
+  final String? _note;
+  _note = IsarCore.readString(reader, 4);
+  final object = WearEvent(
+    itemId: _itemId,
+    kind: _kind,
+    occurredAt: _occurredAt,
+    note: _note,
+  );
+  object.id = IsarCore.readId(reader);
+  return object;
 }
 
-void _wearEventAttach(IsarCollection<dynamic> col, Id id, WearEvent object) {
-  object.id = id;
-}
-
-extension WearEventQueryWhereSort
-    on QueryBuilder<WearEvent, WearEvent, QWhere> {
-  QueryBuilder<WearEvent, WearEvent, QAfterWhere> anyId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(const IdWhereClause.any());
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhere> anyItemId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'itemId'),
-      );
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhere> anyKind() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'kind'),
-      );
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhere> anyOccurredAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'occurredAt'),
-      );
-    });
+@isarProtected
+dynamic deserializeWearEventProp(IsarReader reader, int property) {
+  switch (property) {
+    case 0:
+      return IsarCore.readId(reader);
+    case 1:
+      return IsarCore.readLong(reader, 1);
+    case 2:
+      {
+        if (IsarCore.readNull(reader, 2)) {
+          return EventKind.wear;
+        } else {
+          return _wearEventKind[IsarCore.readByte(reader, 2)] ?? EventKind.wear;
+        }
+      }
+    case 3:
+      {
+        final value = IsarCore.readLong(reader, 3);
+        if (value == -9223372036854775808) {
+          return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
+        } else {
+          return DateTime.fromMicrosecondsSinceEpoch(
+            value,
+            isUtc: true,
+          ).toLocal();
+        }
+      }
+    case 4:
+      return IsarCore.readString(reader, 4);
+    default:
+      throw ArgumentError('Unknown property: $property');
   }
 }
 
-extension WearEventQueryWhere
-    on QueryBuilder<WearEvent, WearEvent, QWhereClause> {
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> idEqualTo(Id id) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
-    });
-  }
+sealed class _WearEventUpdate {
+  bool call({
+    required int id,
+    int? itemId,
+    EventKind? kind,
+    DateTime? occurredAt,
+    String? note,
+  });
+}
 
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> idNotEqualTo(Id id) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(
-              IdWhereClause.lessThan(upper: id, includeUpper: false),
-            )
-            .addWhereClause(
-              IdWhereClause.greaterThan(lower: id, includeLower: false),
-            );
-      } else {
-        return query
-            .addWhereClause(
-              IdWhereClause.greaterThan(lower: id, includeLower: false),
-            )
-            .addWhereClause(
-              IdWhereClause.lessThan(upper: id, includeUpper: false),
-            );
-      }
-    });
-  }
+class _WearEventUpdateImpl implements _WearEventUpdate {
+  const _WearEventUpdateImpl(this.collection);
 
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> idGreaterThan(Id id,
-      {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IdWhereClause.greaterThan(lower: id, includeLower: include),
-      );
-    });
-  }
+  final IsarCollection<int, WearEvent> collection;
 
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> idLessThan(Id id,
-      {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IdWhereClause.lessThan(upper: id, includeUpper: include),
-      );
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> idBetween(
-    Id lowerId,
-    Id upperId, {
-    bool includeLower = true,
-    bool includeUpper = true,
+  @override
+  bool call({
+    required int id,
+    Object? itemId = ignore,
+    Object? kind = ignore,
+    Object? occurredAt = ignore,
+    Object? note = ignore,
   }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
-    });
+    return collection.updateProperties(
+          [id],
+          {
+            if (itemId != ignore) 1: itemId as int?,
+            if (kind != ignore) 2: kind as EventKind?,
+            if (occurredAt != ignore) 3: occurredAt as DateTime?,
+            if (note != ignore) 4: note as String?,
+          },
+        ) >
+        0;
   }
+}
 
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> itemIdEqualTo(
-      int itemId) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'itemId',
-        value: [itemId],
-      ));
-    });
-  }
+sealed class _WearEventUpdateAll {
+  int call({
+    required List<int> id,
+    int? itemId,
+    EventKind? kind,
+    DateTime? occurredAt,
+    String? note,
+  });
+}
 
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> itemIdNotEqualTo(
-      int itemId) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'itemId',
-              lower: [],
-              upper: [itemId],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'itemId',
-              lower: [itemId],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'itemId',
-              lower: [itemId],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'itemId',
-              lower: [],
-              upper: [itemId],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
+class _WearEventUpdateAllImpl implements _WearEventUpdateAll {
+  const _WearEventUpdateAllImpl(this.collection);
 
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> itemIdGreaterThan(
-    int itemId, {
-    bool include = false,
+  final IsarCollection<int, WearEvent> collection;
+
+  @override
+  int call({
+    required List<int> id,
+    Object? itemId = ignore,
+    Object? kind = ignore,
+    Object? occurredAt = ignore,
+    Object? note = ignore,
   }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'itemId',
-        lower: [itemId],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> itemIdLessThan(
-    int itemId, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'itemId',
-        lower: [],
-        upper: [itemId],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> itemIdBetween(
-    int lowerItemId,
-    int upperItemId, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'itemId',
-        lower: [lowerItemId],
-        includeLower: includeLower,
-        upper: [upperItemId],
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindEqualTo(
-      EventKind kind) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'kind',
-        value: [kind],
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindNotEqualTo(
-      EventKind kind) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'kind',
-              lower: [],
-              upper: [kind],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'kind',
-              lower: [kind],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'kind',
-              lower: [kind],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'kind',
-              lower: [],
-              upper: [kind],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindGreaterThan(
-    EventKind kind, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'kind',
-        lower: [kind],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindLessThan(
-    EventKind kind, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'kind',
-        lower: [],
-        upper: [kind],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> kindBetween(
-    EventKind lowerKind,
-    EventKind upperKind, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'kind',
-        lower: [lowerKind],
-        includeLower: includeLower,
-        upper: [upperKind],
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> occurredAtEqualTo(
-      DateTime occurredAt) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'occurredAt',
-        value: [occurredAt],
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> occurredAtNotEqualTo(
-      DateTime occurredAt) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'occurredAt',
-              lower: [],
-              upper: [occurredAt],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'occurredAt',
-              lower: [occurredAt],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'occurredAt',
-              lower: [occurredAt],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'occurredAt',
-              lower: [],
-              upper: [occurredAt],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> occurredAtGreaterThan(
-    DateTime occurredAt, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'occurredAt',
-        lower: [occurredAt],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> occurredAtLessThan(
-    DateTime occurredAt, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'occurredAt',
-        lower: [],
-        upper: [occurredAt],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterWhereClause> occurredAtBetween(
-    DateTime lowerOccurredAt,
-    DateTime upperOccurredAt, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'occurredAt',
-        lower: [lowerOccurredAt],
-        includeLower: includeLower,
-        upper: [upperOccurredAt],
-        includeUpper: includeUpper,
-      ));
+    return collection.updateProperties(id, {
+      if (itemId != ignore) 1: itemId as int?,
+      if (kind != ignore) 2: kind as EventKind?,
+      if (occurredAt != ignore) 3: occurredAt as DateTime?,
+      if (note != ignore) 4: note as String?,
     });
   }
 }
+
+extension WearEventUpdate on IsarCollection<int, WearEvent> {
+  _WearEventUpdate get update => _WearEventUpdateImpl(this);
+
+  _WearEventUpdateAll get updateAll => _WearEventUpdateAllImpl(this);
+}
+
+sealed class _WearEventQueryUpdate {
+  int call({int? itemId, EventKind? kind, DateTime? occurredAt, String? note});
+}
+
+class _WearEventQueryUpdateImpl implements _WearEventQueryUpdate {
+  const _WearEventQueryUpdateImpl(this.query, {this.limit});
+
+  final IsarQuery<WearEvent> query;
+  final int? limit;
+
+  @override
+  int call({
+    Object? itemId = ignore,
+    Object? kind = ignore,
+    Object? occurredAt = ignore,
+    Object? note = ignore,
+  }) {
+    return query.updateProperties(limit: limit, {
+      if (itemId != ignore) 1: itemId as int?,
+      if (kind != ignore) 2: kind as EventKind?,
+      if (occurredAt != ignore) 3: occurredAt as DateTime?,
+      if (note != ignore) 4: note as String?,
+    });
+  }
+}
+
+extension WearEventQueryUpdate on IsarQuery<WearEvent> {
+  _WearEventQueryUpdate get updateFirst =>
+      _WearEventQueryUpdateImpl(this, limit: 1);
+
+  _WearEventQueryUpdate get updateAll => _WearEventQueryUpdateImpl(this);
+}
+
+class _WearEventQueryBuilderUpdateImpl implements _WearEventQueryUpdate {
+  const _WearEventQueryBuilderUpdateImpl(this.query, {this.limit});
+
+  final QueryBuilder<WearEvent, WearEvent, QOperations> query;
+  final int? limit;
+
+  @override
+  int call({
+    Object? itemId = ignore,
+    Object? kind = ignore,
+    Object? occurredAt = ignore,
+    Object? note = ignore,
+  }) {
+    final q = query.build();
+    try {
+      return q.updateProperties(limit: limit, {
+        if (itemId != ignore) 1: itemId as int?,
+        if (kind != ignore) 2: kind as EventKind?,
+        if (occurredAt != ignore) 3: occurredAt as DateTime?,
+        if (note != ignore) 4: note as String?,
+      });
+    } finally {
+      q.close();
+    }
+  }
+}
+
+extension WearEventQueryBuilderUpdate
+    on QueryBuilder<WearEvent, WearEvent, QOperations> {
+  _WearEventQueryUpdate get updateFirst =>
+      _WearEventQueryBuilderUpdateImpl(this, limit: 1);
+
+  _WearEventQueryUpdate get updateAll => _WearEventQueryBuilderUpdateImpl(this);
+}
+
+const _wearEventKind = {0: EventKind.wear, 1: EventKind.wash};
 
 extension WearEventQueryFilter
     on QueryBuilder<WearEvent, WearEvent, QFilterCondition> {
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> idEqualTo(
-      Id value) {
+    int value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 0, value: value),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+    int value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        GreaterCondition(property: 0, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  idGreaterThanOrEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 0, value: value),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+    int value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(LessCondition(property: 0, value: value));
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> idLessThanOrEqualTo(
+    int value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 0, value: value),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> idBetween(
-    Id lower,
-    Id upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
+    int lower,
+    int upper,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        BetweenCondition(property: 0, lower: lower, upper: upper),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> itemIdEqualTo(
-      int value) {
+    int value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'itemId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 1, value: value),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> itemIdGreaterThan(
-    int value, {
-    bool include = false,
-  }) {
+    int value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'itemId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        GreaterCondition(property: 1, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  itemIdGreaterThanOrEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 1, value: value),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> itemIdLessThan(
-    int value, {
-    bool include = false,
-  }) {
+    int value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'itemId',
-        value: value,
-      ));
+      return query.addFilterCondition(LessCondition(property: 1, value: value));
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  itemIdLessThanOrEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 1, value: value),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> itemIdBetween(
     int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
+    int upper,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'itemId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        BetweenCondition(property: 1, lower: lower, upper: upper),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> kindEqualTo(
-      EventKind value) {
+    EventKind value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'kind',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 2, value: value.index),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> kindGreaterThan(
-    EventKind value, {
-    bool include = false,
-  }) {
+    EventKind value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'kind',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        GreaterCondition(property: 2, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  kindGreaterThanOrEqualTo(EventKind value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 2, value: value.index),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> kindLessThan(
-    EventKind value, {
-    bool include = false,
-  }) {
+    EventKind value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'kind',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        LessCondition(property: 2, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  kindLessThanOrEqualTo(EventKind value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 2, value: value.index),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> kindBetween(
     EventKind lower,
-    EventKind upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
+    EventKind upper,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'kind',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        BetweenCondition(property: 2, lower: lower.index, upper: upper.index),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> occurredAtEqualTo(
+    DateTime value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 3, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  occurredAtGreaterThan(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 3, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  occurredAtGreaterThanOrEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 3, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> occurredAtLessThan(
+    DateTime value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(LessCondition(property: 3, value: value));
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  occurredAtLessThanOrEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 3, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> occurredAtBetween(
+    DateTime lower,
+    DateTime upper,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 3, lower: lower, upper: upper),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'note',
-      ));
+      return query.addFilterCondition(const IsNullCondition(property: 4));
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'note',
-      ));
+    return QueryBuilder.apply(not(), (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 4));
     });
   }
 
@@ -732,60 +545,78 @@ extension WearEventQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'note',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        EqualCondition(property: 4, value: value, caseSensitive: caseSensitive),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteGreaterThan(
     String? value, {
-    bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'note',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        GreaterCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  noteGreaterThanOrEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteLessThan(
     String? value, {
-    bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'note',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        LessCondition(property: 4, value: value, caseSensitive: caseSensitive),
+      );
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
+  noteLessThanOrEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteBetween(
     String? lower,
     String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'note',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        BetweenCondition(
+          property: 4,
+          lower: lower,
+          upper: upper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
@@ -794,11 +625,13 @@ extension WearEventQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'note',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        StartsWithCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
@@ -807,107 +640,59 @@ extension WearEventQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'note',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        EndsWithCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteContains(
-      String value,
-      {bool caseSensitive = true}) {
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'note',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        ContainsCondition(
+          property: 4,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'note',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        MatchesCondition(
+          property: 4,
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'note',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        const EqualCondition(property: 4, value: ''),
+      );
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> noteIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'note',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> occurredAtEqualTo(
-      DateTime value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'occurredAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition>
-      occurredAtGreaterThan(
-    DateTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'occurredAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> occurredAtLessThan(
-    DateTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'occurredAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterFilterCondition> occurredAtBetween(
-    DateTime lower,
-    DateTime upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'occurredAt',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        const GreaterCondition(property: 4, value: ''),
+      );
     });
   }
 }
@@ -915,55 +700,68 @@ extension WearEventQueryFilter
 extension WearEventQueryObject
     on QueryBuilder<WearEvent, WearEvent, QFilterCondition> {}
 
-extension WearEventQueryLinks
-    on QueryBuilder<WearEvent, WearEvent, QFilterCondition> {}
-
 extension WearEventQuerySortBy on QueryBuilder<WearEvent, WearEvent, QSortBy> {
+  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortById() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(0);
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(0, sort: Sort.desc);
+    });
+  }
+
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByItemId() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'itemId', Sort.asc);
+      return query.addSortBy(1);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByItemIdDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'itemId', Sort.desc);
+      return query.addSortBy(1, sort: Sort.desc);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByKind() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'kind', Sort.asc);
+      return query.addSortBy(2);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByKindDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'kind', Sort.desc);
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByNote() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'note', Sort.asc);
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByNoteDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'note', Sort.desc);
+      return query.addSortBy(2, sort: Sort.desc);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByOccurredAt() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'occurredAt', Sort.asc);
+      return query.addSortBy(3);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByOccurredAtDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'occurredAt', Sort.desc);
+      return query.addSortBy(3, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByNote({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(4, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> sortByNoteDesc({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(4, sort: Sort.desc, caseSensitive: caseSensitive);
     });
   }
 }
@@ -972,122 +770,194 @@ extension WearEventQuerySortThenBy
     on QueryBuilder<WearEvent, WearEvent, QSortThenBy> {
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'id', Sort.asc);
+      return query.addSortBy(0);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'id', Sort.desc);
+      return query.addSortBy(0, sort: Sort.desc);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByItemId() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'itemId', Sort.asc);
+      return query.addSortBy(1);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByItemIdDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'itemId', Sort.desc);
+      return query.addSortBy(1, sort: Sort.desc);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByKind() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'kind', Sort.asc);
+      return query.addSortBy(2);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByKindDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'kind', Sort.desc);
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByNote() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'note', Sort.asc);
-    });
-  }
-
-  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByNoteDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'note', Sort.desc);
+      return query.addSortBy(2, sort: Sort.desc);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByOccurredAt() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'occurredAt', Sort.asc);
+      return query.addSortBy(3);
     });
   }
 
   QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByOccurredAtDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'occurredAt', Sort.desc);
+      return query.addSortBy(3, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByNote({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(4, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<WearEvent, WearEvent, QAfterSortBy> thenByNoteDesc({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(4, sort: Sort.desc, caseSensitive: caseSensitive);
     });
   }
 }
 
 extension WearEventQueryWhereDistinct
     on QueryBuilder<WearEvent, WearEvent, QDistinct> {
-  QueryBuilder<WearEvent, WearEvent, QDistinct> distinctByItemId() {
+  QueryBuilder<WearEvent, WearEvent, QAfterDistinct> distinctByItemId() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'itemId');
+      return query.addDistinctBy(1);
     });
   }
 
-  QueryBuilder<WearEvent, WearEvent, QDistinct> distinctByKind() {
+  QueryBuilder<WearEvent, WearEvent, QAfterDistinct> distinctByKind() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'kind');
+      return query.addDistinctBy(2);
     });
   }
 
-  QueryBuilder<WearEvent, WearEvent, QDistinct> distinctByNote(
-      {bool caseSensitive = true}) {
+  QueryBuilder<WearEvent, WearEvent, QAfterDistinct> distinctByOccurredAt() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'note', caseSensitive: caseSensitive);
+      return query.addDistinctBy(3);
     });
   }
 
-  QueryBuilder<WearEvent, WearEvent, QDistinct> distinctByOccurredAt() {
+  QueryBuilder<WearEvent, WearEvent, QAfterDistinct> distinctByNote({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'occurredAt');
+      return query.addDistinctBy(4, caseSensitive: caseSensitive);
     });
   }
 }
 
-extension WearEventQueryProperty
-    on QueryBuilder<WearEvent, WearEvent, QQueryProperty> {
-  QueryBuilder<WearEvent, int, QQueryOperations> idProperty() {
+extension WearEventQueryProperty1
+    on QueryBuilder<WearEvent, WearEvent, QProperty> {
+  QueryBuilder<WearEvent, int, QAfterProperty> idProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'id');
+      return query.addProperty(0);
     });
   }
 
-  QueryBuilder<WearEvent, int, QQueryOperations> itemIdProperty() {
+  QueryBuilder<WearEvent, int, QAfterProperty> itemIdProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'itemId');
+      return query.addProperty(1);
     });
   }
 
-  QueryBuilder<WearEvent, EventKind, QQueryOperations> kindProperty() {
+  QueryBuilder<WearEvent, EventKind, QAfterProperty> kindProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'kind');
+      return query.addProperty(2);
     });
   }
 
-  QueryBuilder<WearEvent, String?, QQueryOperations> noteProperty() {
+  QueryBuilder<WearEvent, DateTime, QAfterProperty> occurredAtProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'note');
+      return query.addProperty(3);
     });
   }
 
-  QueryBuilder<WearEvent, DateTime, QQueryOperations> occurredAtProperty() {
+  QueryBuilder<WearEvent, String?, QAfterProperty> noteProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'occurredAt');
+      return query.addProperty(4);
+    });
+  }
+}
+
+extension WearEventQueryProperty2<R>
+    on QueryBuilder<WearEvent, R, QAfterProperty> {
+  QueryBuilder<WearEvent, (R, int), QAfterProperty> idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(0);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R, int), QAfterProperty> itemIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(1);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R, EventKind), QAfterProperty> kindProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(2);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R, DateTime), QAfterProperty> occurredAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(3);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R, String?), QAfterProperty> noteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(4);
+    });
+  }
+}
+
+extension WearEventQueryProperty3<R1, R2>
+    on QueryBuilder<WearEvent, (R1, R2), QAfterProperty> {
+  QueryBuilder<WearEvent, (R1, R2, int), QOperations> idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(0);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R1, R2, int), QOperations> itemIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(1);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R1, R2, EventKind), QOperations> kindProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(2);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R1, R2, DateTime), QOperations>
+  occurredAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(3);
+    });
+  }
+
+  QueryBuilder<WearEvent, (R1, R2, String?), QOperations> noteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(4);
     });
   }
 }

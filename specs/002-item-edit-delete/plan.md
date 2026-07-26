@@ -15,7 +15,7 @@ Isar 트랜잭션으로 제거하고 sandbox 이미지 파일을 best-effort로 
 
 ## Technical Context
 
-**Language/Version**: Dart 3.5+ / Flutter 3.27 (stable) — 001과 동일
+**Language/Version**: Dart 3.12+ / Flutter 3.44 (stable) — 001과 동일
 
 **Primary Dependencies**: 신규 의존성 없음. 기존 isar, flutter_riverpod, go_router, image_picker, freezed 재사용.
 
@@ -23,7 +23,7 @@ Isar 트랜잭션으로 제거하고 sandbox 이미지 파일을 best-effort로 
 
 **Testing**: `flutter_test` 위젯·단위 테스트. repository 로직은 in-memory fake로 검증(001 `test/feature/wear_record_test.dart` 패턴 재사용).
 
-**Target Platform**: iOS 13+ / Android API 21+ — 001과 동일.
+**Target Platform**: iOS 13+ / Android API 24+ — 001과 동일.
 
 **Project Type**: 모바일 단일 앱 (백엔드 없음).
 

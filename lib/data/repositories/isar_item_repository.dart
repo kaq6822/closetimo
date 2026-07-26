@@ -1,7 +1,7 @@
 // ItemRepository의 Isar 구현. Phase 3에서는 create만 구현하고,
 // Phase 4·5·7에서 나머지 watch/get을 채워간다.
 
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 
 import '../../core/persistence/image_store.dart';
 import '../../core/utils/clock.dart';
@@ -16,15 +16,15 @@ class IsarItemRepository implements ItemRepository {
     required Isar isar,
     required ImageStore imageStore,
     required Clock clock,
-  })  : _isar = isar,
-        _imageStore = imageStore,
-        _clock = clock;
+  }) : _isar = isar,
+       _imageStore = imageStore,
+       _clock = clock;
 
   final Isar _isar;
   final ImageStore _imageStore;
   final Clock _clock;
 
-  IsarCollection<Item> get _items => _isar.items;
+  IsarCollection<int, Item> get _items => _isar.items;
 
   @override
   Future<int> create(NewItemDraft draft) async {
@@ -42,24 +42,19 @@ class IsarItemRepository implements ItemRepository {
       createdAt: now,
       purchasedAt: draft.purchasedAt,
     );
-    return _isar.writeTxn(() async {
-      final id = await _items.put(item);
-      // 사진이 있으면 sandbox로 복사하고 상대 경로를 저장.
-      if (draft.tempPhoto != null) {
-        final relPath = await _imageStore.copyTo(draft.tempPhoto!, '$id');
-        item.imagePath = relPath;
-        await _items.put(item);
-      }
-      return id;
-    });
+    final id = _items.autoIncrement();
+    item.id = id;
+    // 사진이 있으면 sandbox로 복사하고 상대 경로를 저장.
+    if (draft.tempPhoto != null) {
+      item.imagePath = await _imageStore.copyTo(draft.tempPhoto!, '$id');
+    }
+    _isar.write((isar) => isar.items.put(item));
+    return id;
   }
 
   @override
   Stream<List<Item>> watchAll() {
-    return _items
-        .where()
-        .sortByCreatedAtDesc()
-        .watch(fireImmediately: true);
+    return _items.where().sortByCreatedAtDesc().watch(fireImmediately: true);
   }
 
   @override
@@ -104,12 +99,10 @@ class IsarItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchRecentlyWorn({int limit = 2}) {
-    return _items
-        .filter()
-        .lastWornAtIsNotNull()
-        .sortByLastWornAtDesc()
-        .limit(limit)
-        .watch(fireImmediately: true);
+    return _items.where().lastWornAtIsNotNull().sortByLastWornAtDesc().watch(
+      fireImmediately: true,
+      limit: limit,
+    );
   }
 
   @override
@@ -142,9 +135,7 @@ class IsarItemRepository implements ItemRepository {
   }
 
   @override
-  Future<Item?> get(int id) {
-    return _items.get(id);
-  }
+  Future<Item?> get(int id) async => _items.get(id);
 
   @override
   Future<void> update(int id, ItemPatch patch) async {
@@ -152,25 +143,29 @@ class IsarItemRepository implements ItemRepository {
     if (trimmedName.isEmpty) {
       throw ArgumentError('Item name must be non-empty');
     }
+    final existing = _items.get(id);
+    if (existing == null) return;
+    final replacementPath = patch.newPhoto == null
+        ? null
+        : await _imageStore.copyTo(patch.newPhoto!, '$id');
     // removePhoto 경로에서 txn 밖 파일 삭제를 위해 이전 경로를 보관한다.
     String? pathToDelete;
-    await _isar.writeTxn(() async {
-      final item = await _items.get(id);
+    _isar.write((isar) {
+      final item = isar.items.get(id);
       if (item == null) return; // 미존재 no-op(FR: id 미존재 시 무시)
       item
         ..name = trimmedName
-        ..brand =
-            patch.brand == null || patch.brand!.trim().isEmpty
-                ? null
-                : patch.brand!.trim()
+        ..brand = patch.brand == null || patch.brand!.trim().isEmpty
+            ? null
+            : patch.brand!.trim()
         ..category = patch.category
         ..careMethod = patch.careMethod
         ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
         ..purchasedAt = patch.purchasedAt;
 
       // 사진 3-way 의도(data-model.md §3): 교체 > 제거 > 유지.
-      if (patch.newPhoto != null) {
-        item.imagePath = await _imageStore.copyTo(patch.newPhoto!, '$id');
+      if (replacementPath != null) {
+        item.imagePath = replacementPath;
       } else if (patch.removePhoto) {
         pathToDelete = item.imagePath;
         item.imagePath = null;
@@ -181,7 +176,7 @@ class IsarItemRepository implements ItemRepository {
           ? ItemStatus.dirty
           : ItemStatus.clean;
 
-      await _items.put(item);
+      isar.items.put(item);
     });
     if (pathToDelete != null) {
       await _imageStore.delete(pathToDelete!); // best-effort(FR-011)
@@ -191,20 +186,20 @@ class IsarItemRepository implements ItemRepository {
   @override
   Future<void> delete(int id) async {
     String? pathToDelete;
-    await _isar.writeTxn(() async {
-      final item = await _items.get(id);
+    _isar.write((isar) {
+      final item = isar.items.get(id);
       if (item == null) return; // 미존재 no-op
       pathToDelete = item.imagePath;
 
       // 연관 WearEvent 전량 제거(kind 무관) — orphan 방지(SC-004, FR-010).
-      final eventIds = await _isar.wearEvents
-          .filter()
+      final eventIds = isar.wearEvents
+          .where()
           .itemIdEqualTo(id)
           .idProperty()
           .findAll();
-      await _isar.wearEvents.deleteAll(eventIds);
+      isar.wearEvents.deleteAll(eventIds);
 
-      await _items.delete(id);
+      isar.items.delete(id);
     });
     if (pathToDelete != null) {
       await _imageStore.delete(pathToDelete!); // best-effort(FR-011)

@@ -29,19 +29,26 @@
   - **AutoRoute**: 코드 생성 기반으로 강력하나 빌드 시간 증가. 6 화면 규모엔 과잉.
   - **Navigator 1.0 (push/pop)**: 가장 단순하지만 탭 전환 + 상세 스택 관리에서 누수 위험.
 
-## 3. 로컬 DB: Isar 3.x 채택 (안정 라인)
+## 3. 로컬 DB: Isar Plus 전환
 
-- **Decision**: 안정 라인인 `isar` 3.x(`^3.1.0+1`)를 사용한다. 4.x(Rust core)는 정식 release 전이라 v1에서는 채택하지 않으며, 후속 spec에서 마이그레이션 여부를 검토한다. 스키마 v1: `Item`, `WearEvent`, `UserPreferences` 컬렉션. `LaundryBasket`은 `Item.inLaundry: bool` 속성으로 표현.
+> 2026-07-25에 `003-migrate-isar-spm` spec으로 아래 최초 결정을 대체했다.
+> 주 저장소는 SwiftPM을 지원하는 `isar_plus 1.3.7`이며, 기존 Isar 3 저장소는
+> 프로젝트에 고정한 읽기 브리지로 한 번 이전한 뒤 원본을 보존한다.
+
+- **Decision**: `isar_plus 1.3.7`을 주 저장소로 사용한다. 스키마 v1의 `Item`, `WearEvent`, `UserPreferences`에 이전 완료 표식인 `StorageMetadata`를 추가한다. `LaundryBasket`은 `Item.inLaundry: bool` 속성으로 표현한다.
 - **Rationale**:
   - mmap 기반 NoSQL로 수만 건 쿼리에서도 ms 단위 응답 → SC-004(100점 200ms) 무난.
-  - `@collection` 데코레이터 + `isar_generator` 빌드로 타입 안전.
+  - `@collection` 데코레이터 + Isar Plus 내장 generator 빌드로 타입 안전.
   - `watchLazy()` 스트림이 Riverpod와 결합 시 자동 재렌더 워크플로 단순.
   - 헌법 III(로컬 우선)와 부합: 외부 네트워크 호출 없음.
 - **Alternatives 비교 (요약)**:
   - **drift (SQLite)**: 관계형 쿼리 강점이나 본 도메인은 옷·이벤트 두 집합 중심으로 NoSQL이 더 직관적.
   - **Hive**: 가볍지만 인덱스·복잡 쿼리 약함. 정렬·필터 다양한 본 spec 요구에 부적합.
   - **ObjectBox**: Isar와 유사하나 라이선스(상업적 사용 시 유료) 부담.
-- **버전 주의**: Isar 3.x는 C++ core 기반 안정 라인. iOS·Android 양 플랫폼에서 `isar_flutter_libs` 동적 라이브러리 자동 번들. macOS dev 빌드 시 `isar.dylib` 경로 환경 변수 셋업 필요(quickstart.md 참조). Android는 AGP 8+ 빌드에서 `isar_flutter_libs` 3.x에 namespace 주입이 필요(commit `b4bbb0b` 참조).
+- **버전 주의**: 앱은 새 `closetimo_plus.isar`만 쓴다. 기존 `closetimo.isar`는
+  `packages/closetimo_legacy_isar`가 읽고, `packages/isar_flutter_libs`의 고정 Isar 3
+  binary는 SwiftPM manifest와 Android namespace를 자체 제공한다. 제거 조건과 무결성 검증은
+  `specs/003-migrate-isar-spm/`을 따른다.
 
 ## 4. 디자인 시스템 → Flutter 매핑
 
@@ -124,7 +131,7 @@
 ## 11. 빌드·코드 생성
 
 - **Decision**:
-  - `build.yaml`에서 `isar_generator`(@collection 스키마) + `freezed`(불변 폼 state) + `json_serializable`(`laundry_tips.json` 로드용) 통합.
+  - `build.yaml`에서 `isar_plus:isar_generator`(@collection 스키마) + `freezed`(불변 폼 state) + `json_serializable`(`laundry_tips.json` 로드용) 통합.
   - 개발 워크플로: `dart run build_runner watch -d`로 핫 코드 생성 + Flutter hot-reload 병행.
 
 ## 12. 의존성 핀(주요)
@@ -132,15 +139,16 @@
 | 패키지 | 버전 핀 | 비고 |
 |---|---|---|
 | flutter | 3.35.x (stable) | Dart 3.9.2 포함 (개발 환경 기준; plan.md 작성 시 3.27.x였으나 본 환경은 더 신규 안정 라인) |
-| isar | ^3.1.0+1 | 4.x(Rust core)는 정식 release 전이라 안정 라인 3.x를 채택. data-model.md의 `@collection`/`@Index` API 호환. 후속 spec에서 4.x 마이그레이션 |
-| isar_flutter_libs | ^3.1.0+1 | isar와 버전 동기화 |
+| isar_plus | 1.3.7 | 주 저장소 엔진과 generator |
+| isar_plus_flutter_libs | 1.3.7 | SwiftPM 지원 native binary |
+| isar_flutter_libs | local 3.1.0+1 | legacy 읽기 전용, binary checksum 고정 |
 | flutter_riverpod | ^2.6.1 | |
 | go_router | ^14.6.2 | |
 | image_picker | ^1.1.2 | |
 | intl | ^0.20.2 | flutter_localizations(3.35 SDK)가 0.20.2를 핀하므로 0.19→0.20.2로 상향 |
 | path_provider | ^2.1.5 | |
-| freezed | ^2.5.2 | dev_dep. isar_generator 3.x의 analyzer ^5/6 호환을 위해 2.5.7→2.5.2로 하향 |
-| build_runner | ^2.4.13 | dev_dep |
+| freezed | ^3.2.5 | dev_dep |
+| build_runner | 2.15.1 | Flutter SDK의 analyzer/meta 핀과 호환되는 dev_dep |
 
 `pubspec.yaml`은 `flutter pub upgrade --major-versions` 시점에 일괄 재검토.
 

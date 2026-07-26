@@ -10,13 +10,11 @@
 
 | 도구 | 버전 | 설치 검증 |
 |---|---|---|
-| Flutter SDK | 3.27.x stable | `flutter --version` |
-| Dart | 3.5+ (Flutter 번들) | `dart --version` |
+| Flutter SDK | 3.44.x stable | `flutter --version` |
+| Dart | 3.12+ (Flutter 번들) | `dart --version` |
 | Xcode | 15+ (iOS 빌드) | `xcodebuild -version` |
-| CocoaPods | 1.15+ | `pod --version` |
 | Android Studio | Hedgehog 2023.1+ (또는 cmdline-tools 11+) | `sdkmanager --version` |
-| Android SDK | API 34 (compile) / API 21+ (min) | `sdkmanager --list` |
-| Ruby | 3.0+ (CocoaPods용) | `ruby --version` |
+| Android SDK | API 36 (compile) / API 24+ (min) | `sdkmanager --list` |
 
 `flutter doctor`에서 모든 항목 ✓일 것.
 
@@ -29,10 +27,7 @@
 flutter pub get
 
 # 2. 코드 생성 (isar collections, freezed, json_serializable)
-dart run build_runner build --delete-conflicting-outputs
-
-# 3. iOS 의존성 (macOS에서만)
-cd ios && pod install && cd -
+dart run build_runner build
 ```
 
 코드 생성 산출물:
@@ -43,7 +38,7 @@ cd ios && pod install && cd -
 개발 중 hot codegen이 필요한 경우 별도 터미널에서:
 
 ```bash
-dart run build_runner watch --delete-conflicting-outputs
+dart run build_runner watch
 ```
 
 ---
@@ -61,7 +56,8 @@ flutter run -d <android-device-id>
 flutter run --dart-define=SEED_DEMO=true
 ```
 
-첫 실행 시 sandbox에 Isar DB 파일(`closetimo.isar` + `.lock`)이 생성된다. 위치:
+첫 실행 시 sandbox에 주 저장소(`closetimo_plus.isar` + `.lock`)가 생성된다. 업데이트
+설치에서는 기존 `closetimo.isar`를 읽어 새 저장소로 이전하되 원본 파일은 보존한다. 위치:
 - iOS: `<simulator>/data/Containers/Data/Application/<UUID>/Documents/`
 - Android: `/data/data/com.example.closetimo/files/`
 
@@ -98,7 +94,8 @@ flutter test integration_test/
 flutter test integration_test/add_item_flow_test.dart
 ```
 
-테스트 시 Isar는 메모리 인스턴스를 사용(`test/helpers/isar_test_helper.dart`).
+테스트 시 Isar Plus는 임시 디렉토리 인스턴스를 사용하고, 최초 실행에 native test core를
+시스템 임시 디렉토리에 준비한다(`test/support/isar_plus_test_support.dart`).
 
 ---
 
@@ -117,8 +114,8 @@ flutter test integration_test/add_item_flow_test.dart
 
 | 증상 | 원인 / 해결 |
 |---|---|
-| `Isar.openSync()` 에서 `dylib not found` (macOS dev) | `flutter pub get` 후 `flutter run` 1회 실행해 isar_flutter_libs를 캐시. |
-| 빌드 시 `.g.dart` 파일 충돌 | `dart run build_runner build --delete-conflicting-outputs` |
+| 테스트에서 Isar Plus native core 준비 실패 | 네트워크와 Xcode Command Line Tools의 `clang` 사용 가능 여부 확인 후 `flutter test -j 1` 재실행 |
+| 빌드 시 `.g.dart` 파일 충돌 | 생성 파일을 직접 수정하지 말고 원본 모델 수정 후 `dart run build_runner build` |
 | iOS 빌드 `min iOS version` 경고 | `ios/Podfile`의 `platform :ios, '13.0'` 확인 |
 | Android Pretendard 폰트가 적용되지 않음 | `pubspec.yaml`의 `fonts:` 섹션에 `Pretendard-Regular.otf` 누락 여부 확인 |
 | 한국어 텍스트가 깨짐 | `MaterialApp`의 `localizationsDelegates`에 `GlobalMaterialLocalizations.delegate`, `supportedLocales`에 `Locale('ko', 'KR')` 포함 확인 |

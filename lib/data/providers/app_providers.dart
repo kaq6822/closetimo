@@ -4,7 +4,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/persistence/image_store.dart';
-import '../../core/persistence/isar_provider.dart';
 import '../../core/utils/clock.dart';
 import '../models/user_preferences.dart';
 import '../repositories/event_repository.dart';
@@ -15,6 +14,7 @@ import '../repositories/isar_preferences_repository.dart';
 import '../repositories/item_repository.dart';
 import '../repositories/laundry_repository.dart';
 import '../repositories/preferences_repository.dart';
+import 'isar_provider.dart';
 
 final itemRepositoryProvider = Provider<ItemRepository>((ref) {
   final isar = ref.watch(isarProvider).requireValue;
@@ -27,18 +27,12 @@ final itemRepositoryProvider = Provider<ItemRepository>((ref) {
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
   final isar = ref.watch(isarProvider).requireValue;
-  return IsarEventRepository(
-    isar: isar,
-    clock: ref.watch(clockProvider),
-  );
+  return IsarEventRepository(isar: isar, clock: ref.watch(clockProvider));
 });
 
 final laundryRepositoryProvider = Provider<LaundryRepository>((ref) {
   final isar = ref.watch(isarProvider).requireValue;
-  return IsarLaundryRepository(
-    isar: isar,
-    clock: ref.watch(clockProvider),
-  );
+  return IsarLaundryRepository(isar: isar, clock: ref.watch(clockProvider));
 });
 
 final preferencesRepositoryProvider = Provider<PreferencesRepository>((ref) {

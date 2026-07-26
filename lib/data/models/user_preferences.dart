@@ -1,6 +1,6 @@
 // data-model.md §3 UserPreferences (single-row 컬렉션). FR-022.
 
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 
 part 'user_preferences.g.dart';
 
@@ -20,7 +20,7 @@ class UserPreferences {
   /// 단일 행 보장을 위한 고정 ID.
   static const int singletonId = 0;
 
-  Id id = singletonId;
+  int id = singletonId;
 
   bool notifWash;
   bool notifWeekly;
