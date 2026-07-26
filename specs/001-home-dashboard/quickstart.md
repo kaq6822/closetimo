@@ -13,10 +13,8 @@
 | Flutter SDK | 3.44.x stable | `flutter --version` |
 | Dart | 3.12+ (Flutter 번들) | `dart --version` |
 | Xcode | 15+ (iOS 빌드) | `xcodebuild -version` |
-| CocoaPods | 1.15+ | `pod --version` |
 | Android Studio | Hedgehog 2023.1+ (또는 cmdline-tools 11+) | `sdkmanager --version` |
-| Android SDK | API 34 (compile) / API 21+ (min) | `sdkmanager --list` |
-| Ruby | 3.0+ (CocoaPods용) | `ruby --version` |
+| Android SDK | API 36 (compile) / API 24+ (min) | `sdkmanager --list` |
 
 `flutter doctor`에서 모든 항목 ✓일 것.
 

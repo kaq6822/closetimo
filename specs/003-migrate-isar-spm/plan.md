@@ -18,7 +18,7 @@ Swift Package Manager를 정식 지원하는 Isar Plus 안정판으로 주 저�
 
 **Testing**: `flutter_test`, 실제 Isar native core를 사용하는 저장소·이전 통합 테스트, iOS Simulator 수동 회귀
 
-**Target Platform**: iOS 13+, Android API 21+, 휴대폰 폼팩터
+**Target Platform**: iOS 13+, Android API 24+, 휴대폰 폼팩터
 
 **Project Type**: Flutter 모바일 앱
 

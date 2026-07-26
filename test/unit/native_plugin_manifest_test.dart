@@ -70,4 +70,12 @@ void main() {
       );
     }
   });
+
+  test('Android 앱이 Flutter 3.44 지원 기준인 API 24를 고정한다', () {
+    final appGradle = File('android/app/build.gradle.kts').readAsStringSync();
+    final rootGradle = File('android/build.gradle.kts').readAsStringSync();
+
+    expect(appGradle, contains('minSdk = 24'));
+    expect(rootGradle, isNot(contains('defaultConfig.minSdk')));
+  });
 }

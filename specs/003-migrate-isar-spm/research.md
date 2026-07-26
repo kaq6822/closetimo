@@ -92,3 +92,17 @@
 
 - 단위 mock만 사용: 핵심 위험인 실제 구형 파일 읽기를 검증하지 못한다.
 - 수동 테스트만 사용: 이후 의존성 업데이트의 회귀를 자동 탐지하지 못한다.
+
+## 6. Android 최소 지원 버전
+
+**Decision**: Android 최소 지원 버전을 API 24로 고정한다.
+
+**Rationale**:
+
+- Flutter 3.44 SDK의 `flutter.minSdkVersion`은 API 24이며, 빌드 전 migration이 이보다 낮은 값을 자동으로 지원 기준에 맞춘다.
+- API 21을 강제로 유지하면 현재 Flutter의 지원 범위를 벗어나고 빌드 도구가 값을 되돌리므로 장기 유지 가능한 계약이 아니다.
+- `android/app/build.gradle.kts`에 24를 명시하여 이후 Flutter SDK 갱신이 최소 버전을 묵시적으로 바꾸지 않게 한다.
+
+**Source**:
+
+- https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration

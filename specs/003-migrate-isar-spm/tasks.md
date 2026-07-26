@@ -89,7 +89,7 @@
 ### Implementation for User Story 3
 
 - [x] T020 [US3] `flutter build ios --no-codesign --debug`를 실행하고 미지원 SwiftPM 경고 0건과 `Runner.app` 생성을 확인한다.
-- [x] T021 [US3] `flutter build apk --debug`를 실행하고 API 21+ debug APK 생성 및 namespace 오류 부재를 확인한다.
+- [x] T021 [US3] `flutter build apk --debug`를 실행하고 API 24+ debug APK 생성 및 namespace 오류 부재를 확인한다.
 - [x] T022 [US3] 실제 iOS Simulator에서 legacy 데이터가 있는 업데이트 설치와 신규 설치의 핵심 흐름을 `specs/003-migrate-isar-spm/quickstart.md`에 따라 검증한다.
 
 **Checkpoint**: 모든 사용자 스토리와 두 모바일 플랫폼 빌드가 독립적으로 검증된다.

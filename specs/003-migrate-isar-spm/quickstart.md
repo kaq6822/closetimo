@@ -62,7 +62,7 @@ flutter build apk --debug
 
 예상 결과:
 
-- API 21+ 호환 debug APK 생성
+- API 24+ 호환 debug APK 생성
 - legacy plugin namespace 임시 주입 없이 성공
 
 ## 실제 업데이트 시나리오
@@ -85,7 +85,7 @@ flutter build apk --debug
 
 - 환경: Flutter 3.44.6, iPhone 17 Pro / iOS 26.5 Simulator
 - 자동화: `flutter analyze` 경고·오류 0건, 전체 68개 테스트, 디자인 토큰 검사 통과
-- 빌드: iOS `Runner.app`과 Android `app-debug.apk` 생성, SwiftPM 미지원 경고·중복 native 심볼·Android namespace 오류 0건
+- 빌드: iOS `Runner.app`과 Android API 24+ `app-debug.apk` 생성, SwiftPM 미지원 경고·중복 native 심볼·Android namespace 오류 0건
 - 신규 설치: 빈 홈, 의류 등록, 착용 기록, 세탁 바구니 추가·완료, 설정 변경, 강제 종료 후 의류·설정 영속성을 확인했다. iOS 시스템 앨범 선택기 실행과 Simulator 사진 목록 표시도 확인했다.
 - 업데이트 설치: 실제 Isar 3 `closetimo.isar` fixture를 앱 Documents에 배치하고 첫 실행 이전을 수행했다. 의류 ID·이름·브랜드·세탁 방법·착용 횟수·최근 세탁일·세탁 바구니 상태·착용 이벤트 메모가 UI에 그대로 표시됐다. 보존된 Documents 이미지 경로에 fixture 이미지를 배치한 뒤 목록과 수정 화면의 이미지 표시도 확인했다.
 - 업데이트 재실행: `source=alreadyMigrated, items=1, events=1` 로그와 동일한 UI 상태를 확인해 이전이 반복되지 않음을 검증했다.
