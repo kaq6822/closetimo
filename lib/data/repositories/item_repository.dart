@@ -1,6 +1,7 @@
 // contracts/repositories.md §1 — UI/feature 코드는 본 인터페이스만 의존한다.
 
 import '../models/item.dart';
+import '../models/item_patch.dart';
 import '../../features/add_item/new_item_draft.dart';
 
 enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
@@ -41,4 +42,12 @@ abstract interface class ItemRepository {
   // ── 쓰기 ──
   /// FR-001~004. 명칭 검증 실패 시 [ArgumentError]를 던진다.
   Future<int> create(NewItemDraft draft);
+
+  /// 002 FR-001~006. 편집 가능 필드를 갱신하고 status를 재평가한다(FR-004).
+  /// 명칭이 비어 있으면 [ArgumentError], `id` 미존재 시 no-op.
+  Future<void> update(int id, ItemPatch patch);
+
+  /// 002 FR-008~012. 대상 Item + 연관 WearEvent 전량을 단일 트랜잭션으로
+  /// 제거하고 sandbox 이미지 파일을 best-effort 삭제한다. `id` 미존재 시 no-op.
+  Future<void> delete(int id);
 }

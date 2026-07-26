@@ -1,4 +1,6 @@
-// US1 T038 — 신규 옷 등록 화면. 디자인 패키지의 add.jsx와 1:1 매핑.
+// US1 T038 — 신규 옷 등록 화면. 002 T009 — editId로 수정 모드 겸용.
+
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,9 +8,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/persistence/image_store.dart';
+import '../../core/utils/clock.dart';
+import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
+import '../../data/models/item_patch.dart';
 import '../../data/providers/app_providers.dart';
 import 'new_item_draft.dart';
 import 'widgets/care_method_picker.dart';
@@ -17,7 +23,10 @@ import 'widgets/photo_picker_card.dart';
 import 'widgets/wash_cycle_stepper.dart';
 
 class AddItemScreen extends ConsumerStatefulWidget {
-  const AddItemScreen({super.key});
+  const AddItemScreen({this.editId, super.key});
+
+  /// null이면 등록 모드, 그 외에는 해당 옷의 수정 모드(002 FR-001).
+  final int? editId;
 
   @override
   ConsumerState<AddItemScreen> createState() => _AddItemScreenState();
@@ -25,10 +34,100 @@ class AddItemScreen extends ConsumerStatefulWidget {
 
 class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   NewItemDraft _draft = const NewItemDraft();
+
+  /// 수정 모드의 dirty 판정 기준. 진입 시 원본 값으로 채워진다.
+  NewItemDraft _initialDraft = const NewItemDraft();
   bool _saving = false;
 
+  /// 수정 모드에서 로드된 기존 사진의 sandbox 절대 경로(표시용).
+  String? _existingImagePath;
+
+  /// 사용자가 "사진 제거"를 선택했는지(수정 모드).
+  bool _photoCleared = false;
+
+  bool get _isEdit => widget.editId != null;
+
+  /// 로딩 완료 여부(수정 모드 진입 시 옷을 fetch하는 동안 false).
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEdit) {
+      _loading = true;
+      _loadForEdit();
+    }
+  }
+
+  Future<void> _loadForEdit() async {
+    final item = await ref.read(itemRepositoryProvider).get(widget.editId!);
+    if (!mounted) return;
+    if (item == null) {
+      showClosetimoToast(context, '옷을 찾을 수 없어요');
+      context.pop();
+      return;
+    }
+    final draft = NewItemDraft.fromItem(item);
+    String? existingAbs;
+    final imagePath = item.imagePath;
+    if (imagePath != null) {
+      existingAbs = await ref.read(imageStoreProvider).absolutePath(imagePath);
+    }
+    if (!mounted) return;
+    setState(() {
+      _draft = draft;
+      _initialDraft = draft;
+      _existingImagePath = existingAbs;
+      _loading = false;
+    });
+  }
+
+  /// 폼에 변경 사항이 있는지. 등록 모드는 빈 폼과 비교, 수정 모드는 원본과 비교.
+  bool get _isDirty {
+    if (!_isEdit) return _draft != const NewItemDraft();
+    return _draft != _initialDraft || _photoCleared;
+  }
+
+  void _pickPhoto(File file) {
+    setState(() {
+      _draft = _draft.copyWith(tempPhoto: file);
+      _photoCleared = false;
+    });
+  }
+
+  /// tempPhoto를 확실히 null로 되돌리기 위해 draft를 재구성한다
+  /// (freezed copyWith로는 nullable 필드를 null로 설정할 수 없다).
+  void _removePhoto() {
+    setState(() {
+      _draft = NewItemDraft(
+        name: _draft.name,
+        brand: _draft.brand,
+        category: _draft.category,
+        washCycle: _draft.washCycle,
+        careMethod: _draft.careMethod,
+        purchasedAt: _draft.purchasedAt,
+      );
+      // 원본 사진이 있었을 때만 "제거" 의도가 유의미하다. 원본이 없는데
+      // 새로 골랐다 지운 경우는 순변화 없음이므로 dirty로 오판하지 않는다.
+      _photoCleared = _existingImagePath != null;
+    });
+  }
+
+  Future<void> _pickPurchaseDate() async {
+    final now = ref.read(clockProvider).now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _draft.purchasedAt ?? now,
+      firstDate: DateTime(2000),
+      lastDate: now,
+    );
+    if (picked != null) {
+      setState(() => _draft = _draft.copyWith(purchasedAt: picked));
+    }
+  }
+
   Future<bool> _confirmDiscard(BuildContext context) async {
-    if (_draft == const NewItemDraft()) return true;
+    if (!_isDirty) return true;
     final keep = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -60,11 +159,37 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     var success = false;
     try {
       final repo = ref.read(itemRepositoryProvider);
-      await repo.create(_draft);
-      message = '새 옷이 옷장에 등록됐어요';
+      if (_isEdit) {
+        final photoChanged = _draft.tempPhoto != null || _photoCleared;
+        await repo.update(
+          widget.editId!,
+          ItemPatch(
+            name: _draft.name,
+            brand: _draft.brand,
+            category: _draft.category,
+            careMethod: _draft.careMethod,
+            washCycle: _draft.washCycle,
+            purchasedAt: _draft.purchasedAt,
+            newPhoto: _draft.tempPhoto,
+            removePhoto: _photoCleared,
+          ),
+        );
+        // 사진을 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가
+        // 이전 이미지를 계속 반환한다. 상세·옷장이 새 사진을 즉시 반영하도록
+        // 이미지 캐시를 비운다(FR-006, 파일 경로 기반 캐시 무효화 함정 회피).
+        if (photoChanged) {
+          PaintingBinding.instance.imageCache
+            ..clear()
+            ..clearLiveImages();
+        }
+        message = '옷 정보를 수정했어요';
+      } else {
+        await repo.create(_draft);
+        message = '새 옷이 옷장에 등록됐어요';
+      }
       success = true;
     } catch (_) {
-      message = '등록에 실패했어요';
+      message = _isEdit ? '수정에 실패했어요' : '등록에 실패했어요';
     }
     if (!context.mounted) return;
     showClosetimoToast(context, message);
@@ -75,10 +200,15 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
     return PopScope(
-      // 빈 폼이면 자유롭게 pop, dirty일 때만 시스템 back을 가로채 다이얼로그를 띄운다.
+      // 변경 없으면 자유롭게 pop, dirty일 때만 시스템 back을 가로채 다이얼로그를 띄운다.
       // canPop:false를 무조건 켜두면 go_router의 명시적 context.pop()까지 차단된다.
-      canPop: _draft == const NewItemDraft(),
+      canPop: !_isDirty,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final ok = await _confirmDiscard(context);
@@ -92,7 +222,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               Column(
                 children: [
                   TopBar(
-                    subtitle: '신규 옷 등록',
+                    subtitle: _isEdit ? '옷 정보 수정' : '신규 옷 등록',
                     onBack: () async {
                       final ok = await _confirmDiscard(context);
                       if (!ok || !context.mounted) return;
@@ -116,8 +246,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         children: [
                           PhotoPickerCard(
                             tempPhoto: _draft.tempPhoto,
-                            onPicked: (f) =>
-                                setState(() => _draft = _draft.copyWith(tempPhoto: f)),
+                            existingImagePath:
+                                (_photoCleared || _draft.tempPhoto != null)
+                                    ? null
+                                    : _existingImagePath,
+                            onPicked: _pickPhoto,
+                            onRemove: _isEdit ? _removePhoto : null,
                           ),
                           const SizedBox(height: ClosetimoSpacing.xl + 2),
                           const _FieldLabel(label: '의류 명칭'),
@@ -174,6 +308,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                               () => _draft = _draft.copyWith(careMethod: m),
                             ),
                           ),
+                          const SizedBox(height: ClosetimoSpacing.lg),
+                          const _FieldLabel(label: '구매일'),
+                          _DateField(
+                            value: _draft.purchasedAt,
+                            onTap: _pickPurchaseDate,
+                          ),
                         ],
                       ),
                     ),
@@ -195,7 +335,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     color: surfaces.containerLowest.withValues(alpha: 0.92),
                   ),
                   child: PrimaryButton(
-                    label: '등록하기',
+                    label: _isEdit ? '수정 완료' : '등록하기',
                     trailing: const Icon(Icons.check_rounded),
                     onPressed: _draft.canSave && !_saving ? _save : null,
                   ),
@@ -243,6 +383,51 @@ class _FieldLabel extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// 구매일 선택 필드. 탭하면 날짜 피커를 띄운다(002 FR-002). 값이 없으면
+/// 안내 문구를 보여준다. _FieldInput과 동일한 surface-container-low 스타일.
+class _DateField extends StatelessWidget {
+  const _DateField({required this.value, required this.onTap});
+
+  final DateTime? value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
+    final hasValue = value != null;
+    return Material(
+      color: surfaces.containerLow,
+      borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  hasValue ? formatFullDate(value!) : '구매일 선택',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 15,
+                    color: hasValue ? ClosetimoColors.ink : ClosetimoColors.muted,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.calendar_today_rounded,
+                size: 18,
+                color: ClosetimoColors.muted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/widgets/chip_filter.dart';
 import '../../core/widgets/primary_button.dart';
@@ -14,6 +15,7 @@ import '../../data/models/item.dart';
 import '../../data/models/wear_event.dart';
 import '../../data/providers/app_providers.dart';
 import 'widgets/delete_event_dialog.dart';
+import 'widgets/delete_item_dialog.dart';
 import 'widgets/edit_note_sheet.dart';
 import 'widgets/hero_image.dart';
 import 'widgets/history_timeline.dart';
@@ -102,6 +104,27 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     showClosetimoToast(context, '착용 기록을 삭제했어요');
   }
 
+  // 002 FR-001 — 수정 화면 진입 후 복귀 시 상세를 갱신한다.
+  Future<void> _edit() async {
+    await context.pushNamed(
+      Routes.editItem,
+      pathParameters: {'id': '${widget.id}'},
+    );
+    await _refresh();
+  }
+
+  // 002 FR-008~012 — 확인 후 옷을 삭제하고 옷장으로 복귀한다.
+  Future<void> _delete() async {
+    final ok = await DeleteItemDialog.confirm(context);
+    if (!ok) return;
+    await ref.read(itemRepositoryProvider).delete(widget.id);
+    if (!context.mounted) return;
+    showClosetimoToast(context, '옷을 옷장에서 삭제했어요');
+    // FR-012 — 삭제 후에는 진입 경로(홈·세탁 타일 포함)와 무관하게 옷장 탭으로
+    // 복귀해야 한다. pop()은 진입 스택으로 돌아가므로 goNamed로 탭을 전환한다.
+    context.goNamed(Routes.wardrobe);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -117,7 +140,23 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            TopBar(onBack: () => context.pop()),
+            TopBar(
+              onBack: () => context.pop(),
+              rightSlot: PopupMenuButton<String>(
+                icon: const Icon(Icons.more_horiz_rounded),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _edit();
+                  } else if (value == 'delete') {
+                    _delete();
+                  }
+                },
+                itemBuilder: (ctx) => const [
+                  PopupMenuItem(value: 'edit', child: Text('수정하기')),
+                  PopupMenuItem(value: 'delete', child: Text('삭제하기')),
+                ],
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

@@ -1,6 +1,7 @@
 // US2 acceptance — 카테고리·검색·정렬 분기 단위 테스트.
 
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -64,6 +65,11 @@ class _FakeRepo implements ItemRepository {
       const Stream.empty();
   @override
   Stream<WardrobeStats> watchStats() => const Stream.empty();
+  @override
+  Future<void> update(int id, ItemPatch patch) async =>
+      throw UnimplementedError();
+  @override
+  Future<void> delete(int id) async => throw UnimplementedError();
 }
 
 Item _it({

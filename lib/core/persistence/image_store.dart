@@ -33,8 +33,27 @@ class ImageStore {
 
   /// 상대 경로 → sandbox 절대 경로 변환.
   Future<String> absolutePath(String relativePath) async {
+    if (_overrideRoot != null) {
+      // 테스트 오버라이드 루트는 `items/` 접두를 제거한 하위로 매핑한다.
+      final name = p.basename(relativePath);
+      return p.join(_overrideRoot.path, name);
+    }
     final docs = await getApplicationDocumentsDirectory();
     return p.join(docs.path, relativePath);
+  }
+
+  /// 002 FR-011 — 상대 경로(`items/{id}.jpg`)의 sandbox 파일을 삭제한다.
+  /// 파일이 없거나 삭제에 실패해도 예외를 던지지 않는다(best-effort).
+  Future<void> delete(String relativePath) async {
+    try {
+      final abs = await absolutePath(relativePath);
+      final file = File(abs);
+      if (file.existsSync()) {
+        await file.delete();
+      }
+    } catch (_) {
+      // best-effort: 파일 삭제 실패는 무시한다.
+    }
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:closetimo/app/theme/app_theme.dart';
 import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
 import 'package:closetimo/features/add_item/add_item_screen.dart';
@@ -68,6 +69,30 @@ class _InMemoryItemRepository implements ItemRepository {
 
   @override
   Stream<WardrobeStats> watchStats() => const Stream.empty();
+
+  @override
+  Future<void> update(int id, ItemPatch patch) async {
+    final idx = items.indexWhere((i) => i.id == id);
+    if (idx < 0) return;
+    final item = items[idx];
+    item
+      ..name = patch.name.trim()
+      ..brand = patch.brand == null || patch.brand!.trim().isEmpty
+          ? null
+          : patch.brand!.trim()
+      ..category = patch.category
+      ..careMethod = patch.careMethod
+      ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
+      ..purchasedAt = patch.purchasedAt
+      ..status = item.wearSinceWash >= item.washCycle
+          ? ItemStatus.dirty
+          : ItemStatus.clean;
+  }
+
+  @override
+  Future<void> delete(int id) async {
+    items.removeWhere((i) => i.id == id);
+  }
 }
 
 Widget _harness(_InMemoryItemRepository repo) {
@@ -79,9 +104,18 @@ Widget _harness(_InMemoryItemRepository repo) {
         builder: (ctx, st) => Scaffold(
           body: Center(
             child: Builder(
-              builder: (ctx) => TextButton(
-                onPressed: () => ctx.push('/add'),
-                child: const Text('open'),
+              builder: (ctx) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => ctx.push('/add'),
+                    child: const Text('open'),
+                  ),
+                  TextButton(
+                    onPressed: () => ctx.push('/edit/1'),
+                    child: const Text('openEdit'),
+                  ),
+                ],
               ),
             ),
           ),
@@ -90,6 +124,11 @@ Widget _harness(_InMemoryItemRepository repo) {
       GoRoute(
         path: '/add',
         builder: (ctx, st) => const AddItemScreen(),
+      ),
+      GoRoute(
+        path: '/edit/:id',
+        builder: (ctx, st) =>
+            AddItemScreen(editId: int.parse(st.pathParameters['id']!)),
       ),
     ],
   );
@@ -158,5 +197,72 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repo.items, isEmpty);
+  });
+
+  testWidgets('002 US1: 수정 모드는 기존 값을 prefill하고 저장 시 update한다',
+      (tester) async {
+    final repo = _InMemoryItemRepository();
+    repo.items.add(
+      Item(
+        name: '기존 코트',
+        category: Category.outer,
+        washCycle: 5,
+        createdAt: DateTime(2026, 1, 1),
+      )..id = 1,
+    );
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('openEdit'));
+    await tester.pumpAndSettle();
+
+    // prefill: subtitle·버튼 라벨·기존 명칭 노출
+    expect(find.text('옷 정보 수정'), findsOneWidget);
+    expect(find.text('수정 완료'), findsOneWidget);
+    // TextField의 초기값은 controller.text이므로 값으로 직접 확인
+    final nameField = tester.widget<TextField>(find.byType(TextField).first);
+    expect(nameField.controller?.text, '기존 코트');
+
+    await tester.enterText(find.byType(TextField).first, '수정된 코트');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('수정 완료'));
+    await tester.pumpAndSettle();
+
+    expect(repo.items.single.name, '수정된 코트');
+    // 파생 필드 보존
+    expect(repo.items.single.washCycle, 5);
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('002 US1: 수정 모드에서 명칭을 비우면 수정 완료가 비활성',
+      (tester) async {
+    final repo = _InMemoryItemRepository();
+    repo.items.add(
+      Item(
+        name: '기존 코트',
+        category: Category.outer,
+        washCycle: 5,
+        createdAt: DateTime(2026, 1, 1),
+      )..id = 1,
+    );
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('openEdit'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<TextButton>(
+      find.ancestor(
+        of: find.text('저장'),
+        matching: find.byType(TextButton),
+      ),
+    );
+    expect(button.onPressed, isNull); // 비활성
   });
 }
