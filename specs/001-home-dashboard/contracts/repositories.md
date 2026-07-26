@@ -68,7 +68,7 @@ abstract interface class LaundryRepository {
 - `completeWashFor`:
   1. 각 `itemId`의 Item을 `status=clean, wearSinceWash=0, lastWashedAt=now, inLaundry=false`로 갱신(FR-016).
   2. 각 Item에 대해 `WearEvent(kind: wash, occurredAt: now)` 1건 추가(FR-013 타임라인 보강).
-  3. 모두 단일 `isar.writeTxnSync`로 묶어 원자성 보장.
+  3. 모두 단일 `isar.write`로 묶어 원자성 보장.
 
 ---
 
@@ -152,7 +152,7 @@ txn {
 }
 ```
 
-전체 동작은 단일 `isar.writeTxnSync`로 묶어 원자성을 보장한다. UI 흐름: 타임라인 wear 항목 long-press → "기록 삭제" → 확인 다이얼로그 → `deleteWearEvent`. 호출 후 `Toast("착용 기록을 삭제했어요")`. `inLaundry`는 변경하지 않는다(FR-010b, Edge Case "사용자 토글 전까지 유지").
+전체 동작은 단일 `isar.write`로 묶어 원자성을 보장한다. UI 흐름: 타임라인 wear 항목 long-press → "기록 삭제" → 확인 다이얼로그 → `deleteWearEvent`. 호출 후 `Toast("착용 기록을 삭제했어요")`. `inLaundry`는 변경하지 않는다(FR-010b, Edge Case "사용자 토글 전까지 유지").
 
 ---
 

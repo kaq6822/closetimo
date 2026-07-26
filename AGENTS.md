@@ -9,7 +9,7 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 - **제품**: 옷장이모(Closetimo) — 큐레이팅하는 디지털 옷장 (옷장 관리 + 세탁 워크플로 MVP)
 - **플랫폼**: Flutter 단일 코드베이스, iOS 13+ / Android API 21+ (휴대폰 폼팩터 한정)
 - **아키텍처**: 로컬 우선(오프라인 동작), 백엔드 없음, 외부 SDK·분석 도구·서버 동기화 금지
-- **기술 스택**: Dart 3.5+ / Flutter 3.27 stable, Isar 3.x(로컬 NoSQL), Riverpod(상태 관리),
+- **기술 스택**: Dart 3.7+ / Flutter 3.24+ stable, Isar Plus 1.3.x(로컬 NoSQL), Riverpod(상태 관리),
   go_router(라우팅), freezed(불변 모델), image_picker + path_provider(이미지), intl(ko 로케일)
 
 ## Spec 주도 개발
@@ -65,7 +65,7 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 - 모델(`lib/data/models/`)이나 freezed 클래스를 수정한 경우 빌드 전에 코드 생성을 먼저 실행한다:
 
   ```bash
-  dart run build_runner build --delete-conflicting-outputs
+  dart run build_runner build
   ```
 
 - analyze 경고, 테스트 실패, 빌드 실패가 남아 있는 상태로 작업을 완료로 보고하지 않는다.
@@ -74,8 +74,8 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 
 ```bash
 flutter pub get                                        # 의존성 설치
-dart run build_runner build --delete-conflicting-outputs  # 코드 생성 (isar, freezed)
-dart run build_runner watch --delete-conflicting-outputs  # 개발 중 hot codegen
+dart run build_runner build                              # 코드 생성 (Isar Plus, freezed)
+dart run build_runner watch                              # 개발 중 hot codegen
 flutter run -d "iPhone 15"                             # iOS 시뮬레이터 실행
 flutter analyze                                        # 정적 분석
 flutter test                                           # 전체 테스트

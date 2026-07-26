@@ -1,6 +1,6 @@
 // data-model.md §2 WearEvent 컬렉션. FR-013·020 타임라인 백본.
 
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 
 part 'wear_event.g.dart';
 
@@ -13,16 +13,15 @@ class WearEvent {
     this.note,
   });
 
-  Id id = Isar.autoIncrement;
+  int id = 0;
 
   @Index()
   late int itemId;
 
   @Index()
-  @enumerated
   late EventKind kind;
 
-  @Index(type: IndexType.value)
+  @Index()
   late DateTime occurredAt;
 
   String? note;
@@ -32,7 +31,7 @@ enum EventKind { wear, wash }
 
 extension EventKindLabel on EventKind {
   String get label => switch (this) {
-        EventKind.wear => '착용',
-        EventKind.wash => '세탁',
-      };
+    EventKind.wear => '착용',
+    EventKind.wash => '세탁',
+  };
 }

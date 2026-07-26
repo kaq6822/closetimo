@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 
 import '../../core/utils/clock.dart';
 import '../models/item.dart';
@@ -7,8 +7,8 @@ import 'event_repository.dart';
 
 class IsarEventRepository implements EventRepository {
   IsarEventRepository({required Isar isar, required Clock clock})
-      : _isar = isar,
-        _clock = clock;
+    : _isar = isar,
+      _clock = clock;
 
   final Isar _isar;
   final Clock _clock;
@@ -32,7 +32,7 @@ class IsarEventRepository implements EventRepository {
   @override
   Stream<List<WearEvent>> watchForItem(int itemId) {
     return _isar.wearEvents
-        .filter()
+        .where()
         .itemIdEqualTo(itemId)
         .sortByOccurredAtDesc()
         .watch(fireImmediately: true);
@@ -42,8 +42,8 @@ class IsarEventRepository implements EventRepository {
   Future<void> recordWear(int itemId, {String? note}) async {
     final normalized = _normalizeNote(note);
     final now = _clock.now();
-    await _isar.writeTxn(() async {
-      final item = await _isar.items.get(itemId);
+    _isar.write((isar) {
+      final item = isar.items.get(itemId);
       if (item == null) return;
       item
         ..wearSinceWash += 1
@@ -52,51 +52,51 @@ class IsarEventRepository implements EventRepository {
       if (item.wearSinceWash >= item.washCycle) {
         item.status = ItemStatus.dirty;
       }
-      await _isar.items.put(item);
-      await _isar.wearEvents.put(WearEvent(
+      isar.items.put(item);
+      final event = WearEvent(
         itemId: itemId,
         kind: EventKind.wear,
         occurredAt: now,
         note: normalized,
-      ));
+      )..id = isar.wearEvents.autoIncrement();
+      isar.wearEvents.put(event);
     });
   }
 
   @override
   Future<void> updateEventNote(int eventId, String? note) async {
     final normalized = _normalizeNote(note);
-    await _isar.writeTxn(() async {
-      final ev = await _isar.wearEvents.get(eventId);
+    _isar.write((isar) {
+      final ev = isar.wearEvents.get(eventId);
       if (ev == null) return;
       if (ev.kind != EventKind.wear) {
         throw StateError('updateEventNote only applies to wear events');
       }
       ev.note = normalized;
-      await _isar.wearEvents.put(ev);
+      isar.wearEvents.put(ev);
     });
   }
 
   @override
   Future<void> deleteWearEvent(int eventId) async {
-    await _isar.writeTxn(() async {
-      final ev = await _isar.wearEvents.get(eventId);
+    _isar.write((isar) {
+      final ev = isar.wearEvents.get(eventId);
       if (ev == null) return;
       if (ev.kind != EventKind.wear) {
         throw StateError('deleteWearEvent only applies to wear events');
       }
       final itemId = ev.itemId;
-      await _isar.wearEvents.delete(eventId);
+      isar.wearEvents.delete(eventId);
 
-      final item = await _isar.items.get(itemId);
+      final item = isar.items.get(itemId);
       if (item == null) return;
 
       item
-        ..wearSinceWash =
-            item.wearSinceWash > 0 ? item.wearSinceWash - 1 : 0
+        ..wearSinceWash = item.wearSinceWash > 0 ? item.wearSinceWash - 1 : 0
         ..totalWears = item.totalWears > 0 ? item.totalWears - 1 : 0;
 
-      final remaining = await _isar.wearEvents
-          .filter()
+      final remaining = isar.wearEvents
+          .where()
           .itemIdEqualTo(itemId)
           .kindEqualTo(EventKind.wear)
           .sortByOccurredAtDesc()
@@ -108,7 +108,7 @@ class IsarEventRepository implements EventRepository {
         item.status = ItemStatus.clean;
       }
 
-      await _isar.items.put(item);
+      isar.items.put(item);
     });
   }
 }

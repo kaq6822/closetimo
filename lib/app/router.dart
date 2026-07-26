@@ -39,7 +39,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   // FR-022 lastTab 복원: 본 provider 생성 시점은 ClosetimoApp이 prefs를
   // resolve한 후이므로 `valueOrNull`이 거의 항상 hit (한 번만 평가).
   final prefs = ref.read(preferencesStreamProvider).valueOrNull;
-  final initial = prefs?.lastTab ?? BottomNavTab.home.path;
+  final initial = initialLocationForLastTab(prefs?.lastTab);
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: initial,
@@ -133,6 +133,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// 과거 버전이 탭 이름만 저장한 경우와 손상된 값을 안전한 경로로 정규화한다.
+String initialLocationForLastTab(String? lastTab) {
+  if (lastTab == null || lastTab.isEmpty) {
+    return BottomNavTab.home.path;
+  }
+  final candidate = lastTab.startsWith('/') ? lastTab : '/$lastTab';
+  final isKnownTab = BottomNavTab.values.any((tab) => tab.path == candidate);
+  return isKnownTab ? candidate : BottomNavTab.home.path;
+}
+
 /// 하단에서 밀려 올라오는 slide-up transition 페이지(등록·수정 모달 공용).
 CustomTransitionPage<void> _slideUpPage(Widget child) {
   return CustomTransitionPage<void>(
@@ -166,9 +176,7 @@ class _MainShell extends ConsumerWidget {
             initialLocation: t.index == navShell.currentIndex,
           );
           // 탭 전환 시 FR-022에 따라 lastTab을 영속화.
-          unawaited(
-            ref.read(preferencesRepositoryProvider).setLastTab(t.path),
-          );
+          unawaited(ref.read(preferencesRepositoryProvider).setLastTab(t.path));
         },
       ),
     );
@@ -186,14 +194,9 @@ class _PlaceholderModal extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            TopBar(
-              subtitle: title,
-              onBack: () => context.pop(),
-            ),
+            TopBar(subtitle: title, onBack: () => context.pop()),
             const Expanded(
-              child: Center(
-                child: Text('Phase 2 모달 placeholder'),
-              ),
+              child: Center(child: Text('Phase 2 모달 placeholder')),
             ),
           ],
         ),

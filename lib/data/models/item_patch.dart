@@ -10,7 +10,7 @@ import 'item.dart';
 part 'item_patch.freezed.dart';
 
 @freezed
-class ItemPatch with _$ItemPatch {
+abstract class ItemPatch with _$ItemPatch {
   const factory ItemPatch({
     required String name,
     String? brand,

@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 
 import '../../core/utils/clock.dart';
 import '../models/item.dart';
@@ -7,8 +7,8 @@ import 'laundry_repository.dart';
 
 class IsarLaundryRepository implements LaundryRepository {
   IsarLaundryRepository({required Isar isar, required Clock clock})
-      : _isar = isar,
-        _clock = clock;
+    : _isar = isar,
+      _clock = clock;
 
   final Isar _isar;
   final Clock _clock;
@@ -16,7 +16,7 @@ class IsarLaundryRepository implements LaundryRepository {
   @override
   Stream<List<Item>> watchBasket() {
     return _isar.items
-        .filter()
+        .where()
         .inLaundryEqualTo(true)
         .sortByCreatedAtDesc()
         .watch(fireImmediately: true);
@@ -24,11 +24,11 @@ class IsarLaundryRepository implements LaundryRepository {
 
   @override
   Future<void> toggle(int itemId) async {
-    await _isar.writeTxn(() async {
-      final item = await _isar.items.get(itemId);
+    _isar.write((isar) {
+      final item = isar.items.get(itemId);
       if (item == null) return;
       item.inLaundry = !item.inLaundry;
-      await _isar.items.put(item);
+      isar.items.put(item);
     });
   }
 
@@ -36,21 +36,22 @@ class IsarLaundryRepository implements LaundryRepository {
   Future<void> completeWashFor(List<int> itemIds) async {
     if (itemIds.isEmpty) return;
     final now = _clock.now();
-    await _isar.writeTxn(() async {
+    _isar.write((isar) {
       for (final id in itemIds) {
-        final item = await _isar.items.get(id);
+        final item = isar.items.get(id);
         if (item == null) continue;
         item
           ..status = ItemStatus.clean
           ..wearSinceWash = 0
           ..lastWashedAt = now
           ..inLaundry = false;
-        await _isar.items.put(item);
-        await _isar.wearEvents.put(WearEvent(
+        isar.items.put(item);
+        final event = WearEvent(
           itemId: id,
           kind: EventKind.wash,
           occurredAt: now,
-        ));
+        )..id = isar.wearEvents.autoIncrement();
+        isar.wearEvents.put(event);
       }
     });
   }
