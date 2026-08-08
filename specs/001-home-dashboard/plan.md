@@ -155,10 +155,11 @@ test/
 └── helpers/
     └── isar_test_helper.dart
 
-integration_test/
-├── add_item_flow_test.dart         # US1 E2E
-├── wear_record_flow_test.dart      # US3 E2E
-└── laundry_flow_test.dart          # US4 E2E
+integration_test/                   # US별 개별 E2E는 feature-level 테스트로 흡수(T057 합의)
+└── full_flow_verification_test.dart # 전체 사용자 여정 E2E + 단계별 스크린샷
+
+test_driver/
+└── integration_test.dart           # flutter drive 스크린샷 수집 드라이버
 
 assets/
 ├── fonts/

@@ -92,15 +92,23 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                       );
                     }
                     if (items.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 60),
+                      // 검색어·필터 없이 비어 있으면 옷장 자체가 빈 것이므로
+                      // "검색 무결과"와 구분해 첫 등록을 유도한다.
+                      final filtered =
+                          _query.trim().isNotEmpty || _category != null;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 60),
                         child: Center(
                           child: Text(
-                            '검색 결과가 없습니다.',
-                            style: TextStyle(
+                            filtered
+                                ? '검색 결과가 없습니다.'
+                                : '아직 등록된 옷이 없어요.\n오른쪽 위 + 버튼으로 첫 옷을 등록해 보세요.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
                               fontFamily: 'Manrope',
                               fontSize: 14,
                               color: ClosetimoColors.muted,
+                              height: 1.5,
                             ),
                           ),
                         ),

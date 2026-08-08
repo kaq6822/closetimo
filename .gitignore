@@ -24,10 +24,12 @@
 **/local.properties
 *.lock
 
-# Asset fonts (downloaded per assets/fonts/README.md, not committed)
-assets/fonts/Manrope/*.ttf
-assets/fonts/Inter/*.ttf
-assets/fonts/Pretendard/*.otf
+# 폰트는 OFL 라이선스 파일과 함께 저장소에 커밋한다 (assets/fonts/README.md).
+# 과거 "다운로드 후 pubspec 주석 해제" 방식은 폰트 없는 체크아웃의 빌드를
+# 깨뜨려 폐기했다.
+
+# 레거시 Isar 3 브릿지가 테스트 중 CWD에 내려받는 산출물
+/libisar.dylib
 
 # macOS / Editor
 .DS_Store

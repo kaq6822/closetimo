@@ -87,12 +87,17 @@ flutter test                    # PR 검증 시
 # 단위 + 위젯 + 골든
 flutter test
 
-# 통합(integration_test) — emulator·simulator 필요
-flutter test integration_test/
-
-# 특정 user story 흐름만
-flutter test integration_test/add_item_flow_test.dart
+# 통합(E2E) — emulator·simulator 필요. 실제 Isar 저장소를 사용하므로
+# 결정적 결과를 위해 실행 전 앱을 삭제해 빈 상태에서 시작한다.
+xcrun simctl uninstall booted com.closetimo.closetimoApp   # iOS 시뮬레이터 기준
+flutter drive \
+  --driver=test_driver/integration_test.dart \
+  --target=integration_test/full_flow_verification_test.dart \
+  -d <device-id>
 ```
+
+통합 테스트는 등록→옷장→상세(착용·세탁)→세탁 완료→설정→수정→삭제 전 여정을
+순회하며 단계별 스크린샷을 `build/ios_verify_shots/`에 저장한다(UI 육안 검증용).
 
 테스트 시 Isar Plus는 임시 디렉토리 인스턴스를 사용하고, 최초 실행에 native test core를
 시스템 임시 디렉토리에 준비한다(`test/support/isar_plus_test_support.dart`).
@@ -104,7 +109,7 @@ flutter test integration_test/add_item_flow_test.dart
 1. `flutter analyze` — 경고 0
 2. `dart format --set-exit-if-changed .` — 포맷 일관
 3. `flutter test` — 단위·위젯·골든 통과
-4. `flutter test integration_test/` — E2E 통과
+4. `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/full_flow_verification_test.dart` — E2E 통과
 5. spec.md의 변경된 FR이 있는 경우 본 plan과 contracts/ 갱신
 6. `.specify/memory/constitution.md`의 4개 원칙 위반 없음 확인
 

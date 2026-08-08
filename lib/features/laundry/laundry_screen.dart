@@ -100,7 +100,7 @@ class LaundryScreen extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '(${items.length})',
+                            '세탁 대기 ${items.length}점',
                             style: const TextStyle(
                               fontFamily: 'Manrope',
                               fontSize: 14,

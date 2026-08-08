@@ -12,7 +12,8 @@ class DeleteItemDialog {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('이 옷을 삭제할까요?'),
-        content: const Text('착용·세탁 기록도 함께 사라지고 되돌릴 수 없어요.'),
+        // 좁은 화면에서 단어 중간 줄바꿈('없어\n요')을 피하도록 수동 개행.
+        content: const Text('착용·세탁 기록도 함께 사라지고\n되돌릴 수 없어요.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
