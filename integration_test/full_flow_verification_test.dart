@@ -55,8 +55,7 @@ void main() {
       expect(find.text('신규 옷 등록'), findsOneWidget);
       await shot(tester, '02_add_blank');
 
-      await tester.enterText(
-          find.byType(TextField).at(0), '오버사이즈 캐시미어 코트');
+      await tester.enterText(find.byType(TextField).at(0), '오버사이즈 캐시미어 코트');
       await tester.enterText(find.byType(TextField).at(1), 'ZARA');
       await tester.pumpAndSettle();
 
