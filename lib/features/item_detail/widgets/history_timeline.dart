@@ -117,6 +117,9 @@ class HistoryTimeline extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(left: 42),
           child: Stack(
+            // 세로선(left: -27)과 이벤트 아이콘(left: -42)이 음수 좌표에
+            // 그려지므로 기본 Clip.hardEdge를 끄지 않으면 모두 잘려 보인다.
+            clipBehavior: Clip.none,
             children: [
               Positioned(
                 left: -27,

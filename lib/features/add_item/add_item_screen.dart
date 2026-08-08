@@ -1,6 +1,7 @@
 // US1 T038 — 신규 옷 등록 화면. 002 T009 — editId로 수정 모드 겸용.
 
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -324,20 +325,32 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(
-                    ClosetimoSpacing.lg,
-                    ClosetimoSpacing.md,
-                    ClosetimoSpacing.lg,
-                    MediaQuery.paddingOf(context).bottom + ClosetimoSpacing.md,
-                  ),
-                  decoration: BoxDecoration(
-                    color: surfaces.containerLowest.withValues(alpha: 0.92),
-                  ),
-                  child: PrimaryButton(
-                    label: _isEdit ? '수정 완료' : '등록하기',
-                    trailing: const Icon(Icons.check_rounded),
-                    onPressed: _draft.canSave && !_saving ? _save : null,
+                // 글래스모피즘 바: 배경이 실제로 비치도록 alpha를 낮추고
+                // 블러로 아래 폼 콘텐츠의 형태만 남긴다. ClipRect가 없으면
+                // BackdropFilter의 블러 대상이 화면 전체로 번진다.
+                // 하단 여백: 이 Stack은 SafeArea 안에 있어 home indicator
+                // 만큼 이미 올라와 있으므로 MediaQuery bottom을 더하면
+                // 이중 패딩이 된다(리뷰 지적). 고정 여백만 준다.
+                child: ClipRect(
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(
+                        ClosetimoSpacing.lg,
+                        ClosetimoSpacing.md,
+                        ClosetimoSpacing.lg,
+                        ClosetimoSpacing.md,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            surfaces.containerLowest.withValues(alpha: 0.72),
+                      ),
+                      child: PrimaryButton(
+                        label: _isEdit ? '수정 완료' : '등록하기',
+                        trailing: const Icon(Icons.check_rounded),
+                        onPressed: _draft.canSave && !_saving ? _save : null,
+                      ),
+                    ),
                   ),
                 ),
               ),
