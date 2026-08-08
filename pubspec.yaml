@@ -62,25 +62,24 @@ flutter:
     - assets/images/
     - assets/tips/
 
-  # NOTE: 실제 .ttf/.otf 폰트 파일은 assets/fonts/README.md의 가이드를 따라
-  # 직접 다운로드한다. 파일이 추가되면 아래 주석을 해제한다.
-  # fonts:
-  #   - family: Manrope
-  #     fonts:
-  #       - asset: assets/fonts/Manrope/Manrope-Regular.ttf
-  #       - asset: assets/fonts/Manrope/Manrope-Medium.ttf
-  #         weight: 500
-  #       - asset: assets/fonts/Manrope/Manrope-Bold.ttf
-  #         weight: 700
-  #   - family: Inter
-  #     fonts:
-  #       - asset: assets/fonts/Inter/Inter-Regular.ttf
-  #       - asset: assets/fonts/Inter/Inter-Medium.ttf
-  #         weight: 500
-  #   - family: Pretendard
-  #     fonts:
-  #       - asset: assets/fonts/Pretendard/Pretendard-Regular.otf
-  #       - asset: assets/fonts/Pretendard/Pretendard-Medium.otf
-  #         weight: 500
-  #       - asset: assets/fonts/Pretendard/Pretendard-Bold.otf
-  #         weight: 700
+  # 폰트 파일은 OFL.txt와 함께 저장소에 커밋되어 있다 (assets/fonts/README.md).
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope/Manrope-Regular.ttf
+        - asset: assets/fonts/Manrope/Manrope-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope/Manrope-Bold.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/Inter-Regular.ttf
+        - asset: assets/fonts/Inter/Inter-Medium.ttf
+          weight: 500
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard/Pretendard-Regular.otf
+        - asset: assets/fonts/Pretendard/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard/Pretendard-Bold.otf
+          weight: 700
