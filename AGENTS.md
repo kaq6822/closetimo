@@ -43,6 +43,8 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 - 테스트 배치:
   - `test/unit/` — 순수 로직 단위 테스트 (예: `date_formatter_test.dart`)
   - `test/feature/` — 화면·플로우 위젯 테스트 (예: `add_item_flow_test.dart`)
+  - `integration_test/` — 실기기(시뮬레이터) E2E. `flutter drive`로 실행하며
+    단계별 스크린샷을 남긴다. 실제 Isar를 쓰므로 실행 전 앱 삭제로 초기화한다.
 - Isar 의존 테스트는 in-memory 인스턴스로 격리한다. 시간 의존 로직은 `lib/core/utils/clock.dart`를 주입해 고정한다.
 - `test.skip` / `.only` / 빈 스텁 테스트는 완료 증거가 아니다. 남겨두지 말 것.
 
@@ -81,6 +83,9 @@ flutter analyze                                        # 정적 분석
 flutter test                                           # 전체 테스트
 flutter test test/unit/date_formatter_test.dart        # 단일 테스트 파일
 dart run tool/check_design_tokens.dart                 # 디자인 토큰 하드코딩 검사
+# 실기기 E2E (사전: xcrun simctl uninstall booted com.closetimo.closetimoApp)
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/full_flow_verification_test.dart -d <device-id>
 ```
 
 ## 프로젝트 구조
@@ -94,7 +99,10 @@ lib/
 └── features/          # 화면 단위 기능 모듈 (home, wardrobe, …) → lib/features/AGENTS.md
 test/
 ├── unit/              # 순수 로직 단위 테스트
-└── feature/           # 화면·플로우 위젯 테스트
+├── feature/           # 화면·플로우 위젯 테스트
+└── support/           # 테스트 인프라 (Isar native core 준비 등)
+integration_test/      # 실기기 E2E (flutter drive + 스크린샷)
+test_driver/           # integration_test 스크린샷 수집 드라이버
 specs/                 # spec 주도 개발 산출물
 tool/                  # 개발 보조 스크립트
 ```
