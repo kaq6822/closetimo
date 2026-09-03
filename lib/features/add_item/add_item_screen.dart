@@ -175,9 +175,16 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             removePhoto: _photoCleared,
           ),
         );
-        // 사진을 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가
-        // 이전 이미지를 계속 반환한다. 상세·옷장이 새 사진을 즉시 반영하도록
+        // 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가 이전
+        // 이미지를 계속 반환한다. 상세·옷장이 새 사진을 즉시 반영하도록
         // 이미지 캐시를 비운다(FR-006, 파일 경로 기반 캐시 무효화 함정 회피).
+        //
+        // 경로 기반 타깃 evict(FileImage(File(abs)))는 쓰지 않는다: 표시 표면
+        // (hero_image·garment_tile·recently_worn·laundry_tile)이 모두
+        // Image.file(cacheWidth: N)을 쓰므로 캐시 키가 bare FileImage가 아니라
+        // ResizeImage(_SizeAwareCacheKey)다. bare FileImage로 evict하면 어떤
+        // 리사이즈 엔트리와도 == 이 성립하지 않아 stale 이미지가 남는다. 한 파일이
+        // 최대 4가지 width로 캐싱되므로 키 무관 전역 clear가 이 경우 올바른 도구다.
         if (photoChanged) {
           PaintingBinding.instance.imageCache
             ..clear()
@@ -189,7 +196,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         message = '새 옷이 옷장에 등록됐어요';
       }
       success = true;
-    } catch (_) {
+    } catch (e, stackTrace) {
+      debugPrint('Failed to save item (edit=$_isEdit): $e\n$stackTrace');
       message = _isEdit ? '수정에 실패했어요' : '등록에 실패했어요';
     }
     if (!context.mounted) return;
@@ -208,7 +216,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     }
     return PopScope(
       // 변경 없으면 자유롭게 pop, dirty일 때만 시스템 back을 가로채 다이얼로그를 띄운다.
-      // canPop:false를 무조건 켜두면 go_router의 명시적 context.pop()까지 차단된다.
+      // canPop은 시스템 back/maybePop 경로에서만 참조된다. go_router의 명시적
+      // context.pop()은 Navigator.pop()을 명령형 호출해 PopScope를 우회하므로
+      // 다이얼로그 후 context.pop()이 이중 다이얼로그 없이 정상 pop된다.
       canPop: !_isDirty,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
