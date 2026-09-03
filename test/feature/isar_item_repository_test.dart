@@ -167,6 +167,39 @@ void main() {
       expect(isar.items.get(id)!.imagePath, isNull);
       expect(file.existsSync(), isFalse); // best-effort 삭제가 실제로 수행됨
     });
+
+    test(
+      '사진 유지(newPhoto=null, removePhoto=false): imagePath 불변 + 파일 조작 없음',
+      () async {
+        final id = await seedItem(imagePath: 'items/1.jpg');
+        final file = File('${tmpDir.path}/1.jpg')..writeAsBytesSync([9]);
+
+        await repo.update(id, _basePatch());
+
+        expect(isar.items.get(id)!.imagePath, 'items/1.jpg');
+        expect(file.existsSync(), isTrue); // 기존 파일이 그대로 남아있음
+      },
+    );
+
+    test('빈 브랜드는 null로 정규화한다', () async {
+      final id = await seedItem();
+      isar.write((isar) {
+        final item = isar.items.get(id)!..brand = '기존';
+        isar.items.put(item);
+      });
+
+      await repo.update(id, _basePatch(brand: '  '));
+
+      expect(isar.items.get(id)!.brand, isNull);
+    });
+
+    test('washCycle <= 0은 1로 클램프한다', () async {
+      final id = await seedItem(washCycle: 5);
+
+      await repo.update(id, _basePatch(washCycle: 0));
+
+      expect(isar.items.get(id)!.washCycle, 1);
+    });
   });
 
   group('IsarItemRepository.delete (real Isar)', () {
