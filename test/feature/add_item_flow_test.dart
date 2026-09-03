@@ -24,6 +24,10 @@ class _FakeClock implements Clock {
   DateTime now() => _now;
 }
 
+/// 위젯 UI 테스트용 간이 double이다. `update()`의 clamp/정규화/status 재평가
+/// 로직은 편의상 흉내만 냈을 뿐, repository 로직 계약(단일 진실 원천)은
+/// `isar_item_repository_test.dart`가 실제 Isar 인스턴스로 검증한다. 이 클래스가
+/// 계약 검증의 근거로 쓰이지 않도록 주의할 것.
 class _InMemoryItemRepository implements ItemRepository {
   final List<Item> items = [];
   int _nextId = 1;
@@ -60,12 +64,10 @@ class _InMemoryItemRepository implements ItemRepository {
     Category? category,
     String query = '',
     required WardrobeSort sort,
-  }) =>
-      watchAll();
+  }) => watchAll();
 
   @override
-  Stream<List<Item>> watchRecentlyWorn({int limit = 2}) =>
-      const Stream.empty();
+  Stream<List<Item>> watchRecentlyWorn({int limit = 2}) => const Stream.empty();
 
   @override
   Stream<WardrobeStats> watchStats() => const Stream.empty();
@@ -121,10 +123,7 @@ Widget _harness(_InMemoryItemRepository repo) {
           ),
         ),
       ),
-      GoRoute(
-        path: '/add',
-        builder: (ctx, st) => const AddItemScreen(),
-      ),
+      GoRoute(path: '/add', builder: (ctx, st) => const AddItemScreen()),
       GoRoute(
         path: '/edit/:id',
         builder: (ctx, st) =>
@@ -199,8 +198,7 @@ void main() {
     expect(repo.items, isEmpty);
   });
 
-  testWidgets('002 US1: 수정 모드는 기존 값을 prefill하고 저장 시 update한다',
-      (tester) async {
+  testWidgets('002 US1: 수정 모드는 기존 값을 prefill하고 저장 시 update한다', (tester) async {
     final repo = _InMemoryItemRepository();
     repo.items.add(
       Item(
@@ -237,8 +235,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('002 US1: 수정 모드에서 명칭을 비우면 수정 완료가 비활성',
-      (tester) async {
+  testWidgets('002 US1: 수정 모드에서 명칭을 비우면 수정 완료가 비활성', (tester) async {
     final repo = _InMemoryItemRepository();
     repo.items.add(
       Item(
@@ -258,11 +255,90 @@ void main() {
     await tester.pumpAndSettle();
 
     final button = tester.widget<TextButton>(
-      find.ancestor(
-        of: find.text('저장'),
-        matching: find.byType(TextButton),
-      ),
+      find.ancestor(of: find.text('저장'), matching: find.byType(TextButton)),
     );
     expect(button.onPressed, isNull); // 비활성
+  });
+
+  // 이슈 #5 — 수정 모드 dirty-back 폐기 흐름(spec Edge Case).
+  // PopScope(canPop: !_isDirty)가 시스템 back을 가로채 확인 다이얼로그를 띄우는지 검증한다.
+  group('002 수정 모드 dirty-back 폐기 흐름', () {
+    Future<_InMemoryItemRepository> seedAndEnterEdit(
+      WidgetTester tester,
+    ) async {
+      final repo = _InMemoryItemRepository();
+      repo.items.add(
+        Item(
+          name: '기존 코트',
+          category: Category.outer,
+          washCycle: 5,
+          createdAt: DateTime(2026, 1, 1),
+        )..id = 1,
+      );
+      await tester.pumpWidget(_harness(repo));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('openEdit'));
+      await tester.pumpAndSettle();
+      expect(find.text('옷 정보 수정'), findsOneWidget);
+      return repo;
+    }
+
+    testWidgets('dirty 상태에서 시스템 back → 확인 다이얼로그 노출', (tester) async {
+      await seedAndEnterEdit(tester);
+
+      await tester.enterText(find.byType(TextField).first, '수정된 코트');
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('작성을 그만두시겠어요?'), findsOneWidget);
+    });
+
+    testWidgets('"계속 작성" 선택 시 다이얼로그가 닫히고 수정 화면이 유지된다', (tester) async {
+      await seedAndEnterEdit(tester);
+
+      await tester.enterText(find.byType(TextField).first, '수정된 코트');
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('작성을 그만두시겠어요?'), findsOneWidget);
+
+      await tester.tap(find.text('계속 작성'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('작성을 그만두시겠어요?'), findsNothing);
+      expect(find.text('옷 정보 수정'), findsOneWidget);
+    });
+
+    testWidgets('"나가기" 선택 시 수정 화면을 벗어나 홈으로 돌아간다', (tester) async {
+      await seedAndEnterEdit(tester);
+
+      await tester.enterText(find.byType(TextField).first, '수정된 코트');
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('작성을 그만두시겠어요?'), findsOneWidget);
+
+      await tester.tap(find.text('나가기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('옷 정보 수정'), findsNothing);
+      expect(find.text('openEdit'), findsOneWidget);
+    });
+
+    testWidgets('변경 없이 시스템 back 시 다이얼로그 없이 즉시 pop된다', (tester) async {
+      await seedAndEnterEdit(tester);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('작성을 그만두시겠어요?'), findsNothing);
+      expect(find.text('옷 정보 수정'), findsNothing);
+      expect(find.text('openEdit'), findsOneWidget);
+    });
   });
 }
