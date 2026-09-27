@@ -101,7 +101,11 @@ class LaundryTile extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: ClosetimoSpacing.sm + 2),
-          _CheckCircle(selected: selected, onTap: onToggleSelection),
+          _CheckCircle(
+            label: '${item.name} 선택',
+            selected: selected,
+            onTap: onToggleSelection,
+          ),
         ],
       ),
     );
@@ -118,11 +122,7 @@ class _Thumb extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(ClosetimoRadius.md),
-      child: SizedBox(
-        width: 62,
-        height: 62,
-        child: _resolve(ref),
-      ),
+      child: SizedBox(width: 62, height: 62, child: _resolve(ref)),
     );
   }
 
@@ -142,32 +142,44 @@ class _Thumb extends ConsumerWidget {
 }
 
 class _CheckCircle extends StatelessWidget {
-  const _CheckCircle({required this.selected, required this.onTap});
+  const _CheckCircle({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color:
-              selected ? ClosetimoColors.primary : surfaces.containerHighest,
+    // #17 — 원형 체크는 시각 상태만 있어 TalkBack이 이름·체크 여부를 읽지 못했다.
+    return Semantics(
+      container: true,
+      label: label,
+      checked: selected,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected
+                ? ClosetimoColors.primary
+                : surfaces.containerHighest,
+          ),
+          child: selected
+              ? const Icon(
+                  Icons.check_rounded,
+                  size: 16,
+                  color: ClosetimoColors.onPrimary,
+                )
+              : null,
         ),
-        child: selected
-            ? const Icon(
-                Icons.check_rounded,
-                size: 16,
-                color: ClosetimoColors.onPrimary,
-              )
-            : null,
       ),
     );
   }

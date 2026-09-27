@@ -41,6 +41,7 @@ class WashCycleStepper extends StatelessWidget {
           const Spacer(),
           _RoundButton(
             icon: Icons.remove_rounded,
+            semanticLabel: '착용 횟수 줄이기',
             background: surfaces.containerLowest,
             foreground: ClosetimoColors.ink,
             onTap: value > 1 ? () => onChanged(value - 1) : null,
@@ -62,6 +63,7 @@ class WashCycleStepper extends StatelessWidget {
           const SizedBox(width: ClosetimoSpacing.sm + 4),
           _RoundButton(
             icon: Icons.add_rounded,
+            semanticLabel: '착용 횟수 늘리기',
             background: ClosetimoColors.primary,
             foreground: ClosetimoColors.onPrimary,
             onTap: () => onChanged(value + 1),
@@ -75,12 +77,14 @@ class WashCycleStepper extends StatelessWidget {
 class _RoundButton extends StatelessWidget {
   const _RoundButton({
     required this.icon,
+    required this.semanticLabel,
     required this.background,
     required this.foreground,
     required this.onTap,
   });
 
   final IconData icon;
+  final String semanticLabel;
   final Color background;
   final Color foreground;
   final VoidCallback? onTap;
@@ -88,16 +92,23 @@ class _RoundButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = onTap == null;
-    return Material(
-      color: background.withValues(alpha: disabled ? 0.5 : 1),
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(icon, size: 16, color: foreground),
+    // #17 — 아이콘만 있어 TalkBack이 이름 없이 읽던 ± 버튼에 라벨을 붙인다.
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: !disabled,
+      label: semanticLabel,
+      child: Material(
+        color: background.withValues(alpha: disabled ? 0.5 : 1),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: Icon(icon, size: 16, color: foreground),
+          ),
         ),
       ),
     );

@@ -34,7 +34,11 @@ class TopBar extends StatelessWidget {
       child: Row(
         children: [
           if (onBack != null)
-            _IconButton(icon: Icons.arrow_back_ios_new_rounded, onTap: onBack!),
+            _IconButton(
+              icon: Icons.arrow_back_ios_new_rounded,
+              semanticLabel: '뒤로 가기',
+              onTap: onBack!,
+            ),
           if (onBack != null) const SizedBox(width: 8),
           if (subtitle == null) ...[
             Image.asset(
@@ -63,20 +67,31 @@ class TopBar extends StatelessWidget {
   }
 }
 
+/// 아이콘만 있는 버튼. 스크린리더용 [semanticLabel]을 필수로 받는다(#17).
 class _IconButton extends StatelessWidget {
-  const _IconButton({required this.icon, required this.onTap});
+  const _IconButton({
+    required this.icon,
+    required this.semanticLabel,
+    required this.onTap,
+  });
 
   final IconData icon;
+  final String semanticLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkResponse(
-      onTap: onTap,
-      radius: 22,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, size: 18, color: ClosetimoColors.ink),
+    return Semantics(
+      container: true,
+      button: true,
+      label: semanticLabel,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 22,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, size: 18, color: ClosetimoColors.ink),
+        ),
       ),
     );
   }
@@ -90,6 +105,10 @@ class TopBarPlusAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _IconButton(icon: Icons.add_rounded, onTap: onTap);
+    return _IconButton(
+      icon: Icons.add_rounded,
+      semanticLabel: '옷 등록',
+      onTap: onTap,
+    );
   }
 }

@@ -259,26 +259,30 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             tempPhoto: _draft.tempPhoto,
                             existingImagePath:
                                 (_photoCleared || _draft.tempPhoto != null)
-                                    ? null
-                                    : _existingImagePath,
+                                ? null
+                                : _existingImagePath,
                             onPicked: _pickPhoto,
                             onRemove: _isEdit ? _removePhoto : null,
                           ),
                           const SizedBox(height: ClosetimoSpacing.xl + 2),
                           const _FieldLabel(label: '의류 명칭'),
                           _FieldInput(
+                            label: '의류 명칭',
                             initial: _draft.name,
                             hint: 'e.g. 오버사이즈 캐시미어 코트',
-                            onChanged: (v) =>
-                                setState(() => _draft = _draft.copyWith(name: v)),
+                            onChanged: (v) => setState(
+                              () => _draft = _draft.copyWith(name: v),
+                            ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '브랜드'),
                           _FieldInput(
+                            label: '브랜드',
                             initial: _draft.brand,
                             hint: 'e.g. ZARA',
-                            onChanged: (v) =>
-                                setState(() => _draft = _draft.copyWith(brand: v)),
+                            onChanged: (v) => setState(
+                              () => _draft = _draft.copyWith(brand: v),
+                            ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '세탁 주기 설정'),
@@ -301,10 +305,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(
-                            label: '카테고리',
-                            required: true,
-                          ),
+                          const _FieldLabel(label: '카테고리', required: true),
                           CategoryPicker(
                             value: _draft.category,
                             onChanged: (c) => setState(
@@ -352,8 +353,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         ClosetimoSpacing.md,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            surfaces.containerLowest.withValues(alpha: 0.72),
+                        color: surfaces.containerLowest.withValues(alpha: 0.72),
                       ),
                       child: PrimaryButton(
                         label: _isEdit ? '수정 완료' : '등록하기',
@@ -439,7 +439,9 @@ class _DateField extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Manrope',
                     fontSize: 15,
-                    color: hasValue ? ClosetimoColors.ink : ClosetimoColors.muted,
+                    color: hasValue
+                        ? ClosetimoColors.ink
+                        : ClosetimoColors.muted,
                   ),
                 ),
               ),
@@ -458,11 +460,14 @@ class _DateField extends StatelessWidget {
 
 class _FieldInput extends StatefulWidget {
   const _FieldInput({
+    required this.label,
     required this.initial,
     required this.hint,
     required this.onChanged,
   });
 
+  /// 스크린리더가 읽을 필드 이름. 화면의 _FieldLabel과 같은 문구(#17).
+  final String label;
   final String initial;
   final String hint;
   final ValueChanged<String> onChanged;
@@ -472,8 +477,9 @@ class _FieldInput extends StatefulWidget {
 }
 
 class _FieldInputState extends State<_FieldInput> {
-  late final TextEditingController _ctl =
-      TextEditingController(text: widget.initial);
+  late final TextEditingController _ctl = TextEditingController(
+    text: widget.initial,
+  );
 
   @override
   void dispose() {
@@ -484,29 +490,33 @@ class _FieldInputState extends State<_FieldInput> {
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    return TextField(
-      controller: _ctl,
-      onChanged: widget.onChanged,
-      style: const TextStyle(
-        fontFamily: 'Manrope',
-        fontSize: 15,
-        color: ClosetimoColors.ink,
-      ),
-      decoration: InputDecoration(
-        hintText: widget.hint,
-        filled: true,
-        fillColor: surfaces.containerLow,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
+    // #17 — 힌트("e.g. …")만으로는 필드 이름을 알 수 없어 라벨을 붙인다.
+    return Semantics(
+      label: widget.label,
+      child: TextField(
+        controller: _ctl,
+        onChanged: widget.onChanged,
+        style: const TextStyle(
+          fontFamily: 'Manrope',
+          fontSize: 15,
+          color: ClosetimoColors.ink,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-          borderSide: BorderSide.none,
+        decoration: InputDecoration(
+          hintText: widget.hint,
+          filled: true,
+          fillColor: surfaces.containerLow,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 16,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );

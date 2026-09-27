@@ -1,5 +1,6 @@
 // FR-023 — 2초 비차단 토스트. Material SnackBar 대신 Overlay 기반으로
 // 디자인 패키지의 둥근 알약 + 좌측 체크 스타일을 재현한다.
+// 스크린리더가 낭독하도록 live region으로 노출한다(#17).
 
 import 'package:flutter/material.dart';
 
@@ -92,37 +93,41 @@ class _ToastBubbleState extends State<_ToastBubble>
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
     final isTop = widget.placement == ToastPlacement.top;
-    final bubble = Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ClosetimoSpacing.lg,
-        vertical: ClosetimoSpacing.sm + 2,
-      ),
-      decoration: BoxDecoration(
-        color: surfaces.containerLowest,
-        borderRadius: BorderRadius.circular(ClosetimoRadius.full),
-        boxShadow: ClosetimoElevation.ambientShadow,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.check_circle_rounded,
-            size: 16,
-            color: ClosetimoColors.primary,
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              widget.message,
-              style: const TextStyle(
-                fontFamily: 'Manrope',
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: ClosetimoColors.ink,
+    final bubble = Semantics(
+      container: true,
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: ClosetimoSpacing.lg,
+          vertical: ClosetimoSpacing.sm + 2,
+        ),
+        decoration: BoxDecoration(
+          color: surfaces.containerLowest,
+          borderRadius: BorderRadius.circular(ClosetimoRadius.full),
+          boxShadow: ClosetimoElevation.ambientShadow,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              size: 16,
+              color: ClosetimoColors.primary,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                widget.message,
+                style: const TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: ClosetimoColors.ink,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
     return Positioned(
