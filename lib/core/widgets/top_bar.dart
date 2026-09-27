@@ -1,8 +1,12 @@
 // 공용 상단바. 좌측 백 버튼·중앙 브랜드/서브타이틀, 우측 액션 슬롯.
+// 서브타이틀이 없는 브랜드 모드에서는 워드마크 앞에 B1 미소 옷걸이 심볼을 둔다.
 
 import 'package:flutter/material.dart';
 
 import '../../app/theme/tokens.dart';
+
+/// 브랜드 심볼 에셋 경로. 해상도별 변형은 `assets/images/2.0x`, `3.0x`에 있다.
+const closetimoSymbolAsset = 'assets/images/closetimo_symbol.png';
 
 class TopBar extends StatelessWidget {
   const TopBar({
@@ -32,6 +36,15 @@ class TopBar extends StatelessWidget {
           if (onBack != null)
             _IconButton(icon: Icons.arrow_back_ios_new_rounded, onTap: onBack!),
           if (onBack != null) const SizedBox(width: 8),
+          if (subtitle == null) ...[
+            Image.asset(
+              closetimoSymbolAsset,
+              key: const ValueKey('topBarBrandSymbol'),
+              width: 28,
+              excludeFromSemantics: true,
+            ),
+            const SizedBox(width: ClosetimoSpacing.sm),
+          ],
           Text(
             subtitle ?? title,
             style: TextStyle(
