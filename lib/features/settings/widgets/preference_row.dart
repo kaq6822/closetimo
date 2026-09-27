@@ -23,57 +23,63 @@ class PreferenceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
     // #17 — 스위치 행은 라벨과 스위치를 한 노드로 합쳐 TalkBack이
-    // "주간 세탁 알림, 스위치, 켜짐"처럼 함께 읽게 한다.
+    // "세탁 알림, 스위치, 켜짐"처럼 함께 읽게 하고, 스위치뿐 아니라 행 전체
+    // 탭으로도 토글한다(표준 설정 UX).
+    final toggleable = toggleValue != null && onToggle != null;
     return MergeSemantics(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: ClosetimoSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          color: surfaces.containerLowest,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 14,
-                  color: ClosetimoColors.ink,
-                ),
-              ),
+      child: Material(
+        color: surfaces.containerLowest,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: toggleable ? () => onToggle!(!toggleValue!) : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: ClosetimoSpacing.md,
             ),
-            if (toggleValue != null && onToggle != null)
-              Switch.adaptive(
-                value: toggleValue!,
-                onChanged: onToggle,
-                activeThumbColor: ClosetimoColors.onPrimary,
-                activeTrackColor: ClosetimoColors.primary,
-              )
-            else if (textValue != null)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    textValue!,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
                     style: const TextStyle(
                       fontFamily: 'Manrope',
-                      fontSize: 13,
-                      color: ClosetimoColors.muted,
+                      fontSize: 14,
+                      color: ClosetimoColors.ink,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: ClosetimoColors.muted,
+                ),
+                if (toggleable)
+                  Switch.adaptive(
+                    value: toggleValue!,
+                    onChanged: onToggle,
+                    activeThumbColor: ClosetimoColors.onPrimary,
+                    activeTrackColor: ClosetimoColors.primary,
+                  )
+                else if (textValue != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        textValue!,
+                        style: const TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 13,
+                          color: ClosetimoColors.muted,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: ClosetimoColors.muted,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

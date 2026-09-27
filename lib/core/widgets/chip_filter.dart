@@ -18,26 +18,32 @@ class ChipFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: active
-          ? ClosetimoColors.primary
-          : ClosetimoColors.secondaryContainer,
-      borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-      child: InkWell(
-        onTap: onTap,
+    // #17 — 활성 칩이 색으로만 구분돼 TalkBack이 선택 여부를 읽지 못했다.
+    return Semantics(
+      container: true,
+      button: true,
+      selected: active,
+      child: Material(
+        color: active
+            ? ClosetimoColors.primary
+            : ClosetimoColors.secondaryContainer,
         borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: ClosetimoSpacing.md,
-            vertical: ClosetimoSpacing.sm,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: active ? ClosetimoColors.onPrimary : ClosetimoColors.ink,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: ClosetimoSpacing.md,
+              vertical: ClosetimoSpacing.sm,
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: active ? ClosetimoColors.onPrimary : ClosetimoColors.ink,
+              ),
             ),
           ),
         ),

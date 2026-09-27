@@ -25,6 +25,11 @@ class LaundryTile extends ConsumerWidget {
   final bool selected;
   final VoidCallback onToggleSelection;
 
+  void _openDetail(BuildContext context) => context.pushNamed(
+    Routes.itemDetail,
+    pathParameters: {'id': '${item.id}'},
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
@@ -40,64 +45,80 @@ class LaundryTile extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.pushNamed(
-              Routes.itemDetail,
-              pathParameters: {'id': '${item.id}'},
-            ),
-            child: _Thumb(
-              imagePath: item.imagePath,
-              fallback: Color(item.fallbackColor),
-            ),
-          ),
-          const SizedBox(width: ClosetimoSpacing.md - 2),
+          // #17 — 썸네일만 상세로 가고 라벨도 없던 영역을 썸네일+정보 전체 탭으로 넓히고
+          // "<옷 이름> 상세 보기"로 읽게 한다. 우측 체크 탭 영역과는 분리돼 있다.
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  item.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: ClosetimoColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${item.category.label} · ${item.careMethod.label}',
-                  style: const TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 12,
-                    color: ClosetimoColors.muted,
-                  ),
-                ),
-                const SizedBox(height: ClosetimoSpacing.sm),
-                Row(
+            child: Semantics(
+              container: true,
+              button: true,
+              label: '${item.name} 상세 보기',
+              value:
+                  '${item.category.label} · ${item.careMethod.label}, '
+                  '착용 ${item.wearSinceWash}/${item.washCycle}',
+              excludeSemantics: true,
+              onTap: () => _openDetail(context),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _openDetail(context),
+                child: Row(
                   children: [
-                    Text(
-                      '${item.wearSinceWash}/${item.washCycle}',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: ClosetimoColors.ink,
-                      ),
+                    _Thumb(
+                      imagePath: item.imagePath,
+                      fallback: Color(item.fallbackColor),
                     ),
-                    const SizedBox(width: ClosetimoSpacing.sm + 2),
+                    const SizedBox(width: ClosetimoSpacing.md - 2),
                     Expanded(
-                      child: ProgressBar(
-                        value: progress,
-                        variant: ProgressBarVariant.alert,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: ClosetimoColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${item.category.label} · ${item.careMethod.label}',
+                            style: const TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 12,
+                              color: ClosetimoColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: ClosetimoSpacing.sm),
+                          Row(
+                            children: [
+                              Text(
+                                '${item.wearSinceWash}/${item.washCycle}',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: ClosetimoColors.ink,
+                                ),
+                              ),
+                              const SizedBox(width: ClosetimoSpacing.sm + 2),
+                              Expanded(
+                                child: ProgressBar(
+                                  value: progress,
+                                  variant: ProgressBarVariant.alert,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(width: ClosetimoSpacing.sm + 2),

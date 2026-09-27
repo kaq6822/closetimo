@@ -132,7 +132,9 @@ adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings p
 2. **키보드 닫기에 back을 쓰지 말 것.** 키보드가 없으면 back은 화면 pop/앱 종료다. → `hide_kb()`.
 3. **좌표 대신 content-desc.** 키보드·스크롤로 좌표가 계속 바뀐다(세탁 주기 +를 다른 요소에 탭한 사례).
    → `tap "<라벨>"`. 상단바 `+`("옷 등록")·뒤로("뒤로 가기")·세탁 주기 ±("착용 횟수 줄이기/늘리기")·
-   세탁 바구니 체크("<옷 이름> 선택")·설정 스위치(행 라벨)는 접근성 라벨로 찾는다(#17).
+   세탁 바구니 체크("<옷 이름> 선택")·설정 알림(행 라벨 "세탁 알림" 등, 행 전체 탭으로 토글)은
+   접근성 라벨로 찾는다(#17). 세탁 바구니 타일의 상세 진입은 `tap "<옷 이름> 상세 보기" contains`다
+   (content-desc 뒤에 분류·착용 값이 붙는다). 카테고리 칩은 라벨 + `selected` 상태로 노출된다.
    **입력 필드만 예외**다. Flutter는 EditText의 라벨을 content-desc가 아닌 hintText로 내보낸다.
    TalkBack은 이 값을 읽지만 `android layout`·`uiautomator dump`에는 나오지 않는다.
    그래서 필드는 `field_below "<필드 이름>"`(이름 텍스트 바로 아래 첫 입력 필드)으로 찾는다.

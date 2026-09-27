@@ -47,7 +47,7 @@ debug 모드 측정치(766ms)는 판정에 쓰지 않았다.
 | F-04 | P2 | 검색창 포커스 상태로 상세 진입 → 복귀 시 **키보드가 자동으로 다시 올라와** 그리드를 가림 | 재현: 옷장 검색창 탭 → 키보드 닫기 → 타일 탭 → back → `mInputShown=true` | 해결 (#14) — 검색 필드 `onTapOutside` 포커스 해제. A23에서 재현 절차 후 `mInputShown=false` |
 | F-05 | P2 | spec 드리프트: 착용 기록 후 상세 화면 **유지**로 변경됐으나 spec AC3-1·routes.md §3·tasks T054는 "직전 화면으로 pop" | 커밋 `33068f3`. 코드가 의도된 동작이면 spec 갱신 필요 | 미해결 (#15) |
 | F-06 | P2 | v1에 없는 기능을 약속하는 UI: 등록 화면 "설정한 횟수만큼 착용하면 세탁 알림을 보냅니다.", 알림 토글 3종(발송 구현·권한 없음), chevron만 있고 눌리지 않는 "데이터 백업"·"개인정보 처리방침" | `add_item_screen.dart:295`, `settings_screen.dart:90-91`, README "후속 작업" | 미해결 (#16) |
-| F-07 | P2 | 접근성: 상단 `+`, 입력 필드, 세탁 주기 ±, 세탁 바구니 체크박스, 설정 스위치에 라벨 없음(TalkBack이 이름 없이 읽음). 체크 상태 미노출. 토스트는 live region 아님 | `android layout`에서 `content-desc` 빈 값 | 해결 (#17) — 라벨·checked·toggled·liveRegion 추가. A23 `android layout`에서 +·뒤로·±·체크·스위치 content-desc 확인(입력 필드는 hintText로 노출돼 덤프에는 안 보임) |
+| F-07 | P2 | 접근성: 상단 `+`, 입력 필드, 세탁 주기 ±, 세탁 바구니 체크박스, 설정 스위치에 라벨 없음(TalkBack이 이름 없이 읽음). 체크 상태 미노출. 토스트는 live region 아님 | `android layout`에서 `content-desc` 빈 값 | 해결 (#17) — 라벨·checked·toggled·liveRegion 추가. A23 `android layout`에서 +·뒤로·±·체크·스위치 content-desc 확인(입력 필드는 hintText로 노출돼 덤프에는 안 보임). 인수 잔여 D-1~D-3(칩 selected, 세탁 타일 "<옷 이름> 상세 보기", 설정 행 전체 탭 토글) 후속 반영 |
 | F-08 | P3 | 홈 인사말이 시간과 무관하게 "좋은 아침입니다" | `home_screen.dart:58` | 미해결 (#18) |
 | F-09 | P3 | 영문 라벨 혼재: "REQUIRED", "DRY CLEAN/MACHINE/HAND WASH"(상세에선 "기계세탁"). 글꼴 2.0에서 "MACHI/NE" 단어 중간 줄바꿈 | `add_item_screen.dart:399`, `lib/data/models/item.dart:104-106` | 미해결 (#19) |
 | F-10 | P3 | 세로 고정 안 됨. 가로에서 하단 탭이 화면 1/3 차지(폰 전용 제품) | `setPreferredOrientations` 호출 없음 | 결정 필요 (#20) |
