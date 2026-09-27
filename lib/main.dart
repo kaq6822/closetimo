@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'app/app_title.dart';
 import 'app/router.dart';
 import 'app/theme/app_theme.dart';
 import 'data/providers/app_providers.dart';
@@ -45,7 +46,8 @@ class _RouterApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
     return MaterialApp.router(
-      title: '옷장이모',
+      onGenerateTitle: (_) =>
+          appTitleFor(WidgetsBinding.instance.platformDispatcher.locale),
       debugShowCheckedModeBanner: false,
       theme: buildClosetimoTheme(),
       localizationsDelegates: const [
