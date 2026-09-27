@@ -35,6 +35,7 @@
 | `/wardrobe` 그리드 타일 | 탭 | `/item/:id` | hero-image transition(선택) |
 | `/home` 최근 옷 카드 | 탭 | `/item/:id` | 동일 |
 | `/home` 카테고리 카드 | 탭 | `/wardrobe?category=상의` | 탭 전환 + 필터 사전 적용(FR-019) |
+| `/wardrobe` 카테고리 칩 | 탭 | `/wardrobe?category=<Category>` (전체는 쿼리 없음) | 같은 화면 유지, 쿼리를 칩 선택과 동기화 — 이후 같은 홈 카드 재탭도 필터 변경으로 감지(#13) |
 | `/item/:id` "착용 기록하기" | 탭 | pop → 직전 화면 | Toast: "오늘의 착용이 기록되었어요" (US3 AC1) |
 | `/item/:id` 백 버튼 | 탭 | pop | 변경사항 자동 저장 |
 | `/laundry` "세탁 완료 처리" | 탭 | 같은 화면 유지 | 항목 제거 + Toast: "N점의 세탁이 완료됐어요" |
