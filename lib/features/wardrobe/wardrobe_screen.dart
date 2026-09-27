@@ -37,7 +37,12 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
     final next = widget.initialCategory;
     if (next != oldWidget.initialCategory && next != _category) {
       _category = next;
-      if (_scrollController.hasClients) _scrollController.jumpTo(0);
+      // 탭 전환 중 build 단계에서 호출되므로 레이아웃이 끝난 뒤 이동한다.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+      });
     }
   }
 

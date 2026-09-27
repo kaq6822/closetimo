@@ -10,7 +10,9 @@ import 'package:closetimo/core/widgets/bottom_nav.dart';
 import 'package:closetimo/data/models/item.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
+import 'package:closetimo/data/models/wear_event.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
+import 'package:closetimo/data/repositories/event_repository.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
 import 'package:closetimo/data/repositories/laundry_repository.dart';
 import 'package:closetimo/data/repositories/preferences_repository.dart';
@@ -30,6 +32,7 @@ class _FakeItemRepository implements ItemRepository {
   _FakeItemRepository(this.items);
 
   final List<Item> items;
+  final List<int> deleted = [];
 
   @override
   Stream<List<Item>> watchFiltered({
@@ -62,7 +65,7 @@ class _FakeItemRepository implements ItemRepository {
   Stream<List<Item>> watchAll() => Stream.value(items);
 
   @override
-  Future<Item?> get(int id) async => null;
+  Future<Item?> get(int id) async => items.where((i) => i.id == id).firstOrNull;
 
   @override
   Future<int> create(NewItemDraft draft) async => 0;
@@ -71,7 +74,21 @@ class _FakeItemRepository implements ItemRepository {
   Future<void> update(int id, ItemPatch patch) async {}
 
   @override
-  Future<void> delete(int id) async {}
+  Future<void> delete(int id) async => deleted.add(id);
+}
+
+class _FakeEventRepository implements EventRepository {
+  @override
+  Stream<List<WearEvent>> watchForItem(int itemId) => Stream.value(const []);
+
+  @override
+  Future<void> recordWear(int itemId, {String? note}) async {}
+
+  @override
+  Future<void> updateEventNote(int eventId, String? note) async {}
+
+  @override
+  Future<void> deleteWearEvent(int eventId) async {}
 }
 
 class _FakeLaundryRepository implements LaundryRepository {
@@ -114,10 +131,13 @@ Item _item(int id, String name, Category category) => Item(
 
 /// main.dart의 `_RouterApp`과 같은 구성으로 실제 [goRouterProvider]·셸을 띄운다.
 /// lastTab을 `/wardrobe`로 두어 "옷장 탭이 먼저 열린" 상태에서 시작한다.
-Widget _harness(List<Item> items) {
+Widget _harness(List<Item> items, {_FakeItemRepository? repo}) {
   return ProviderScope(
     overrides: [
-      itemRepositoryProvider.overrideWithValue(_FakeItemRepository(items)),
+      itemRepositoryProvider.overrideWithValue(
+        repo ?? _FakeItemRepository(items),
+      ),
+      eventRepositoryProvider.overrideWithValue(_FakeEventRepository()),
       laundryRepositoryProvider.overrideWithValue(_FakeLaundryRepository()),
       preferencesRepositoryProvider.overrideWithValue(
         _FakePreferencesRepository(),
@@ -246,5 +266,39 @@ void main() {
 
     expect(_wardrobeScroll(tester).pixels, 0);
     expect(find.text('캐시미어 니트'), findsOneWidget);
+  });
+
+  testWidgets('옷장 칩 필터 상태에서 상세 진입 후 삭제하면 필터가 유지된 옷장으로 돌아온다', (tester) async {
+    final repo = _FakeItemRepository([
+      ...items,
+      _item(4, '와이드 슬랙스', Category.bottom),
+    ]);
+    await tester.pumpWidget(_harness(const [], repo: repo));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(InkWell, Category.bottom.label));
+    await tester.pumpAndSettle();
+    expect(find.text('캐시미어 니트'), findsNothing);
+
+    await tester.ensureVisible(find.text('셀비지 데님'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('셀비지 데님'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('삭제하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
+
+    expect(repo.deleted, [2]);
+    // FR-012 옷장 복귀 + 하의 칩 필터 유지(전체로 초기화되지 않음).
+    expect(find.text('와이드 슬랙스'), findsOneWidget);
+    expect(find.text('캐시미어 니트'), findsNothing);
+    expect(find.text('오버사이즈 코트'), findsNothing);
+
+    // 토스트 타이머 소진.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
   });
 }
