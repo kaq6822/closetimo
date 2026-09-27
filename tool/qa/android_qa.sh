@@ -112,45 +112,39 @@ qa_install_release() {
 }
 
 # ── 시나리오 매크로 ───────────────────────────────────────
-# 라벨 없는 클릭 요소를 위치로 찾는다 → "x y"
-#   _unlabeled plus x            상단바 우측 + 버튼
-#   _unlabeled below <라벨>      라벨 바로 아래 첫 입력 필드
-#   _unlabeled row <라벨> [last] 라벨과 같은 행의 버튼(좌→우, last면 가장 오른쪽)
-# (+ 버튼·입력 필드·세탁주기 ± 버튼에 content-desc가 없어 필요 — 접근성 개선 시 제거 가능)
-_unlabeled() {
+# 주요 컨트롤은 접근성 라벨(#17)이 있어 tap "<라벨>"로 찾는다:
+#   "옷 등록"(상단바 +), "뒤로 가기", "착용 횟수 줄이기"/"착용 횟수 늘리기",
+#   "<옷 이름> 선택"(세탁 바구니 체크), 설정 스위치는 행 라벨("주간 세탁 알림" 등).
+#
+# 입력 필드만은 라벨로 찾을 수 없다. Flutter는 EditText의 라벨을 content-desc가 아닌
+# hintText(TalkBack이 읽음)로 내보내는데, android layout·uiautomator 덤프에는 hint가 없다.
+# 그래서 입력 필드는 위치 규칙으로 찾는다:
+#   field_below <라벨>   화면의 필드 이름 텍스트 바로 아래 첫 입력 필드 → "x y"
+field_below() {
   ui | python3 -c '
 import json,sys
-mode,arg=sys.argv[1],sys.argv[2]
+arg=sys.argv[1]
 els=json.load(sys.stdin)
 c=lambda e: json.loads(e["center"])
 blank=[e for e in els if "clickable" in e.get("interactions",[]) and not (e.get("content-desc") or e.get("text"))]
-if mode=="plus":   # 상단바 우측 + 버튼
-    hits=sorted([e for e in blank if c(e)[1]<300], key=lambda e:-c(e)[0])
-elif mode=="below": # 라벨 아래 첫 입력 필드
-    ly=[c(e)[1] for e in els if e.get("content-desc")==arg or e.get("text")==arg]
-    hits=sorted([e for e in blank if ly and c(e)[1]>ly[0]], key=lambda e:c(e)[1])
-elif mode=="row":   # 같은 행의 버튼들(좌→우): 세탁 주기 −, +
-    ly=[c(e)[1] for e in els if e.get("content-desc")==arg or e.get("text")==arg]
-    hits=sorted([e for e in blank if ly and abs(c(e)[1]-ly[0])<40], key=lambda e:c(e)[0])
-    if len(sys.argv)>3 and sys.argv[3]=="last": hits=hits[::-1]
-else:
-    sys.exit(2)
+ly=[c(e)[1] for e in els if e.get("content-desc")==arg or e.get("text")==arg]
+hits=sorted([e for e in blank if ly and c(e)[1]>ly[0]], key=lambda e:c(e)[1])
 if not hits: sys.exit(1)
 print(*c(hits[0]))
-' "$@"
+' "$1"
 }
-plus_btn() { _unlabeled plus x; }
 
 # add_item <name> <brand|-> <category> <cycleDelta(+n/-n)>   (홈·옷장·세탁 탭에서 호출)
 add_item() {
-  tapxy $(plus_btn) || return 1; sleep 0.5
+  tap "옷 등록" || return 1; sleep 0.5
   has "신규 옷 등록" || { echo "add screen not open" >&2; return 1; }
-  tapxy $(_unlabeled below "의류 명칭") && type_ascii "$1" && hide_kb || return 1
-  if [ "$2" != "-" ]; then tapxy $(_unlabeled below "브랜드") && type_ascii "$2" && hide_kb || return 1; fi
+  tapxy $(field_below "의류 명칭") && type_ascii "$1" && hide_kb || return 1
+  if [ "$2" != "-" ]; then tapxy $(field_below "브랜드") && type_ascii "$2" && hide_kb || return 1; fi
   swipe 1600 700
-  local d=${4:-0} minus plus i
-  minus=$(_unlabeled row "착용 횟수") && plus=$(_unlabeled row "착용 횟수" last) || return 1
-  for ((i=0;i<${d#-};i++)); do if [ "$d" -gt 0 ]; then tapxy $plus; else tapxy $minus; fi; done
+  local d=${4:-0} i
+  for ((i=0;i<${d#-};i++)); do
+    if [ "$d" -gt 0 ]; then tap "착용 횟수 늘리기" || return 1; else tap "착용 횟수 줄이기" || return 1; fi
+  done
   tap "$3" exact 0 || return 1
   TAP_WAIT=0.2 tap "등록하기"
 }

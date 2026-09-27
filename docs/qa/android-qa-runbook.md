@@ -131,7 +131,13 @@ adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings p
    카메라 등 외부 앱에 입력이 필요하면 `QA_ALLOW_PKG=<pkg>`로 1회만 허용한다.
 2. **키보드 닫기에 back을 쓰지 말 것.** 키보드가 없으면 back은 화면 pop/앱 종료다. → `hide_kb()`.
 3. **좌표 대신 content-desc.** 키보드·스크롤로 좌표가 계속 바뀐다(세탁 주기 +를 다른 요소에 탭한 사례).
-   → `tap "<라벨>"`, 라벨 없는 요소는 `_unlabeled`(위치 규칙) 사용.
+   → `tap "<라벨>"`. 상단바 `+`("옷 등록")·뒤로("뒤로 가기")·세탁 주기 ±("착용 횟수 줄이기/늘리기")·
+   세탁 바구니 체크("<옷 이름> 선택")·설정 스위치(행 라벨)는 접근성 라벨로 찾는다(#17).
+   **입력 필드만 예외**다. Flutter는 EditText의 라벨을 content-desc가 아닌 hintText로 내보낸다.
+   TalkBack은 이 값을 읽지만 `android layout`·`uiautomator dump`에는 나오지 않는다.
+   그래서 필드는 `field_below "<필드 이름>"`(이름 텍스트 바로 아래 첫 입력 필드)으로 찾는다.
+   필드 값이 `text`로 노출되므로 `tap "<부분 문자열>" contains`는 입력한 검색어와도 매칭될 수 있다.
+   타일처럼 필드에 없는 고유 문자열(예: "마지막 세탁")을 쓴다.
 4. **키보드가 떠 있는 상태의 swipe는 키 길게 누르기가 된다.** 삼성 키보드에서 '6' 롱프레스로 '⅚'가
    입력된 사례. → swipe 전 `hide_kb`.
 5. **실기기 E2E의 Isar 스트림 지연.** 실제 Isar `watch`는 비동기 I/O라 `pumpAndSettle`이 기다리지 않는다.
