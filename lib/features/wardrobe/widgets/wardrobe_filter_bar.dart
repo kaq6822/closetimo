@@ -41,6 +41,10 @@ class WardrobeFilterBar extends StatelessWidget {
         // 검색
         TextField(
           onChanged: onQueryChanged,
+          // #14 — 모바일 TextField는 바깥을 눌러도 포커스를 유지한다. 포커스를 둔 채
+          // 타일·+로 화면을 push하면 pop 시 Navigator가 포커스를 복원해 키보드가
+          // 다시 올라오므로, 바깥 탭에서 포커스를 해제한다.
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           decoration: InputDecoration(
             hintText: '옷 이름 또는 브랜드 검색',
             prefixIcon: const Icon(
