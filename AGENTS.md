@@ -45,6 +45,10 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
   - `test/feature/` — 화면·플로우 위젯 테스트 (예: `add_item_flow_test.dart`)
   - `integration_test/` — 실기기(시뮬레이터) E2E. `flutter drive`로 실행하며
     단계별 스크린샷을 남긴다. 실제 Isar를 쓰므로 실행 전 앱 삭제로 초기화한다.
+    스크린샷·비동기 대기는 `integration_test/support/e2e_helpers.dart`(`takeShot`, `pumpUntilFound`)를 쓴다
+    — Android 촬영과 실기기 Isar 스트림 지연을 처리한다.
+- **Android QA(출시 전·회귀)는 [docs/qa/android-qa-runbook.md](docs/qa/android-qa-runbook.md)를 따른다.**
+  실기기 우선, 없으면 에뮬레이터. 결과는 `docs/qa/reports/`에 남기고, 시작 전 최신 리포트의 미해결 항목을 확인한다.
 - Isar 의존 테스트는 in-memory 인스턴스로 격리한다. 시간 의존 로직은 `lib/core/utils/clock.dart`를 주입해 고정한다.
 - `test.skip` / `.only` / 빈 스텁 테스트는 완료 증거가 아니다. 남겨두지 말 것.
 
@@ -86,6 +90,10 @@ dart run tool/check_design_tokens.dart                 # 디자인 토큰 하드
 # 실기기 E2E (사전: xcrun simctl uninstall booted com.closetimo.closetimoApp)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/full_flow_verification_test.dart -d <device-id>
+# Android E2E 4종 (기기 자동 선택·앱 초기화·perf는 profile) — 스크린샷 build/android_verify_shots/
+tool/qa/run_android_e2e.sh
+# Android 탐색 QA 헬퍼 (source 해서 사용: descs, tap "<라벨>", shot, guard …)
+source tool/qa/android_qa.sh
 ```
 
 ## 프로젝트 구조
@@ -104,7 +112,8 @@ test/
 integration_test/      # 실기기 E2E (flutter drive + 스크린샷)
 test_driver/           # integration_test 스크린샷 수집 드라이버
 specs/                 # spec 주도 개발 산출물
-tool/                  # 개발 보조 스크립트
+docs/qa/               # QA 런북 + 회차별 리포트(reports/)
+tool/                  # 개발 보조 스크립트 (tool/qa/: Android QA 하네스)
 ```
 
 ## 공통 코드 규칙

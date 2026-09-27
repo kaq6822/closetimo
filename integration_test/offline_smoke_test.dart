@@ -18,6 +18,8 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:closetimo/main.dart' as app;
 
+import 'support/e2e_helpers.dart';
+
 /// 어떤 코드든 HttpClient를 생성하려 하면 즉시 실패시켜 네트워크 의존을 드러낸다.
 class _BlockAllNetworkOverrides extends HttpOverrides {
   @override
@@ -33,7 +35,7 @@ void main() {
 
   Future<void> shot(WidgetTester tester, String name) async {
     await tester.pumpAndSettle();
-    await binding.takeScreenshot(name);
+    await takeShot(binding, tester, name);
   }
 
   Future<void> tapVisible(WidgetTester tester, Finder f) async {
@@ -68,8 +70,12 @@ void main() {
     await tester.tap(find.text('옷장'));
     await tester.pumpAndSettle();
     expect(find.text('오프라인 테스트 재킷'), findsOneWidget);
+    // 먼저 불일치 검색으로 목록이 비는 것을 확인해야 이어지는 양성 검색이 필터를 검증한다.
+    await tester.enterText(find.byType(TextField).first, '존재하지않는옷');
+    await pumpUntilFound(tester, find.text('검색 결과가 없습니다.'));
+    expect(find.text('오프라인 테스트 재킷'), findsNothing);
     await tester.enterText(find.byType(TextField).first, '오프라인');
-    await tester.pumpAndSettle();
+    await pumpUntilFound(tester, find.text('오프라인 테스트 재킷'));
     expect(find.text('오프라인 테스트 재킷'), findsOneWidget);
     await tester.enterText(find.byType(TextField).first, '');
     await tester.pumpAndSettle();

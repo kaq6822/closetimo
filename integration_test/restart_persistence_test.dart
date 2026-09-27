@@ -18,12 +18,14 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:closetimo/main.dart' as app;
 
+import 'support/e2e_helpers.dart';
+
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> shot(WidgetTester tester, String name) async {
     await tester.pumpAndSettle();
-    await binding.takeScreenshot(name);
+    await takeShot(binding, tester, name);
   }
 
   testWidgets('재시작 후 옷 데이터·마지막 탭(설정) 보존', (tester) async {
