@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="launch_background">#FDF7E8</color>
+    <!-- 앱 surface 토큰(ClosetimoColors.surface)과 같은 아이보리 배경 -->
+    <color name="launch_background">#FAFAF5</color>
+    <!-- 브랜드 세이지(ClosetimoColors.primary). 적응형 아이콘·Android 12+ 스플래시 아이콘 배경 -->
+    <color name="ic_launcher_background">#47645E</color>
 </resources>

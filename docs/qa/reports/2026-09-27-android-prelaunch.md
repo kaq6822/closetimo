@@ -42,7 +42,7 @@ debug 모드 측정치(766ms)는 판정에 쓰지 않았다.
 | ID | 등급 | 요약 | 근거 | 상태 |
 |---|---|---|---|---|
 | F-01 | P0 | release 빌드가 **debug 키로 서명**됨. Play 업로드 불가 | `android/app/build.gradle.kts` `buildTypes.release.signingConfig = debug` | 미해결 (#11) |
-| F-02 | P0 | 런처 앱 이름이 `closetimo_app` | `android/app/src/main/AndroidManifest.xml` `android:label`; aapt `application-label:'closetimo_app'`. iOS `CFBundleDisplayName`도 "Closetimo App" | 미해결 (#12) |
+| F-02 | P0 | 런처 앱 이름이 `closetimo_app` | `android/app/src/main/AndroidManifest.xml` `android:label`; aapt `application-label:'closetimo_app'`. iOS `CFBundleDisplayName`도 "Closetimo App" | 해결 — ko "옷장이모"·그 외 "Closetimo" 로케일별 적용 (#12) |
 | F-03 | P1 | 옷장 탭을 한 번 연 뒤에는 홈 카테고리 카드가 **필터를 적용하지 못함**(전체 목록 + 이전 스크롤 위치) — FR-019/AC5-2 위반 | `lib/features/wardrobe/wardrobe_screen.dart:26` `late _category = widget.initialCategory`가 최초 1회만 평가되고 `didUpdateWidget` 없음. `StatefulShellRoute.indexedStack`이 State를 보존. 관련 테스트 없음 | 미해결 (#13) |
 | F-04 | P2 | 검색창 포커스 상태로 상세 진입 → 복귀 시 **키보드가 자동으로 다시 올라와** 그리드를 가림 | 재현: 옷장 검색창 탭 → 키보드 닫기 → 타일 탭 → back → `mInputShown=true` | 미해결 (#14) |
 | F-05 | P2 | spec 드리프트: 착용 기록 후 상세 화면 **유지**로 변경됐으나 spec AC3-1·routes.md §3·tasks T054는 "직전 화면으로 pop" | 커밋 `33068f3`. 코드가 의도된 동작이면 spec 갱신 필요 | 미해결 (#15) |
