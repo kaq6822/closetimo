@@ -212,8 +212,8 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T083 quickstart 매뉴얼 시나리오 회귀 — quickstart.md §8의 7단계를 `integration_test/full_flow_verification_test.dart`(등록·탐색·착용·세탁·설정)로 자동 회귀 확인하고, 7단계(앱 강제 종료 → 재실행 → 데이터·마지막 탭 보존)는 `integration_test/restart_persistence_test.dart`로 검증(SC-005·SC-006). 시뮬레이터에서 OS 프로세스를 직접 종료 후 재실행하면 `flutter drive` 테두리에서 앱이 언인스톨되는 제약이 있어, 위젯 트리를 다시 빌드(`app.main()` 재호출)해 재시작을 시뮬레이션한다(Isar는 실제 파일 저장소이므로 유효한 검증).
 - [X] T084 README 작성 — repo 루트 `README.md`에 프로젝트 소개, 빠른 시작 링크(`specs/001-home-dashboard/quickstart.md`), 헌법 링크, 기술 스택을 한국어로 정리.
 - [X] T085 PR 체크리스트 회귀 — README §"PR 체크리스트" 섹션 — quickstart.md §6의 6개 항목(analyze·format·test·integration·spec 동기화·헌법 준수)을 모두 통과한 상태로 PR 준비. spec.md의 SC-001~007 매핑 표를 PR description에 첨부.
-- [X] T086 앱 ID 확정(#25) — Android `namespace`·`applicationId`와 iOS 번들 ID를 `com.closetimo.app`으로 통일(`MainActivity.kt` 패키지 이동, QA 스크립트·문서의 패키지 ID 갱신). Dart 패키지명(`pubspec` `name: closetimo`)은 유지. `test/unit/release_config_test.dart`로 회귀 가드.
-- [X] T087 release 업로드 키 서명(#11, QA F-01) — `android/key.properties`(gitignore)를 읽는 `signingConfigs.release` 구성. 키가 없으면 release APK는 debug 키 + 경고(로컬 QA 전용), `bundleRelease`(AAB)는 빌드 실패. Play App Signing 절차는 `docs/release/android-signing.md`. 실제 업로드 키 생성·Play Console 등록은 사용자 작업.
+- [X] T093 앱 ID 확정(#25) — Android `namespace`·`applicationId`와 iOS 번들 ID를 `com.closetimo.app`으로 통일(`MainActivity.kt` 패키지 이동, QA 스크립트·문서의 패키지 ID 갱신). Dart 패키지명(`pubspec` `name: closetimo`)은 유지. `test/unit/release_config_test.dart`로 회귀 가드.
+- [X] T094 release 업로드 키 서명(#11, QA F-01) — `android/key.properties`(gitignore)를 읽는 `signingConfigs.release` 구성. 키가 없으면 release APK는 debug 키 + 경고(로컬 QA 전용), `bundleRelease`(AAB)는 빌드 실패. Play App Signing 절차는 `docs/release/android-signing.md`. 실제 업로드 키 생성·Play Console 등록은 사용자 작업.
 
 **Checkpoint**: 모든 spec FR/SC 검증 통과. v1.0 출시 가능 상태.
 
