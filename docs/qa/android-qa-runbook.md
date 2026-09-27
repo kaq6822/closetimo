@@ -53,6 +53,7 @@ ${AAPT%aapt2}apksigner verify --print-certs build/app/outputs/flutter-apk/app-re
 - 서명 DN이 `CN=Android Debug`면 `android/key.properties`가 없는 로컬 빌드다(QA용으로는 무방).
   스토어용 AAB는 업로드 키 없이 빌드가 실패해야 한다 → 성공하면 P0. [docs/release/android-signing.md](../release/android-signing.md)
 - `versionCode`/`versionName`이 이번 출시 값인지.
+- 앱 ID는 `com.closetimo.app`이다. 기기에 구 ID `com.closetimo.closetimo_app` 테스트 빌드가 남아 있으면 별개 앱이므로 `adb uninstall com.closetimo.closetimo_app`으로 삭제한다.
 
 ## 4. 탐색 QA 체크리스트 (L4)
 

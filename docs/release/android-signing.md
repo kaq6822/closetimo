@@ -40,8 +40,9 @@ keyAlias=upload
 keyPassword=<키 비밀번호>
 ```
 
-- `storeFile`은 절대 경로를 권장한다(상대 경로는 `android/app/` 기준으로 해석된다).
+- `storeFile`은 **절대 경로**로 쓴다. `~`는 확장되지 않는다(`~/closetimo-upload.jks`는 `android/app/~/...`로 해석되어 실패). 상대 경로는 `android/app/` 기준이다.
 - 네 값 중 하나라도 비어 있으면 Gradle이 `android/key.properties is missing '<name>'`으로 실패한다.
+  설정 단계에서 검사하므로 **debug 빌드·`flutter run`도 함께 실패**한다. 값을 채우거나 파일을 치운다.
 - 커밋 전 `git status`에 `key.properties`가 보이지 않는지 확인한다(`.gitignore`로 무시됨).
 
 ## 3. 빌드와 서명 확인
@@ -58,17 +59,23 @@ keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab
 
 | 명령 | 결과 |
 |---|---|
-| `flutter build appbundle` (`bundleRelease`) | **빌드 실패** — `Release app bundle requires an upload key.` |
+| `flutter build appbundle` (`bundleRelease`, `signReleaseBundle`·`packageReleaseBundle` 등 이름에 Release·Bundle이 든 모든 태스크) | **빌드 실패** — `Release app bundle requires an upload key.` |
 | `flutter build apk --release` / `flutter run --release` (`assembleRelease`) | debug 키로 서명 + 큰 경고 배너. 로컬 QA 전용 |
 
 스토어에 올리는 산출물은 AAB뿐이므로 AAB만 막는다. 이렇게 하면 업로드 키가 없는 개발자·에이전트도
 런북 §3의 release APK 점검(L2)과 실기기 QA를 계속할 수 있고, debug 키로 서명된 AAB가 Play Console에
 올라가는 사고(#11)는 빌드 단계에서 차단된다. release APK를 배포 용도로 쓰지 말 것.
 
+### 구 앱 ID 테스트 빌드 정리
+
+앱 ID가 `com.closetimo.closetimo_app` → `com.closetimo.app`으로 바뀌어, 이전에 설치한 테스트 빌드는
+**별개 앱으로 남는다**(데이터도 이전되지 않음). QA 기기에서 구 앱을 삭제한다:
+`adb uninstall com.closetimo.closetimo_app` (iOS 시뮬레이터: `xcrun simctl uninstall booted com.closetimo.closetimoApp`).
+
 ## 4. Play Console 최초 등록 (Play App Signing)
 
 1. Play Console에서 앱을 만든다(패키지 이름 `com.closetimo.app`).
-2. **테스트 및 출시 → 설정 → 앱 서명**에서 "Google에서 생성한 앱 서명 키 사용"(기본값)을 선택한다.
+2. **테스트 및 출시 → 앱 무결성 → Play 앱 서명**(콘솔 버전에 따라 메뉴 경로가 다를 수 있음)에서 "Google에서 생성한 앱 서명 키 사용"(기본값)을 선택한다.
 3. 위 §3에서 만든 AAB를 첫 트랙(내부 테스트 권장)에 업로드한다. 이 첫 업로드에 쓴 키가
    **업로드 키로 등록**된다.
 4. 앱 서명 페이지에서 "앱 서명 키 인증서"와 "업로드 키 인증서" SHA-256이 따로 표시되는지 확인한다.
@@ -83,7 +90,7 @@ Play App Signing을 쓰므로 업로드 키를 잃어도 **앱은 계속 업데�
    ```bash
    keytool -export -rfc -keystore ~/closetimo-upload-new.jks -alias upload -file upload_certificate.pem
    ```
-3. Play Console **앱 서명** 페이지의 "업로드 키 재설정 요청"에서 `upload_certificate.pem`을 제출한다
+3. Play Console **Play 앱 서명** 페이지(위 §4 2단계 위치, 콘솔 버전에 따라 다를 수 있음)의 "업로드 키 재설정 요청"에서 `upload_certificate.pem`을 제출한다
    (계정 소유자 권한 필요).
 4. Google 승인 후(보통 수일) 새 키가 유효해진다. 그때 `android/key.properties`의 `storeFile`·비밀번호를 새 값으로 바꾼다.
    승인 전에는 이전 키로도, 새 키로도 업로드할 수 없는 기간이 생길 수 있다.

@@ -68,14 +68,18 @@ android {
 // 업로드 키 없이 만든 release 산출물이 스토어로 나가지 않게 한다(#11).
 gradle.taskGraph.whenReady {
     if (hasUploadKey) return@whenReady
-    val releaseTasks = allTasks.filter { it.project == project && it.name.endsWith("Release") }
-    if (releaseTasks.any { it.name.startsWith("bundle") }) {
+    val appTasks = allTasks.filter { it.project == project }
+    // bundleRelease뿐 아니라 signReleaseBundle·packageReleaseBundle 등 AAB를 만드는 모든 태스크를 막는다.
+    val bundlesRelease = appTasks.any {
+        it.name.contains("release", ignoreCase = true) && it.name.contains("bundle", ignoreCase = true)
+    }
+    if (bundlesRelease) {
         throw GradleException(
             "Release app bundle requires an upload key. " +
                 "Create android/key.properties (see docs/release/android-signing.md)."
         )
     }
-    if (releaseTasks.any { it.name.startsWith("assemble") }) {
+    if (appTasks.any { it.name == "assembleRelease" }) {
         // flutter build는 Gradle을 -q로 실행해 warn 레벨이 숨겨지므로 quiet 레벨로 출력한다.
         logger.quiet(
             """

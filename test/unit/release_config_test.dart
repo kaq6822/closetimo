@@ -38,7 +38,7 @@ void main() {
       contains('if (hasUploadKey) signingConfigs.getByName("release")'),
     );
     // 업로드 키가 없으면 스토어용 AAB 빌드는 실패해야 한다.
-    expect(gradle, contains('it.name.startsWith("bundle")'));
+    expect(gradle, contains('it.name.contains("bundle", ignoreCase = true)'));
     expect(gradle, contains('Release app bundle requires an upload key.'));
   });
 
