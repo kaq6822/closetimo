@@ -17,12 +17,14 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:closetimo/main.dart' as app;
 
+import 'support/e2e_helpers.dart';
+
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> shot(WidgetTester tester, String name) async {
     await tester.pumpAndSettle();
-    await binding.takeScreenshot(name);
+    await takeShot(binding, tester, name);
   }
 
   /// 스크롤로 노출을 보장한 뒤 탭한다.
@@ -95,12 +97,12 @@ void main() {
       await shot(tester, '07_wardrobe_grid');
 
       await tester.enterText(find.byType(TextField).first, '존재하지않는옷');
-      await tester.pumpAndSettle();
+      await pumpUntilFound(tester, find.text('검색 결과가 없습니다.'));
       expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
       await shot(tester, '08_wardrobe_search_empty');
 
       await tester.enterText(find.byType(TextField).first, '캐시미어');
-      await tester.pumpAndSettle();
+      await pumpUntilFound(tester, find.text('오버사이즈 캐시미어 코트'));
       expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
       await tester.enterText(find.byType(TextField).first, '');
       await tester.pumpAndSettle();
