@@ -212,6 +212,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T083 quickstart 매뉴얼 시나리오 회귀 — quickstart.md §8의 7단계를 `integration_test/full_flow_verification_test.dart`(등록·탐색·착용·세탁·설정)로 자동 회귀 확인하고, 7단계(앱 강제 종료 → 재실행 → 데이터·마지막 탭 보존)는 `integration_test/restart_persistence_test.dart`로 검증(SC-005·SC-006). 시뮬레이터에서 OS 프로세스를 직접 종료 후 재실행하면 `flutter drive` 테두리에서 앱이 언인스톨되는 제약이 있어, 위젯 트리를 다시 빌드(`app.main()` 재호출)해 재시작을 시뮬레이션한다(Isar는 실제 파일 저장소이므로 유효한 검증).
 - [X] T084 README 작성 — repo 루트 `README.md`에 프로젝트 소개, 빠른 시작 링크(`specs/001-home-dashboard/quickstart.md`), 헌법 링크, 기술 스택을 한국어로 정리.
 - [X] T085 PR 체크리스트 회귀 — README §"PR 체크리스트" 섹션 — quickstart.md §6의 6개 항목(analyze·format·test·integration·spec 동기화·헌법 준수)을 모두 통과한 상태로 PR 준비. spec.md의 SC-001~007 매핑 표를 PR description에 첨부.
+- [X] T092 [P] 옷 상세 토스트가 방금 누른 버튼을 가림(QA F-12, #22) — `lib/core/widgets/toast.dart`에 `ToastPlacement`(bottom 기본/top) 추가. 옷 상세에 머무는 토스트(착용 기록·세탁 바구니·메모 수정·기록 삭제)는 상단바 아래(top)에 띄우고, 화면을 벗어나는 토스트(삭제 후 옷장 복귀·옷 없음)는 하단 탭 위(bottom)를 유지. 회귀: `test/feature/item_detail_toast_placement_test.dart`(A23 뷰포트에서 버튼·상단바 비겹침).
 
 **Checkpoint**: 모든 spec FR/SC 검증 통과. v1.0 출시 가능 상태.
 
