@@ -87,7 +87,7 @@ flutter analyze                                        # 정적 분석
 flutter test                                           # 전체 테스트
 flutter test test/unit/date_formatter_test.dart        # 단일 테스트 파일
 dart run tool/check_design_tokens.dart                 # 디자인 토큰 하드코딩 검사
-# 실기기 E2E (사전: xcrun simctl uninstall booted com.closetimo.closetimoApp)
+# 실기기 E2E (사전: xcrun simctl uninstall booted com.closetimo.app)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/full_flow_verification_test.dart -d <device-id>
 # Android E2E 4종 (기기 자동 선택·앱 초기화·perf는 profile) — 스크린샷 build/android_verify_shots/

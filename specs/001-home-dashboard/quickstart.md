@@ -59,7 +59,11 @@ flutter run --dart-define=SEED_DEMO=true
 첫 실행 시 sandbox에 주 저장소(`closetimo_plus.isar` + `.lock`)가 생성된다. 업데이트
 설치에서는 기존 `closetimo.isar`를 읽어 새 저장소로 이전하되 원본 파일은 보존한다. 위치:
 - iOS: `<simulator>/data/Containers/Data/Application/<UUID>/Documents/`
-- Android: `/data/data/com.example.closetimo/files/`
+- Android: `/data/data/com.closetimo.app/files/`
+
+앱 ID는 Android `applicationId`·iOS 번들 ID 모두 `com.closetimo.app`이다(스토어 게시 후 변경 불가).
+스토어용 release 빌드(`flutter build appbundle`)는 업로드 키가 필요하다 —
+[docs/release/android-signing.md](../../docs/release/android-signing.md).
 
 ---
 
@@ -89,7 +93,7 @@ flutter test
 
 # 통합(E2E) — emulator·simulator 필요. 실제 Isar 저장소를 사용하므로
 # 결정적 결과를 위해 실행 전 앱을 삭제해 빈 상태에서 시작한다.
-xcrun simctl uninstall booted com.closetimo.closetimoApp   # iOS 시뮬레이터 기준
+xcrun simctl uninstall booted com.closetimo.app   # iOS 시뮬레이터 기준
 flutter drive \
   --driver=test_driver/integration_test.dart \
   --target=integration_test/full_flow_verification_test.dart \

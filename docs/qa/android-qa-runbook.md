@@ -45,12 +45,13 @@ Android 기기에서 출시 전(또는 회귀) QA를 수행하는 에이전트·
 AAPT=$(ls -d ~/Library/Android/sdk/build-tools/*/ | tail -1)aapt2
 $AAPT dump badging build/app/outputs/flutter-apk/app-release.apk | grep -E "^package|targetSdk|application-label"
 $AAPT dump permissions build/app/outputs/flutter-apk/app-release.apk
-grep -n signingConfig android/app/build.gradle.kts
+${AAPT%aapt2}apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk | grep DN
 ```
 
 - `application-label`이 제품명(옷장이모)인지 — 런처 아이콘 아래 표시되는 이름이다.
 - 권한에 `INTERNET`이 **없어야** 한다(헌법 III 로컬 우선). 있으면 P0.
-- release `signingConfig`가 debug 키면 스토어 업로드 불가 → P0(출시 차단).
+- 서명 DN이 `CN=Android Debug`면 `android/key.properties`가 없는 로컬 빌드다(QA용으로는 무방).
+  스토어용 AAB는 업로드 키 없이 빌드가 실패해야 한다 → 성공하면 P0. [docs/release/android-signing.md](../release/android-signing.md)
 - `versionCode`/`versionName`이 이번 출시 값인지.
 
 ## 4. 탐색 QA 체크리스트 (L4)
@@ -121,8 +122,8 @@ adb shell settings put system font_scale "$FS"; adb shell cmd uimode night "$NM"
 adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings put system accelerometer_rotation "$AR"
 ```
 
-- 백그라운드 복원: 앱에서 `home`(헬퍼) → `adb shell am kill com.closetimo.closetimo_app` → `launch` → 마지막 탭·데이터 확인.
-- 메모리: `adb shell dumpsys meminfo com.closetimo.closetimo_app | grep "TOTAL PSS"`.
+- 백그라운드 복원: 앱에서 `home`(헬퍼) → `adb shell am kill com.closetimo.app` → `launch` → 마지막 탭·데이터 확인.
+- 메모리: `adb shell dumpsys meminfo com.closetimo.app | grep "TOTAL PSS"`.
 
 ## 6. 하네스 함정 (실제 사고에서 나온 규칙)
 
