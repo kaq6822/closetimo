@@ -50,8 +50,11 @@ class _FakeItemRepo implements ItemRepository {
 }
 
 class _FakeEventRepo implements EventRepository {
+  _FakeEventRepo(this.events);
+  final List<WearEvent> events;
+
   @override
-  Stream<List<WearEvent>> watchForItem(int itemId) => Stream.value(const []);
+  Stream<List<WearEvent>> watchForItem(int itemId) => Stream.value(events);
   @override
   Future<void> recordWear(int itemId, {String? note}) async {}
   @override
@@ -72,7 +75,7 @@ class _FakeLaundryRepo implements LaundryRepository {
   Future<void> completeWashFor(List<int> itemIds) async {}
 }
 
-Widget _harness(Item item) {
+Widget _harness(Item item, List<WearEvent> events) {
   final router = GoRouter(
     initialLocation: '/item/1',
     routes: [
@@ -86,7 +89,7 @@ Widget _harness(Item item) {
   return ProviderScope(
     overrides: [
       itemRepositoryProvider.overrideWithValue(_FakeItemRepo(item)),
-      eventRepositoryProvider.overrideWithValue(_FakeEventRepo()),
+      eventRepositoryProvider.overrideWithValue(_FakeEventRepo(events)),
       laundryRepositoryProvider.overrideWithValue(_FakeLaundryRepo(item)),
       imageStoreProvider.overrideWithValue(ImageStore()),
     ],
@@ -104,7 +107,8 @@ Widget _harness(Item item) {
 }
 
 /// 상세 화면을 A23 뷰포트(384×856dp, 상태바 24dp·내비바 48dp)로 띄운다.
-Future<Item> _pumpDetail(WidgetTester tester) async {
+/// [historyCount]만큼 착용 기록을 두면 버튼을 화면 위쪽까지 스크롤할 수 있다.
+Future<Item> _pumpDetail(WidgetTester tester, {int historyCount = 0}) async {
   tester.view.physicalSize = const Size(1080, 2408);
   tester.view.devicePixelRatio = 2.8125;
   tester.view.padding = const FakeViewPadding(top: 67.5, bottom: 135);
@@ -116,7 +120,15 @@ Future<Item> _pumpDetail(WidgetTester tester) async {
     washCycle: 5,
     createdAt: DateTime(2026, 1, 1),
   )..id = 1;
-  await tester.pumpWidget(_harness(item));
+  final events = [
+    for (var i = 0; i < historyCount; i++)
+      WearEvent(
+        itemId: 1,
+        kind: EventKind.wear,
+        occurredAt: DateTime(2026, 5, 20 - i),
+      )..id = i + 1,
+  ];
+  await tester.pumpWidget(_harness(item, events));
   await tester.pumpAndSettle();
   return item;
 }
@@ -167,15 +179,42 @@ void main() {
     await _tapAndExpectToastClear(tester, _laundryButton);
   });
 
-  testWidgets('#22: 버튼이 막 보일 만큼만 스크롤한 경우에도 토스트가 가리지 않는다', (tester) async {
-    await _pumpDetail(tester);
-    await tester.scrollUntilVisible(
-      _laundryButton,
-      40,
-      scrollable: find.byType(Scrollable).first,
-    );
+  testWidgets('#22: 버튼을 상단바 바로 아래로 스크롤해 토스트가 겹쳐도 버튼을 다시 누를 수 있다', (
+    tester,
+  ) async {
+    final item = await _pumpDetail(tester, historyCount: 12);
+    // 버튼 윗변을 상단바 바로 아래로 올린다 → 상단 토스트 띠와 겹친다.
+    final topBarBottom = tester.getRect(find.byType(TopBar)).bottom;
+    final dy = tester.getRect(_laundryButton).top - (topBarBottom + 2);
+    await tester.drag(find.byType(SingleChildScrollView), Offset(0, -dy));
     await tester.pumpAndSettle();
+    final buttonCenter = tester.getCenter(_laundryButton);
 
-    await _tapAndExpectToastClear(tester, _laundryButton);
+    await tester.tap(_laundryButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300)); // 토스트 표시 중
+    expect(item.inLaundry, isTrue);
+    final toastRect = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('세탁 바구니에 담겼어요'),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(
+      toastRect.contains(buttonCenter),
+      isTrue,
+      reason: 'precondition: toast $toastRect covers button $buttonCenter',
+    );
+
+    // 토스트는 비차단이어야 한다 — 덮인 버튼을 다시 누르면 토글된다.
+    await tester.tapAt(buttonCenter);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(item.inLaundry, isFalse);
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
   });
 }

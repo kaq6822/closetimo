@@ -21,7 +21,8 @@ enum ToastPlacement {
 /// TopBar 높이(8 + 48 + 8)보다 약간 아래에 둔다.
 const double _topOffset = ClosetimoSpacing.huge + ClosetimoSpacing.xl;
 
-/// 하단 배치 시 오프셋. 하단 탭(BottomNav) 위에 뜨도록 한다.
+/// 하단 배치 시 오프셋. 하단 탭(BottomNav, 약 80dp) 위에 뜨도록 한다.
+/// 탭 높이에 맞춘 레이아웃 값이라 간격 토큰 조합으로 쪼개지 않는다.
 const double _bottomOffset = 100;
 
 void showClosetimoToast(
@@ -133,21 +134,25 @@ class _ToastBubbleState extends State<_ToastBubble>
     return Positioned(
       top: isTop ? _topOffset : null,
       bottom: isTop ? null : _bottomOffset,
-      left: 24,
-      right: 24,
-      child: SafeArea(
-        top: isTop,
-        bottom: !isTop,
-        child: Material(
-          color: Colors.transparent,
-          child: FadeTransition(
-            opacity: _curve,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: Offset(0, isTop ? -0.4 : 0.4),
-                end: Offset.zero,
-              ).animate(_curve),
-              child: bubble,
+      left: ClosetimoSpacing.xl,
+      right: ClosetimoSpacing.xl,
+      // 비차단(FR-023) — 토스트가 버튼 위에 겹쳐도 탭은 아래로 통과한다.
+      // IgnorePointer는 포인터만 막고 시맨틱(liveRegion)은 유지한다.
+      child: IgnorePointer(
+        child: SafeArea(
+          top: isTop,
+          bottom: !isTop,
+          child: Material(
+            color: Colors.transparent,
+            child: FadeTransition(
+              opacity: _curve,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(0, isTop ? -0.4 : 0.4),
+                  end: Offset.zero,
+                ).animate(_curve),
+                child: bubble,
+              ),
             ),
           ),
         ),
