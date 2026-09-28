@@ -201,7 +201,14 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       message = _isEdit ? '수정에 실패했어요' : '등록에 실패했어요';
     }
     if (!context.mounted) return;
-    showClosetimoToast(context, message);
+    // #22 N-02 — 수정은 하단 탭이 없는 상세로 돌아가(실패 시엔 수정 화면에 머묾)
+    // 하단 토스트가 "착용 기록하기" 등을 덮으므로 상단에 띄운다. 신규 등록은
+    // 옷장 등 탭 화면으로 돌아가므로 하단 탭 위(기본)를 유지한다.
+    showClosetimoToast(
+      context,
+      message,
+      placement: _isEdit ? ToastPlacement.top : ToastPlacement.bottom,
+    );
     if (success) context.pop();
     if (mounted) setState(() => _saving = false);
   }

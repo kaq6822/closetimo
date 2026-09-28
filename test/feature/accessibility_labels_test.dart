@@ -2,6 +2,8 @@
 // 있는지, 체크·토글 상태가 노출되는지, 토스트가 live region인지 검증한다.
 // QA 하네스(tool/qa/android_qa.sh)도 이 라벨로 요소를 찾는다.
 
+import 'dart:io';
+
 import 'package:closetimo/app/router.dart';
 import 'package:closetimo/app/theme/app_theme.dart';
 import 'package:closetimo/core/widgets/chip_filter.dart';
@@ -9,6 +11,7 @@ import 'package:closetimo/core/widgets/toast.dart';
 import 'package:closetimo/core/widgets/top_bar.dart';
 import 'package:closetimo/data/models/item.dart';
 import 'package:closetimo/features/add_item/add_item_screen.dart';
+import 'package:closetimo/features/add_item/widgets/photo_picker_card.dart';
 import 'package:closetimo/features/add_item/widgets/wash_cycle_stepper.dart';
 import 'package:closetimo/features/laundry/widgets/laundry_tile.dart';
 import 'package:closetimo/features/settings/widgets/preference_row.dart';
@@ -270,9 +273,11 @@ void main() {
       ),
     );
 
+    // N-03 — 옷 이름이 먼저 읽혀야 한다. value는 Android content-desc에서 label보다
+    // 앞에 붙으므로 부가 정보도 label에 이어 담고 value는 비운다.
     expect(
-      _node(tester, RegExp(r'^울 코트 상세 보기')),
-      isSemantics(isButton: true, hasTapAction: true),
+      _node(tester, '울 코트 상세 보기, 아우터 · 기계세탁, 착용 0/5'),
+      isSemantics(isButton: true, hasTapAction: true, value: ''),
     );
     // 체크를 눌러도 상세로 가지 않는다(탭 영역 분리).
     await tester.tap(find.bySemanticsLabel('울 코트 선택'));
@@ -300,5 +305,29 @@ void main() {
     // 스위치 자체를 눌러도 한 번만 토글된다(행 탭과 중복 호출 없음).
     await tester.tap(find.byType(Switch));
     expect(values, [false, false]);
+  });
+
+  testWidgets('사진이 첨부된 사진 영역은 "의류 사진 변경" 버튼으로 읽힌다 (N-01)', (tester) async {
+    final handle = tester.ensureSemantics();
+    Widget card(File? photo) => _host(
+      SizedBox(
+        width: 300,
+        child: PhotoPickerCard(tempPhoto: photo, onPicked: (_) {}),
+      ),
+    );
+
+    await tester.pumpWidget(card(null));
+    expect(
+      _node(tester, '의류 사진 등록'),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+
+    // 이미지 디코딩과 무관하게 시맨틱만 본다(존재하지 않는 경로여도 무방).
+    await tester.pumpWidget(card(File('/nonexistent/photo.jpg')));
+    expect(
+      _node(tester, '의류 사진 변경'),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
   });
 }

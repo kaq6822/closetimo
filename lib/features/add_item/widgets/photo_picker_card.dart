@@ -87,9 +87,18 @@ class PhotoPickerCard extends StatelessWidget {
         color: surfaces.containerLow,
         borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
+        // #17 N-01 — 사진이 붙으면 안내 텍스트가 사라져 라벨 없는 버튼이 되던 문제.
+        // 상태별 라벨을 직접 붙이고 하위 텍스트는 중복 낭독되지 않게 뺀다.
+        child: Semantics(
+          container: true,
+          button: true,
+          label: _hasPhoto ? '의류 사진 변경' : '의류 사진 등록',
+          excludeSemantics: true,
           onTap: () => _showSourceSheet(context),
-          child: _buildContent(),
+          child: InkWell(
+            onTap: () => _showSourceSheet(context),
+            child: _buildContent(),
+          ),
         ),
       ),
     );

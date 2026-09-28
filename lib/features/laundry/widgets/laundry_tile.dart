@@ -51,8 +51,10 @@ class LaundryTile extends ConsumerWidget {
             child: Semantics(
               container: true,
               button: true,
-              label: '${item.name} 상세 보기',
-              value:
+              // value는 Android content-desc에서 label보다 먼저 읽혀 옷 이름이
+              // 맨 뒤로 밀린다(N-03). 이름이 먼저 오도록 한 label에 담는다.
+              label:
+                  '${item.name} 상세 보기, '
                   '${item.category.label} · ${item.careMethod.label}, '
                   '착용 ${item.wearSinceWash}/${item.washCycle}',
               excludeSemantics: true,

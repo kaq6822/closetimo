@@ -117,6 +117,7 @@ qa_install_release() {
 #   "<옷 이름> 선택"(세탁 바구니 체크), 설정 알림은 행 라벨("세탁 알림" 등, 행 전체 탭으로 토글),
 #   세탁 바구니 타일 상세 진입은 tap "<옷 이름> 상세 보기" contains(뒤에 분류·착용 값이 붙음).
 #   카테고리 칩은 라벨 + selected 상태("아우터" 등, descs의 state 열에 selected).
+#   등록·수정 사진 영역은 "의류 사진 등록"(사진 없음) / "의류 사진 변경"(첨부됨).
 #
 # 입력 필드만은 라벨로 찾을 수 없다. Flutter는 EditText의 라벨을 content-desc가 아닌
 # hintText(TalkBack이 읽음)로 내보내는데, android layout·uiautomator 덤프에는 hint가 없다.

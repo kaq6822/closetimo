@@ -135,6 +135,7 @@ adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings p
    세탁 바구니 체크("<옷 이름> 선택")·설정 알림(행 라벨 "세탁 알림" 등, 행 전체 탭으로 토글)은
    접근성 라벨로 찾는다(#17). 세탁 바구니 타일의 상세 진입은 `tap "<옷 이름> 상세 보기" contains`다
    (content-desc 뒤에 분류·착용 값이 붙는다). 카테고리 칩은 라벨 + `selected` 상태로 노출된다.
+   사진 영역은 "의류 사진 등록"(사진 없음) / "의류 사진 변경"(첨부됨)이다.
    **입력 필드만 예외**다. Flutter는 EditText의 라벨을 content-desc가 아닌 hintText로 내보낸다.
    TalkBack은 이 값을 읽지만 `android layout`·`uiautomator dump`에는 나오지 않는다.
    그래서 필드는 `field_below "<필드 이름>"`(이름 텍스트 바로 아래 첫 입력 필드)으로 찾는다.
