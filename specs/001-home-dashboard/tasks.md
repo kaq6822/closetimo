@@ -215,6 +215,9 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T085 PR 체크리스트 회귀 — README §"PR 체크리스트" 섹션 — quickstart.md §6의 6개 항목(analyze·format·test·integration·spec 동기화·헌법 준수)을 모두 통과한 상태로 PR 준비. spec.md의 SC-001~007 매핑 표를 PR description에 첨부.
 - [X] T093 앱 ID 확정(#25) — Android `namespace`·`applicationId`와 iOS 번들 ID를 `com.closetimo.app`으로 통일(`MainActivity.kt` 패키지 이동, QA 스크립트·문서의 패키지 ID 갱신). Dart 패키지명(`pubspec` `name: closetimo`)은 유지. `test/unit/release_config_test.dart`로 회귀 가드.
 - [X] T094 release 업로드 키 서명(#11, QA F-01) — `android/key.properties`(gitignore)를 읽는 `signingConfigs.release` 구성. 키가 없으면 release APK는 debug 키 + 경고(로컬 QA 전용), `bundleRelease`(AAB)는 빌드 실패. Play App Signing 절차는 `docs/release/android-signing.md`. 실제 업로드 키 생성·Play Console 등록은 사용자 작업.
+- [X] T090 [P] 검색 후 상세에서 돌아오면 키보드가 다시 올라옴(QA F-04, #14) — `lib/features/wardrobe/widgets/wardrobe_filter_bar.dart` 검색 TextField에 `onTapOutside` 포커스 해제 추가. 포커스를 둔 채 타일·+로 push하면 pop 시 Navigator가 포커스를 복원하던 문제. 회귀: `test/feature/wardrobe_search_focus_test.dart`(상세·등록 복귀 후 포커스·키보드 없음).
+- [X] T091 [P] 접근성 라벨 누락(QA F-07, #17) — 상단바 뒤로·+(`top_bar.dart` "뒤로 가기"/"옷 등록"), 등록 폼 입력("의류 명칭"/"브랜드"), 세탁 주기 ±("착용 횟수 줄이기/늘리기", 비활성 상태 포함), 세탁 바구니 체크("<옷 이름> 선택" + checked), 설정 스위치 행(`MergeSemantics`), 토스트(`liveRegion`), 카테고리 칩 selected 상태, 세탁 바구니 타일 "<옷 이름> 상세 보기"(썸네일+정보 영역 탭으로 상세 진입), 설정 알림 행 전체 탭 토글, 첨부 사진 영역 "의류 사진 변경", 세탁 타일 낭독 순서(이름 먼저). 회귀: `test/feature/accessibility_labels_test.dart`. QA 하네스(`tool/qa/android_qa.sh`)는 위치 기반 `_unlabeled` 대신 라벨로 요소를 찾는다.
+- [X] T092 [P] 옷 상세 토스트가 방금 누른 버튼을 가림(QA F-12, #22) — `lib/core/widgets/toast.dart`에 `ToastPlacement`(bottom 기본/top) 추가. 옷 상세에 머무는 토스트(착용 기록·세탁 바구니·메모 수정·기록 삭제)는 상단바 아래(top)에 띄우고, 화면을 벗어나는 토스트(삭제 후 옷장 복귀·옷 없음)는 하단 탭 위(bottom)를 유지. 옷 정보 수정 저장 토스트도 상세로 돌아가므로 top(신규 등록은 bottom). 회귀: `test/feature/item_detail_toast_placement_test.dart`(A23 뷰포트에서 버튼·상단바 비겹침).
 
 **Checkpoint**: 모든 spec FR/SC 검증 통과. v1.0 출시 가능 상태.
 

@@ -63,6 +63,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   }
 
   // ignore_for_file: use_build_context_synchronously
+  // #22 — 상세 화면에 머무는 토스트는 방금 누른 버튼(스크롤 후 화면 하단에 오기
+  // 쉬움)을 가리지 않도록 상단바 아래에 띄운다. 화면을 벗어나는 토스트는 기본(하단).
   Future<void> _recordWear() async {
     final result = await WearRecordSheet.show(context);
     if (result == null) return;
@@ -71,7 +73,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         .recordWear(widget.id, note: result.note);
     await _refresh();
     if (!context.mounted) return;
-    showClosetimoToast(context, '오늘의 착용이 기록되었어요');
+    showClosetimoToast(
+      context,
+      '오늘의 착용이 기록되었어요',
+      placement: ToastPlacement.top,
+    );
   }
 
   Future<void> _toggleLaundry() async {
@@ -83,6 +89,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     showClosetimoToast(
       context,
       wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요',
+      placement: ToastPlacement.top,
     );
   }
 
@@ -93,7 +100,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         .read(eventRepositoryProvider)
         .updateEventNote(event.id, result.note);
     if (!context.mounted) return;
-    showClosetimoToast(context, '메모를 수정했어요');
+    showClosetimoToast(
+      context,
+      '메모를 수정했어요',
+      placement: ToastPlacement.top,
+    );
   }
 
   Future<void> _deleteEvent(WearEvent event) async {
@@ -102,7 +113,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await ref.read(eventRepositoryProvider).deleteWearEvent(event.id);
     await _refresh();
     if (!context.mounted) return;
-    showClosetimoToast(context, '착용 기록을 삭제했어요');
+    showClosetimoToast(
+      context,
+      '착용 기록을 삭제했어요',
+      placement: ToastPlacement.top,
+    );
   }
 
   // 002 FR-001 — 수정 화면 진입 후 복귀 시 상세를 갱신한다.
