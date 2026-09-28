@@ -14,7 +14,7 @@
 # zsh에서 source해도 "$c" 같은 좌표 인자가 bash처럼 단어 분리되게 한다.
 [ -n "${ZSH_VERSION:-}" ] && setopt sh_word_split
 
-PKG=com.closetimo.closetimo_app
+PKG=com.closetimo.app
 QA_OUT="${QA_OUT:-build/android_qa}"
 mkdir -p "$QA_OUT"
 

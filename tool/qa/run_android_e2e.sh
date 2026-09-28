@@ -15,7 +15,7 @@ cd "$(dirname "$0")/../.."
 # shellcheck source=tool/qa/android_qa.sh
 source tool/qa/android_qa.sh >/dev/null || exit 1
 
-PKG=com.closetimo.closetimo_app
+PKG=com.closetimo.app
 LOG_DIR=build/android_qa
 export SHOTS_DIR=build/android_verify_shots
 mkdir -p "$LOG_DIR"

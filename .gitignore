@@ -44,3 +44,8 @@
 
 # Spec Kit 로컬 캐시 (툴이 생성하는 카탈로그 캐시, 소스 아님)
 .specify/extensions/.cache/
+
+# 서명 키 — 절대 커밋하지 않는다 (docs/release/android-signing.md)
+**/key.properties
+*.jks
+*.keystore

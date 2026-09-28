@@ -6,7 +6,7 @@
 // 네트워크를 호출하지 않아야 하므로, 이 차단 아래에서도 정상 동작해야 한다.
 //
 // 실행 전 앱 데이터를 비워야 한다:
-//   xcrun simctl uninstall booted com.closetimo.closetimoApp
+//   xcrun simctl uninstall booted com.closetimo.app
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/offline_smoke_test.dart -d <simulator>
 
