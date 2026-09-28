@@ -8,7 +8,7 @@
 // 확인한다.
 //
 // 실행 전 앱 데이터를 비워야 한다:
-//   xcrun simctl uninstall booted com.closetimo.closetimoApp
+//   xcrun simctl uninstall booted com.closetimo.app
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/restart_persistence_test.dart -d <simulator>
 

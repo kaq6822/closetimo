@@ -41,8 +41,8 @@ debug 모드 측정치(766ms)는 판정에 쓰지 않았다.
 
 | ID | 등급 | 요약 | 근거 | 상태 |
 |---|---|---|---|---|
-| F-01 | P0 | release 빌드가 **debug 키로 서명**됨. Play 업로드 불가 | `android/app/build.gradle.kts` `buildTypes.release.signingConfig = debug` | 미해결 (#11) |
-| F-02 | P0 | 런처 앱 이름이 `closetimo_app` | `android/app/src/main/AndroidManifest.xml` `android:label`; aapt `application-label:'closetimo_app'`. iOS `CFBundleDisplayName`도 "Closetimo App" | 해결 — ko "옷장이모"·그 외 "Closetimo" 로케일별 적용 (#12) |
+| F-01 | P0 | release 빌드가 **debug 키로 서명**됨. Play 업로드 불가 | `android/app/build.gradle.kts` `buildTypes.release.signingConfig = debug` | 해결 (#11) — `key.properties` 업로드 키 서명, 키 없으면 AAB 빌드 실패. 실제 업로드 키 생성·Play App Signing 등록은 사용자 작업으로 남음 |
+| F-02 | P0 | 런처 앱 이름이 `closetimo_app` | `android/app/src/main/AndroidManifest.xml` `android:label`; aapt `application-label:'closetimo_app'`. iOS `CFBundleDisplayName`도 "Closetimo App" | 해결 — ko "옷장이모"·그 외 "Closetimo" 로케일별 적용 (#12). release 빌드 재검증: aapt `application-label:'Closetimo'`, `application-label-ko:'옷장이모'` |
 | F-03 | P1 | 옷장 탭을 한 번 연 뒤에는 홈 카테고리 카드가 **필터를 적용하지 못함**(전체 목록 + 이전 스크롤 위치) — FR-019/AC5-2 위반 | `lib/features/wardrobe/wardrobe_screen.dart:26` `late _category = widget.initialCategory`가 최초 1회만 평가되고 `didUpdateWidget` 없음. `StatefulShellRoute.indexedStack`이 State를 보존. 관련 테스트 없음 | 해결 (#13) |
 | F-04 | P2 | 검색창 포커스 상태로 상세 진입 → 복귀 시 **키보드가 자동으로 다시 올라와** 그리드를 가림 | 재현: 옷장 검색창 탭 → 키보드 닫기 → 타일 탭 → back → `mInputShown=true` | 미해결 (#14) |
 | F-05 | P2 | spec 드리프트: 착용 기록 후 상세 화면 **유지**로 변경됐으나 spec AC3-1·routes.md §3·tasks T054는 "직전 화면으로 pop" | 커밋 `33068f3`. 코드가 의도된 동작이면 spec 갱신 필요 | 미해결 (#15) |
@@ -56,7 +56,7 @@ debug 모드 측정치(766ms)는 판정에 쓰지 않았다.
 | F-13 | P3 | 사진 없는 옷의 플레이스홀더가 단색 박스. `assets/images/upload-placeholder.png`는 미사용 | `hero_image.dart:79`, `garment_tile.dart:150` | 백로그 (#23) |
 | F-14 | P3 | 수정 화면에서 변경이 없어도 "저장" 활성 | — | 백로그 (#24) |
 
-출시 전 결정 필요: `applicationId`가 `com.closetimo.closetimo_app`(Gradle TODO 주석 잔존). 스토어 게시 후 변경 불가. (#25)
+출시 전 결정 필요: `applicationId`가 `com.closetimo.closetimo_app`(Gradle TODO 주석 잔존). 스토어 게시 후 변경 불가. (#25) → 해결: Android `applicationId`·iOS 번들 ID 모두 `com.closetimo.app`으로 확정.
 
 빌드 경고: Kotlin Gradle Plugin 2.2.20(`android/settings.gradle.kts:23`)에 대해 Flutter가 "곧 지원 중단, 2.3.20 이상으로 올릴 것"을 경고한다. 출시 차단은 아니지만 SDK 업그레이드 전에 처리할 것. (#26)
 

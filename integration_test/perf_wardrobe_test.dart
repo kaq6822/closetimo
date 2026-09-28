@@ -12,7 +12,7 @@
 // `--profile` 빌드로 재측정해야 한다.
 //
 // 실행 전 앱 데이터를 비워야 한다(다른 테스트 잔여 데이터와 섞이지 않도록):
-//   xcrun simctl uninstall booted com.closetimo.closetimoApp
+//   xcrun simctl uninstall booted com.closetimo.app
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/perf_wardrobe_test.dart -d <simulator>
 //   # 물리 기기 보유 시 (SC-004 공식 판정):
