@@ -26,6 +26,9 @@
   (`recently_worn_list.dart`)와 세탁 타일(`laundry_tile.dart`)에서도 `pushNamed`로 진입하므로,
   `pop()`은 진입 탭(홈/세탁)으로 돌아가 FR-012의 "옷장 탭 복귀"를 위반한다. 삭제는 탭 전환이
   의도이므로 push 규칙(itemDetail/addItem은 pushNamed)과 별개로 go 계열을 사용한다.
+- 예외(001 #13): push 아래 기준 위치(`routerDelegate.currentConfiguration.uri`)가 이미 `/wardrobe`
+  (옷장 그리드에서 진입)이면 `pop()`으로 돌아간다. 옷장 칩 필터가 `?category=`로 URL에 동기화되므로
+  쿼리 없는 `goNamed`는 필터를 전체로 초기화하고 스크롤을 맨 위로 올리기 때문이다.
 
 ## 3. 계약 준수 노트
 

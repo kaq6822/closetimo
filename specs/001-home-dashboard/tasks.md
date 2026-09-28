@@ -194,6 +194,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T074 [US5] SettingsScreen — `lib/features/settings/settings_screen.dart`. 프로필·알림·기타 3 섹션. 알림 토글은 `preferencesRepositoryProvider`와 양방향 바인딩. "데이터 백업"·"개인정보 처리방침"·"앱 정보 v1.0.0" 행은 read-only(plan.md 헌법 III 범위 명시).
 - [X] T075 [US5] /home·/settings 라우트 결선 — `lib/app/router.dart` shell에 두 화면 연결. 탭 전환 시 `setLastTab` 호출(FR-022).
 - [X] T076 [US5] 부트 시 lastTab 복원 — `lib/main.dart`(또는 router redirect)에서 `preferencesRepositoryProvider.watch()` 값으로 초기 탭 결정(routes.md §2).
+- [X] T086 [US5] 옷장 탭 방문 후 홈 카테고리 카드 필터 미적용 수정(#13, QA F-03) — `lib/features/wardrobe/wardrobe_screen.dart`. `StatefulShellRoute.indexedStack`이 보존한 State에 `didUpdateWidget`으로 새 `?category=`를 반영하고 스크롤을 맨 위로 되돌린다. 칩 선택도 `?category=`에 동기화해 같은 카드 재탭을 감지한다(routes.md §3). 옷장에서 들어간 상세의 삭제 후 복귀는 `pop()`으로 칩 필터를 유지한다(002 routes.md §2). 회귀 테스트 `test/feature/home_category_filter_test.dart`(실제 `goRouterProvider` 셸, FR-019).
 
 **Checkpoint**: 전체 spec(P1~P5) 동작. SC-005(앱 재시작 100% 복원) 검증 가능.
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/widgets/bottom_nav.dart';
 import '../../core/widgets/chip_filter.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/soft_button.dart';
@@ -122,7 +123,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     showClosetimoToast(context, '옷을 옷장에서 삭제했어요');
     // FR-012 — 삭제 후에는 진입 경로(홈·세탁 타일 포함)와 무관하게 옷장 탭으로
     // 복귀해야 한다. pop()은 진입 스택으로 돌아가므로 goNamed로 탭을 전환한다.
-    context.goNamed(Routes.wardrobe);
+    // 단, 옷장에서 push로 들어왔다면(push 아래 기준 URI가 옷장) pop해서
+    // 칩 필터(`?category=`)·검색어·스크롤을 그대로 유지한다(#13 부수 효과 방지).
+    final base = GoRouter.of(context).routerDelegate.currentConfiguration.uri;
+    if (base.path == BottomNavTab.wardrobe.path && context.canPop()) {
+      context.pop();
+    } else {
+      context.goNamed(Routes.wardrobe);
+    }
   }
 
   @override
