@@ -53,7 +53,9 @@ ${AAPT%aapt2}apksigner verify --print-certs build/app/outputs/flutter-apk/app-re
 - 서명 DN이 `CN=Android Debug`면 `android/key.properties`가 없는 로컬 빌드다(QA용으로는 무방).
   스토어용 AAB는 업로드 키 없이 빌드가 실패해야 한다 → 성공하면 P0. [docs/release/android-signing.md](../release/android-signing.md)
 - `versionCode`/`versionName`이 이번 출시 값인지.
-- 앱 ID는 `com.closetimo.app`이다. 기기에 구 ID `com.closetimo.closetimo_app` 테스트 빌드가 남아 있으면 별개 앱이므로 `adb uninstall com.closetimo.closetimo_app`으로 삭제한다.
+- 앱 ID는 `com.closetimo.app`이다. 구 ID `com.closetimo.closetimo_app`은 출시 전 테스트 빌드로, 신 ID와 별개 앱이고
+  데이터도 이전되지 않는다. 사용자 결정(2026-09-28)에 따라 QA 기기에서 발견하면 `adb uninstall com.closetimo.closetimo_app`으로 제거한다.
+  남겨 두면 런처에 같은 이름·아이콘이 2개 보인다.
 
 ## 4. 탐색 QA 체크리스트 (L4)
 
@@ -136,7 +138,7 @@ adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings p
    → `tap "<라벨>"`. 상단바 `+`("옷 등록")·뒤로("뒤로 가기")·세탁 주기 ±("착용 횟수 줄이기/늘리기")·
    세탁 바구니 체크("<옷 이름> 선택")·설정 알림(행 라벨 "세탁 알림" 등, 행 전체 탭으로 토글)은
    접근성 라벨로 찾는다(#17). 세탁 바구니 타일의 상세 진입은 `tap "<옷 이름> 상세 보기" contains`다
-   (content-desc 뒤에 분류·착용 값이 붙는다). 카테고리 칩은 라벨 + `selected` 상태로 노출된다.
+   (content-desc 뒤에 분류·착용 값이 붙는다: `"Tote 상세 보기, 가방 · 기계세탁, 착용 0/5"`). 카테고리 칩은 라벨 + `selected` 상태로 노출된다.
    사진 영역은 "의류 사진 등록"(사진 없음) / "의류 사진 변경"(첨부됨)이다.
    **입력 필드만 예외**다. Flutter는 EditText의 라벨을 content-desc가 아닌 hintText로 내보낸다.
    TalkBack은 이 값을 읽지만 `android layout`·`uiautomator dump`에는 나오지 않는다.
@@ -158,6 +160,35 @@ adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings p
 11. **Flutter 버전 드리프트.** 로컬 SDK가 AGENTS.md 명시 버전과 다르면 `flutter analyze`/`pub get`이
     `analysis_options.yaml`·`pubspec.lock`을 자동 수정한다. QA 종료 시 `git status`로 확인하고
     의도하지 않은 변경은 되돌린다.
+12. **스크린샷 부분 확대에 `sips --cropOffset`을 쓰지 말 것.** 기대와 다른 영역(화면 중앙 부근)이 잘려
+    토스트 위치를 잘못 판독한 사례가 있다. → 원본 스크린샷 전체를 보고 판독한다.
+13. **상세 화면은 콘텐츠가 짧으면 버튼을 상단까지 스크롤할 수 없다.** 토스트가 상단바 아래 버튼을 덮는지
+    (IgnorePointer 재탭) 확인하려면 착용 기록을 약 7건 만들어 페이지를 늘린 뒤 버튼이 y≈256~368 띠에 오게 한다.
+14. **앨범 선택 검증에 개인 사진을 쓰지 말 것.** 앱 화면 스크린샷 1장을 임시로 넣어 고른다:
+    `adb push <png> /sdcard/Pictures/closetimo_qa_tmp.png` → `am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/closetimo_qa_tmp.png`
+    → 선택기 첫 칸(촬영 시각으로 식별) 탭 → **"완료"** 탭(선택기가 다중 선택 모드) →
+    끝나면 `adb shell content delete --uri content://media/external/images/media --where "_display_name='closetimo_qa_tmp.png'"`와 `rm`으로 삭제.
+    선택기 화면은 캡처하지 않는다(사용자 사진이 보인다).
+    에뮬레이터(API 36) 선택기는 단일 선택이라 칸을 탭하면 "완료" 없이 바로 앱으로 돌아온다.
+15. **바텀시트에서 `hide_kb` 뒤에는 좌표를 다시 찾는다.** 키보드가 닫히면 시트가 내려가 이전 좌표가
+    scrim에 떨어지고 시트가 닫힌다(착용 기록 시트 사례). → `tap "<라벨>"`이나 `field_below`로 다시 찾는다.
+16. **dirty 다이얼로그 "계속 작성" 뒤에는 필드 포커스가 복원돼 키보드가 다시 뜬다.** 이때 back 1회는
+    키보드만 닫는다. → 다이얼로그를 다시 띄우려면 `hide_kb` 후 back.
+17. **런처 표시 이름은 런처 화면을 캡처하지 말고 앱 정보 화면 텍스트로 확인한다.** 런처는 사용자 개인 화면이다.
+    `adb shell am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d package:com.closetimo.app` 후
+    `android layout`에서 앱 이름 텍스트를 읽고, 끝나면 `launch`로 앱을 다시 앞으로 가져온다.
+    구 ID(`com.closetimo.closetimo_app`)가 남아 있으면 같은 이름의 아이콘이 2개 보인다.
+18. **에뮬레이터에서는 `hide_kb`가 화면을 pop한다.** 하드웨어 키보드 모드의 에뮬레이터는 소프트 키보드가
+    없어도 `mInputShown=true`로 보고해, `hide_kb`가 보낸 back이 화면 pop(등록 화면 dirty 다이얼로그)이 된다.
+    실제 표시 여부는 `mIsInputViewShown`이다. → 에뮬레이터에서는 세션에서
+    `hide_kb() { if adb shell dumpsys input_method | grep -q "mIsInputViewShown=true"; then guard || return 1; adb shell input keyevent KEYCODE_BACK; sleep 0.8; fi; }`로
+    덮어쓴다(`type_ascii`의 포커스 판정 `kb_shown`은 그대로 둔다).
+19. **잠금은 이 팀 안의 약속일 뿐이다. 외부 세션이 같은 기기를 쓸 수 있다.** 잠금을 잡은 상태에서도 다른 세션이
+    `adb shell`로 다른 앱을 띄워 전면 앱이 바뀌고, UI 덤프가 겹쳐 `UiAutomationService ... already registered!`
+    FATAL과 빈 `android layout`이 나온 사례가 있다(2026-09-28, 실기기). guard는 입력 직전에만 검사하므로
+    전환과 겹친 탭 1회가 외부 앱에 들어갔을 가능성을 배제할 수 없었다.
+    → 기기 사용 전·레이어 사이마다 `fg_pkg`와 `adb logcat -d | grep "ActivityTaskManager: START"`에서
+    이 QA가 보내지 않은 `from uid 2000` START를 확인한다. 발견하면 입력을 멈추고 보고한다.
 
 ## 7. 결함 등급
 
