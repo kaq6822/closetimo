@@ -27,10 +27,10 @@ class WardrobeFilterBar extends StatelessWidget {
   final ValueChanged<WardrobeSort> onSortChanged;
 
   String _sortLabel(WardrobeSort s) => switch (s) {
-        WardrobeSort.statusCleanFirst => '정렬: 상태순 (깨끗한 옷 먼저)',
-        WardrobeSort.recentlyWorn => '정렬: 최근 착용순',
-        WardrobeSort.mostWorn => '정렬: 착용 빈도순',
-      };
+    WardrobeSort.statusCleanFirst => '정렬: 상태순 (깨끗한 옷 먼저)',
+    WardrobeSort.recentlyWorn => '정렬: 최근 착용순',
+    WardrobeSort.mostWorn => '정렬: 착용 빈도순',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -66,12 +66,15 @@ class WardrobeFilterBar extends StatelessWidget {
             color: surfaces.containerLow,
             borderRadius: BorderRadius.circular(ClosetimoRadius.lg + 2),
           ),
-          padding: const EdgeInsets.all(ClosetimoSpacing.md - 2),
+          padding: const EdgeInsets.all(ClosetimoSpacing.space14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 10),
+                padding: EdgeInsets.only(
+                  left: ClosetimoSpacing.space4,
+                  bottom: ClosetimoSpacing.space10,
+                ),
                 child: Text(
                   '카테고리',
                   style: TextStyle(
@@ -110,7 +113,7 @@ class WardrobeFilterBar extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: ClosetimoSpacing.md,
-            vertical: 4,
+            vertical: ClosetimoSpacing.space4,
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<WardrobeSort>(

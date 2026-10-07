@@ -37,7 +37,7 @@ class SettingsScreen extends ConsumerWidget {
                   ClosetimoSpacing.lg,
                   ClosetimoSpacing.lg,
                   ClosetimoSpacing.lg,
-                  ClosetimoSpacing.huge + 32,
+                  ClosetimoSpacing.space76,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -51,7 +51,7 @@ class SettingsScreen extends ConsumerWidget {
                         color: ClosetimoColors.ink,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: ClosetimoSpacing.xs),
                     const Text(
                       '앱 환경을 취향에 맞게 조정하세요.',
                       style: TextStyle(
@@ -60,9 +60,9 @@ class SettingsScreen extends ConsumerWidget {
                         color: ClosetimoColors.muted,
                       ),
                     ),
-                    const SizedBox(height: ClosetimoSpacing.xl + 4),
+                    const SizedBox(height: ClosetimoSpacing.space28),
                     ProfileCard(monthsTogether: months),
-                    const SizedBox(height: ClosetimoSpacing.xl + 4),
+                    const SizedBox(height: ClosetimoSpacing.space28),
                     _Section(
                       title: '알림',
                       rows: [
@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: ClosetimoSpacing.xl + 4),
+                    const SizedBox(height: ClosetimoSpacing.space28),
                     const _Section(
                       title: '기타',
                       rows: [
@@ -120,7 +120,10 @@ class _Section extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          padding: const EdgeInsets.only(
+            left: ClosetimoSpacing.space4,
+            bottom: ClosetimoSpacing.space12,
+          ),
           child: Text(
             title,
             style: const TextStyle(
@@ -133,7 +136,7 @@ class _Section extends StatelessWidget {
           ),
         ),
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(ClosetimoSpacing.xs),
           decoration: BoxDecoration(
             color: surfaces.containerLow,
             borderRadius: BorderRadius.circular(18),
@@ -142,7 +145,8 @@ class _Section extends StatelessWidget {
             children: [
               for (var i = 0; i < rows.length; i++) ...[
                 rows[i],
-                if (i < rows.length - 1) const SizedBox(height: 4),
+                if (i < rows.length - 1)
+                  const SizedBox(height: ClosetimoSpacing.xs),
               ],
             ],
           ),

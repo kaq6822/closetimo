@@ -28,7 +28,7 @@ class ProgressBar extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(ClosetimoRadius.full),
       child: SizedBox(
-        height: 6,
+        height: ClosetimoSpacing.space6,
         child: Stack(
           children: [
             Container(color: surfaces.containerHigh),

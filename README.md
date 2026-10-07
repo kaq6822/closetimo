@@ -17,32 +17,39 @@
 
 ## 기술 스택
 
-- **Flutter** 3.27+ / **Dart** 3.5+
-- **Isar** 3.x — 디바이스 로컬 NoSQL DB (헌법 III: 로컬 우선 데이터 소유권)
+- **Flutter** 3.44+ / **Dart** 3.12+
+- **Isar Plus** 1.3.7 — 디바이스 로컬 NoSQL DB (헌법 III: 로컬 우선 데이터 소유권).
+  SwiftPM 경로를 쓰는 주 저장소이며 iOS/Android 네이티브 코어를 함께 링크한다.
+- **legacy Isar 3 읽기 브리지** — 구버전 앱의 `closetimo.isar`를 한 번만 읽어
+  `closetimo_plus.isar`로 이전한다. 전환 기간 전용이며 제거 조건은
+  [specs/003-migrate-isar-spm/quickstart.md](specs/003-migrate-isar-spm/quickstart.md)에 있다.
 - **Riverpod** — 컴파일 안전한 상태 관리, Isar `watchLazy`와 자연스러운 결합
 - **go_router** — 선언적 라우팅, 4탭 `StatefulShellRoute.indexedStack`
 - **image_picker** + `path_provider` — 카메라/앨범 사진 + sandbox 사본 저장
 
-자세한 결정 근거는 [specs/001-home-dashboard/research.md](specs/001-home-dashboard/research.md).
+자세한 결정 근거는 [specs/001-home-dashboard/research.md](specs/001-home-dashboard/research.md),
+마이그레이션 결정은 [specs/003-migrate-isar-spm/](specs/003-migrate-isar-spm/)를 따른다.
 
 ## 빠른 시작
 
 ```bash
 # 1. 의존성 + 코드 생성
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 
-# 2. iOS 의존성 (macOS만)
-cd ios && pod install && cd -
-
-# 3. 실행
-flutter run                                       # 기본
+# 2. 실행 (iOS는 SwiftPM만 사용하므로 pod install이 필요 없다)
+flutter run
 flutter run --dart-define=SEED_DEMO=true          # 데모 시드 (개발용)
 
-# 4. 검증
+# 3. 검증
 flutter analyze
 flutter test
-dart run tool/check_design_tokens.dart            # 디자인 토큰 일치 (헌법 II 가드)
+dart run tool/check_design_tokens.dart            # 디자인 토큰 가드 (헌법 II)
+
+# 4. 실기기 E2E (앱 데이터를 초기화해야 결정적인 결과가 나온다)
+xcrun simctl uninstall booted com.closetimo.closetimoApp
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/full_flow_verification_test.dart -d <device-id>
 ```
 
 전체 셋업 가이드는 [specs/001-home-dashboard/quickstart.md](specs/001-home-dashboard/quickstart.md).
@@ -89,7 +96,7 @@ PR 머지 전 모든 항목을 통과한다.
 
 - [ ] `flutter analyze` — 경고 0
 - [ ] `flutter test` — 단위·feature 테스트 통과
-- [ ] `dart run tool/check_design_tokens.dart` — design.md ↔ tokens.dart 일치
+- [ ] `dart run tool/check_design_tokens.dart` — design.md ↔ tokens.dart 색상 일치 + 하드코딩 간격 0건
 - [ ] spec.md FR-NNN ↔ 코드 매핑 PR description에 첨부
 - [ ] 헌법 4원칙 위반 없음 — 위반 시 plan.md `Complexity Tracking`에 정당화
 
@@ -97,15 +104,41 @@ PR 머지 전 모든 항목을 통과한다.
 
 이 v1 MVP 이후의 task는 [`specs/001-home-dashboard/tasks.md`](specs/001-home-dashboard/tasks.md)와 후속 spec에서 관리됩니다.
 
-- **폰트 자산 다운로드** — `assets/fonts/README.md` 가이드로 Manrope·Inter·Pretendard 추가
-- **골든 테스트** — 디자인 시스템 위젯 회귀 가드 (폰트 자산 선행)
-- **성능 시나리오** — 100점 옷 그리드 200ms 측정 (실기기/시뮬레이터 필요)
-- **오프라인 시나리오** — `HttpOverrides`로 네트워크 격리 자동화
-- **Spacing 토큰 정리** — 각 phase reviewer가 지적한 raw spacing 잔존을 모두 토큰화
-- **Isar 통합 테스트** — in-memory `Isar.openSync`로 production repository를 검증하는 통합 테스트
 - **알림 푸시 스케줄링** — 세탁 알림 토글의 실제 발송 (별도 spec)
 - **iCloud / Google Drive 백업** — 진입점만 v1, 실제 백업/복원은 별도 spec
 - **Isar 4.x 마이그레이션** — Rust 코어 release 시점
+- **profile 모드 성능 판정** — 아래 "검증 현황" 참고
+- **OS 비행기 모드 수동 검증** — 아래 "검증 현황" 참고
+- **SC-006 첫 사용자 성공률 측정** — 사용자 평가 필요 (아래 "검증 현황" 참고)
+
+### 이미 구현된 항목 (후속 작업 아님)
+
+아래는 이전 릴리스에서 완료되어 미구현 목록에서 제거한 항목이다.
+
+- 폰트 자산(Manrope·Inter·Pretendard) — `assets/fonts/`에 저장 및 `pubspec.yaml` 등록 완료
+- 디자인 시스템 골든 테스트 — `test/widget/design_system_golden_test.dart` (기준 PNG 14개)
+- 하드코딩 간격 검사 — `dart run tool/check_design_tokens.dart`가 색상 일치와
+  하드코딩 간격을 함께 검사한다
+- 실제 Isar repository 회귀 테스트 — `test/feature/isar_item_repository_test.dart`,
+  `test/feature/storage_repository_regression_test.dart`
+- 오프라인 시나리오 — `integration_test/offline_smoke_test.dart`
+- 성능 시나리오 — `integration_test/perf_wardrobe_test.dart`
+- 전체 흐름 E2E — `integration_test/full_flow_verification_test.dart`
+
+### 검증 현황
+
+- **T077 골든 테스트**: 통과. 기준 이미지 14개는 육안 확인했고, 색상/간격 토큰을
+  의도적으로 바꾸면 골든이 실제로 실패하는 것까지 확인했다.
+- **T080 성능**: 실제 조건 변경부터 production repository 스트림 결과의 화면
+  레이아웃 반영까지 측정한다. 이전 복제 필터 로직의 0.2~0.9ms는 SC-004
+  통과 근거에서 제외했다. 시뮬레이터 debug 실행은 측정 경로 확인이며,
+  최종 판정에는 전용 실기기의 profile 실행이 필요하다.
+- **T081 오프라인**: Dart HTTP 경로 차단 상태에서 핵심 5작업 통과, 차단된 요청 0건.
+  단, `HttpOverrides`는 Dart HTTP 클라이언트만 막으므로 **OS 비행기 모드 전체
+  오프라인과 동일한 증거가 아니다.** 비행기 모드 수동 검증은 별도 과제다.
+- **T083 전체 흐름**: `sh tool/verify_full_flow.sh <simulator-udid>`로 세탁 주기
+  도달·세탁 초기화·프로세스 종료 후 데이터와 마지막 탭 복원을 검증한다. SC-006의
+  "첫 사용자 성공률 90%"는 E2E 통과로 증명되지 않는다. 실제 사용자 평가가 필요하다.
 
 ## 라이선스 / 자산
 

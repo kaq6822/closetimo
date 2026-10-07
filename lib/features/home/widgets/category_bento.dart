@@ -25,15 +25,12 @@ class CategoryBento extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
+      mainAxisSpacing: ClosetimoSpacing.space12,
+      crossAxisSpacing: ClosetimoSpacing.space12,
       childAspectRatio: 1.15,
       children: [
         for (final e in entries)
-          _BentoCard(
-            entry: e,
-            count: perBucket[e.category] ?? 0,
-          ),
+          _BentoCard(entry: e, count: perBucket[e.category] ?? 0),
       ],
     );
   }
@@ -52,18 +49,16 @@ class _BentoCard extends StatelessWidget {
   final int count;
 
   IconData get _icon => switch (entry.category) {
-        Category.outer => Icons.dry_cleaning_outlined,
-        Category.top => Icons.checkroom_outlined,
-        Category.bottom => Icons.straighten_outlined,
-        _ => Icons.category_outlined,
-      };
+    Category.outer => Icons.dry_cleaning_outlined,
+    Category.top => Icons.checkroom_outlined,
+    Category.bottom => Icons.straighten_outlined,
+    _ => Icons.category_outlined,
+  };
 
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    final bg = entry.accent
-        ? surfaces.bgMintSoft
-        : surfaces.containerLowest;
+    final bg = entry.accent ? surfaces.bgMintSoft : surfaces.containerLowest;
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
@@ -74,7 +69,7 @@ class _BentoCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(ClosetimoSpacing.space20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -93,7 +88,7 @@ class _BentoCard extends StatelessWidget {
                       height: 1,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: ClosetimoSpacing.space6),
                   Text(
                     entry.category.label,
                     style: const TextStyle(

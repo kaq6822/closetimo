@@ -38,8 +38,7 @@ class EditNoteSheet extends StatelessWidget {
       initial: initial,
       confirmLabel: '저장',
       confirmIcon: Icons.check_rounded,
-      onConfirm: (note) =>
-          Navigator.of(context).pop(EditNoteResult(note)),
+      onConfirm: (note) => Navigator.of(context).pop(EditNoteResult(note)),
     );
   }
 }

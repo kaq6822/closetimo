@@ -25,7 +25,7 @@ class WashCycleStepper extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: ClosetimoSpacing.md,
-        vertical: ClosetimoSpacing.sm + 4,
+        vertical: ClosetimoSpacing.space12,
       ),
       child: Row(
         children: [
@@ -45,9 +45,9 @@ class WashCycleStepper extends StatelessWidget {
             foreground: ClosetimoColors.ink,
             onTap: value > 1 ? () => onChanged(value - 1) : null,
           ),
-          const SizedBox(width: ClosetimoSpacing.sm + 4),
+          const SizedBox(width: ClosetimoSpacing.space12),
           SizedBox(
-            width: 28,
+            width: ClosetimoSpacing.space28,
             child: Text(
               '$value',
               textAlign: TextAlign.center,
@@ -59,7 +59,7 @@ class WashCycleStepper extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: ClosetimoSpacing.sm + 4),
+          const SizedBox(width: ClosetimoSpacing.space12),
           _RoundButton(
             icon: Icons.add_rounded,
             background: ClosetimoColors.primary,
@@ -95,8 +95,8 @@ class _RoundButton extends StatelessWidget {
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
-          width: 34,
-          height: 34,
+          width: ClosetimoSpacing.space34,
+          height: ClosetimoSpacing.space34,
           child: Icon(icon, size: 16, color: foreground),
         ),
       ),

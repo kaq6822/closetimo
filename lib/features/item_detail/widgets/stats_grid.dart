@@ -20,7 +20,7 @@ class StatsGrid extends StatelessWidget {
         color: surfaces.containerLow,
         borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
       ),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(ClosetimoSpacing.space10),
       child: Column(
         children: [
           Row(
@@ -34,7 +34,7 @@ class StatsGrid extends StatelessWidget {
                   bg: surfaces.containerLowest,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: ClosetimoSpacing.space10),
               Expanded(
                 child: _StatCard(
                   label: '총 착용 횟수',
@@ -45,7 +45,7 @@ class StatsGrid extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: ClosetimoSpacing.space10),
           Row(
             children: [
               Expanded(
@@ -58,7 +58,7 @@ class StatsGrid extends StatelessWidget {
                   bg: surfaces.containerLowest,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: ClosetimoSpacing.space10),
               Expanded(
                 child: _StatCard(
                   label: '구매일',
@@ -101,7 +101,7 @@ class _StatCard extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(ClosetimoRadius.lg + 2),
       ),
-      padding: const EdgeInsets.all(ClosetimoSpacing.md + 2),
+      padding: const EdgeInsets.all(ClosetimoSpacing.space18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -140,7 +140,7 @@ class _StatCard extends StatelessWidget {
             ),
           ),
           if (hint != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: ClosetimoSpacing.sm),
             Text(
               hint!,
               style: const TextStyle(

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/tokens.dart';
 import '../../../core/widgets/chip_filter.dart';
 import '../../../data/models/item.dart';
 
@@ -18,8 +19,8 @@ class CategoryPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: ClosetimoSpacing.sm,
+      runSpacing: ClosetimoSpacing.sm,
       children: [
         for (final c in Category.values)
           ChipFilter(

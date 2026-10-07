@@ -24,7 +24,7 @@ class PreferenceRow extends StatelessWidget {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 18,
+        horizontal: ClosetimoSpacing.space18,
         vertical: ClosetimoSpacing.md,
       ),
       decoration: BoxDecoration(
@@ -62,7 +62,7 @@ class PreferenceRow extends StatelessWidget {
                     color: ClosetimoColors.muted,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: ClosetimoSpacing.xs),
                 const Icon(
                   Icons.chevron_right_rounded,
                   size: 18,

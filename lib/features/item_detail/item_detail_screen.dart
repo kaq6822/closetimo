@@ -79,10 +79,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await ref.read(laundryRepositoryProvider).toggle(widget.id);
     await _refresh();
     if (!context.mounted) return;
-    showClosetimoToast(
-      context,
-      wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요',
-    );
+    showClosetimoToast(context, wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요');
   }
 
   Future<void> _editEventNote(WearEvent event) async {
@@ -163,13 +160,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   ClosetimoSpacing.lg,
                   ClosetimoSpacing.md,
                   ClosetimoSpacing.lg,
-                  ClosetimoSpacing.huge + 32,
+                  ClosetimoSpacing.space76,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     HeroImage(item: item),
-                    const SizedBox(height: ClosetimoSpacing.xl + 2),
+                    const SizedBox(height: ClosetimoSpacing.space26),
                     Text(
                       item.name,
                       style: const TextStyle(
@@ -196,7 +193,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: ClosetimoSpacing.xl + 2),
+                    const SizedBox(height: ClosetimoSpacing.space26),
                     StatsGrid(item: item),
                     const SizedBox(height: ClosetimoSpacing.xl),
                     PrimaryButton(
@@ -204,7 +201,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       leading: const Icon(Icons.add_rounded),
                       onPressed: _recordWear,
                     ),
-                    const SizedBox(height: ClosetimoSpacing.sm + 4),
+                    const SizedBox(height: ClosetimoSpacing.space12),
                     SoftButton(
                       label: item.inLaundry ? '바구니에서 제외' : '세탁 바구니',
                       leading: const Icon(Icons.local_laundry_service_rounded),
@@ -220,7 +217,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         color: ClosetimoColors.ink,
                       ),
                     ),
-                    const SizedBox(height: ClosetimoSpacing.md + 2),
+                    const SizedBox(height: ClosetimoSpacing.space18),
                     HistoryTimeline(
                       itemId: item.id,
                       onEdit: _editEventNote,

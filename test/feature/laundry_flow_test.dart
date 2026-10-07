@@ -12,9 +12,8 @@ class _InMemoryLaundryRepo implements LaundryRepository {
   final List<WearEvent> events = [];
 
   @override
-  Stream<List<Item>> watchBasket() => Stream.value(
-        items.values.where((i) => i.inLaundry).toList(),
-      );
+  Stream<List<Item>> watchBasket() =>
+      Stream.value(items.values.where((i) => i.inLaundry).toList());
 
   @override
   Future<void> toggle(int itemId) async {
@@ -34,22 +33,23 @@ class _InMemoryLaundryRepo implements LaundryRepository {
         ..wearSinceWash = 0
         ..lastWashedAt = now
         ..inLaundry = false;
-      events.add(WearEvent(
-        itemId: id,
-        kind: EventKind.wash,
-        occurredAt: now,
-      ));
+      events.add(WearEvent(itemId: id, kind: EventKind.wash, occurredAt: now));
     }
   }
 }
 
-Item _mk(int id, {int wearSinceWash = 3, int washCycle = 3, bool inLaundry = true}) {
+Item _mk(
+  int id, {
+  int wearSinceWash = 3,
+  int washCycle = 3,
+  bool inLaundry = true,
+}) {
   return Item(
-    name: '옷 $id',
-    category: Category.top,
-    washCycle: washCycle,
-    createdAt: DateTime(2026, 1, id),
-  )
+      name: '옷 $id',
+      category: Category.top,
+      washCycle: washCycle,
+      createdAt: DateTime(2026, 1, id),
+    )
     ..id = id
     ..wearSinceWash = wearSinceWash
     ..status = ItemStatus.dirty
@@ -58,11 +58,7 @@ Item _mk(int id, {int wearSinceWash = 3, int washCycle = 3, bool inLaundry = tru
 
 void main() {
   test('US4: 선택된 옷만 세탁 완료 → clean + 0/N로 초기화, 바구니 제거', () async {
-    final repo = _InMemoryLaundryRepo({
-      1: _mk(1),
-      2: _mk(2),
-      3: _mk(3),
-    });
+    final repo = _InMemoryLaundryRepo({1: _mk(1), 2: _mk(2), 3: _mk(3)});
 
     // 3점 모두 바구니에 있는 초기 상태
     var basket = await repo.watchBasket().first;

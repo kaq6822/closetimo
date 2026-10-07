@@ -27,7 +27,9 @@ class SoftButton extends StatelessWidget {
         onTap: onPressed,
         customBorder: const StadiumBorder(),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 52),
+          constraints: const BoxConstraints(
+            minHeight: ClosetimoSpacing.space52,
+          ),
           padding: const EdgeInsets.symmetric(
             horizontal: ClosetimoSpacing.lg,
             vertical: ClosetimoSpacing.sm,

@@ -20,8 +20,9 @@ class RecentlyWornList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stream =
-        ref.watch(itemRepositoryProvider).watchRecentlyWorn(limit: 2);
+    final stream = ref
+        .watch(itemRepositoryProvider)
+        .watchRecentlyWorn(limit: 2);
     final clock = ref.watch(clockProvider);
     return StreamBuilder<List<Item>>(
       stream: stream,
@@ -53,7 +54,7 @@ class RecentlyWornList extends ConsumerWidget {
             for (var i = 0; i < items.length; i++) ...[
               _RecentCard(item: items[i], now: clock.now()),
               if (i < items.length - 1)
-                const SizedBox(height: ClosetimoSpacing.md - 2),
+                const SizedBox(height: ClosetimoSpacing.space14),
             ],
           ],
         );
@@ -91,7 +92,12 @@ class _RecentCard extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              padding: const EdgeInsets.fromLTRB(
+                ClosetimoSpacing.md,
+                ClosetimoSpacing.space14,
+                ClosetimoSpacing.md,
+                ClosetimoSpacing.space14,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -109,7 +115,7 @@ class _RecentCard extends ConsumerWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: ClosetimoSpacing.xs),
                         Text(
                           '${item.brand ?? '브랜드 미지정'} · ${item.lastWornAt == null ? '—' : formatRelative(item.lastWornAt!, now: now)}',
                           style: const TextStyle(
@@ -123,8 +129,8 @@ class _RecentCard extends ConsumerWidget {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
+                      horizontal: ClosetimoSpacing.space10,
+                      vertical: ClosetimoSpacing.space5,
                     ),
                     decoration: BoxDecoration(
                       color: surfaces.bgChip,

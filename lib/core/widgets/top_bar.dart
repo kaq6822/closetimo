@@ -31,7 +31,7 @@ class TopBar extends StatelessWidget {
         children: [
           if (onBack != null)
             _IconButton(icon: Icons.arrow_back_ios_new_rounded, onTap: onBack!),
-          if (onBack != null) const SizedBox(width: 8),
+          if (onBack != null) const SizedBox(width: ClosetimoSpacing.sm),
           Text(
             subtitle ?? title,
             style: TextStyle(
@@ -62,7 +62,7 @@ class _IconButton extends StatelessWidget {
       onTap: onTap,
       radius: 22,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(ClosetimoSpacing.sm),
         child: Icon(icon, size: 18, color: ClosetimoColors.ink),
       ),
     );

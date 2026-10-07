@@ -250,7 +250,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         ClosetimoSpacing.lg,
                         ClosetimoSpacing.md,
                         ClosetimoSpacing.lg,
-                        120,
+                        // 하단 고정 CTA 바에 폼이 가려지지 않는 여유.
+                        ClosetimoSpacing.space120,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -259,26 +260,28 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             tempPhoto: _draft.tempPhoto,
                             existingImagePath:
                                 (_photoCleared || _draft.tempPhoto != null)
-                                    ? null
-                                    : _existingImagePath,
+                                ? null
+                                : _existingImagePath,
                             onPicked: _pickPhoto,
                             onRemove: _isEdit ? _removePhoto : null,
                           ),
-                          const SizedBox(height: ClosetimoSpacing.xl + 2),
+                          const SizedBox(height: ClosetimoSpacing.space26),
                           const _FieldLabel(label: '의류 명칭'),
                           _FieldInput(
                             initial: _draft.name,
                             hint: 'e.g. 오버사이즈 캐시미어 코트',
-                            onChanged: (v) =>
-                                setState(() => _draft = _draft.copyWith(name: v)),
+                            onChanged: (v) => setState(
+                              () => _draft = _draft.copyWith(name: v),
+                            ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '브랜드'),
                           _FieldInput(
                             initial: _draft.brand,
                             hint: 'e.g. ZARA',
-                            onChanged: (v) =>
-                                setState(() => _draft = _draft.copyWith(brand: v)),
+                            onChanged: (v) => setState(
+                              () => _draft = _draft.copyWith(brand: v),
+                            ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '세탁 주기 설정'),
@@ -290,7 +293,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           ),
                           const SizedBox(height: ClosetimoSpacing.sm),
                           const Padding(
-                            padding: EdgeInsets.only(left: 4),
+                            padding: EdgeInsets.only(
+                              left: ClosetimoSpacing.space4,
+                            ),
                             child: Text(
                               '설정한 횟수만큼 착용하면 세탁 알림을 보냅니다.',
                               style: TextStyle(
@@ -301,10 +306,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(
-                            label: '카테고리',
-                            required: true,
-                          ),
+                          const _FieldLabel(label: '카테고리', required: true),
                           CategoryPicker(
                             value: _draft.category,
                             onChanged: (c) => setState(
@@ -352,8 +354,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         ClosetimoSpacing.md,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            surfaces.containerLowest.withValues(alpha: 0.72),
+                        color: surfaces.containerLowest.withValues(alpha: 0.72),
                       ),
                       child: PrimaryButton(
                         label: _isEdit ? '수정 완료' : '등록하기',
@@ -430,7 +431,10 @@ class _DateField extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: ClosetimoSpacing.space18,
+            vertical: ClosetimoSpacing.space16,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -439,7 +443,9 @@ class _DateField extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Manrope',
                     fontSize: 15,
-                    color: hasValue ? ClosetimoColors.ink : ClosetimoColors.muted,
+                    color: hasValue
+                        ? ClosetimoColors.ink
+                        : ClosetimoColors.muted,
                   ),
                 ),
               ),
@@ -472,8 +478,9 @@ class _FieldInput extends StatefulWidget {
 }
 
 class _FieldInputState extends State<_FieldInput> {
-  late final TextEditingController _ctl =
-      TextEditingController(text: widget.initial);
+  late final TextEditingController _ctl = TextEditingController(
+    text: widget.initial,
+  );
 
   @override
   void dispose() {
@@ -497,8 +504,8 @@ class _FieldInputState extends State<_FieldInput> {
         filled: true,
         fillColor: surfaces.containerLow,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
+          horizontal: ClosetimoSpacing.space18,
+          vertical: ClosetimoSpacing.space16,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ClosetimoRadius.lg),

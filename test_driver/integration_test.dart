@@ -8,6 +8,16 @@ import 'package:integration_test/integration_test_driver_extended.dart';
 
 Future<void> main() async {
   await integrationDriver(
+    writeResponseOnFailure: true,
+    responseDataCallback: (Map<String, dynamic>? data) async {
+      final report = data?['perfReport'];
+      if (report is String) {
+        final file = File('build/verification/perf_wardrobe_report.txt');
+        await file.create(recursive: true);
+        await file.writeAsString('$report\n');
+      }
+      await writeResponseData(data);
+    },
     onScreenshot:
         (String name, List<int> bytes, [Map<String, Object?>? args]) async {
           final file = File('build/ios_verify_shots/$name.png');

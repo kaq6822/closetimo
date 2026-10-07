@@ -34,9 +34,11 @@ class _FakeRepo implements ItemRepository {
       }
       if (q.isNotEmpty) {
         arr = arr
-            .where((i) =>
-                i.name.toLowerCase().contains(q) ||
-                (i.brand ?? '').toLowerCase().contains(q))
+            .where(
+              (i) =>
+                  i.name.toLowerCase().contains(q) ||
+                  (i.brand ?? '').toLowerCase().contains(q),
+            )
             .toList();
       }
       final sorted = [...arr];
@@ -61,8 +63,7 @@ class _FakeRepo implements ItemRepository {
   }
 
   @override
-  Stream<List<Item>> watchRecentlyWorn({int limit = 2}) =>
-      const Stream.empty();
+  Stream<List<Item>> watchRecentlyWorn({int limit = 2}) => const Stream.empty();
   @override
   Stream<WardrobeStats> watchStats() => const Stream.empty();
   @override
@@ -81,12 +82,12 @@ Item _it({
   int totalWears = 0,
 }) =>
     Item(
-      name: name,
-      brand: brand,
-      category: cat,
-      washCycle: 5,
-      createdAt: DateTime(2026, 5, id),
-    )
+        name: name,
+        brand: brand,
+        category: cat,
+        washCycle: 5,
+        createdAt: DateTime(2026, 5, id),
+      )
       ..id = id
       ..status = status
       ..totalWears = totalWears;
@@ -94,14 +95,35 @@ Item _it({
 void main() {
   group('US2 watchFiltered', () {
     final repo = _FakeRepo([
-      _it(id: 1, name: '오버사이즈 코트', brand: 'ZARA', cat: Category.outer,
-          status: ItemStatus.clean),
-      _it(id: 2, name: '캐시미어 니트', brand: '유니클로', cat: Category.top,
-          status: ItemStatus.dirty, totalWears: 8),
-      _it(id: 3, name: '오가닉 코튼 티셔츠', brand: '무인양품', cat: Category.top,
-          totalWears: 3),
-      _it(id: 4, name: '셀비지 데님', brand: 'A.P.C.', cat: Category.bottom,
-          totalWears: 12),
+      _it(
+        id: 1,
+        name: '오버사이즈 코트',
+        brand: 'ZARA',
+        cat: Category.outer,
+        status: ItemStatus.clean,
+      ),
+      _it(
+        id: 2,
+        name: '캐시미어 니트',
+        brand: '유니클로',
+        cat: Category.top,
+        status: ItemStatus.dirty,
+        totalWears: 8,
+      ),
+      _it(
+        id: 3,
+        name: '오가닉 코튼 티셔츠',
+        brand: '무인양품',
+        cat: Category.top,
+        totalWears: 3,
+      ),
+      _it(
+        id: 4,
+        name: '셀비지 데님',
+        brand: 'A.P.C.',
+        cat: Category.bottom,
+        totalWears: 12,
+      ),
     ]);
 
     test('카테고리 필터 — 상의만 남는다', () async {
@@ -136,8 +158,7 @@ void main() {
     });
 
     test('정렬 — 착용 빈도순', () async {
-      final items =
-          await repo.watchFiltered(sort: WardrobeSort.mostWorn).first;
+      final items = await repo.watchFiltered(sort: WardrobeSort.mostWorn).first;
       expect(items.first.id, 4); // 12회
       expect(items[1].id, 2); // 8회
     });

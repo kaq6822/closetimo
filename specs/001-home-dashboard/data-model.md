@@ -4,7 +4,17 @@
 
 본 문서는 Isar 컬렉션 스키마(소스 코드의 `lib/data/models/`에 대응)와 엔티티 간 관계, 검증 규칙, 상태 전이를 정의한다. 모든 필드는 spec.md의 Key Entities + FR-001~FR-022에서 도출된다.
 
-**구현 버전**: Isar **3.x** 안정 라인(`isar ^3.1.0+1`)에 맞춰 작성됨. 본 문서의 `@collection`, `@Index`, `Id` 타입은 3.x API 기준. 후속 4.x(Rust core) 마이그레이션은 별도 spec으로 정의한다.
+**구현 버전 (업데이트)**: 본 문서는 최초 설계 시점의 **Isar 3.x** API를 기준으로
+작성된 **설계 기록**이다. 현재 구현의 주 저장소는 **Isar Plus 1.3.7**
+(`isar_plus` + `isar_plus_flutter_libs`)이며 iOS는 SwiftPM 경로를 사용한다.
+구형 Isar 3 저장소(`closetimo.isar`)는 읽기 전용 legacy 브리지로 남아 있어
+첫 실행 시 한 번 `closetimo_plus.isar`로 이전된다(원본은 보존).
+
+따라서 아래의 `@collection`·`@Index`·`Id` 서술은 **현재 스키마 기준으로는
+Isar Plus 1.3.x를 따르고, Isar 3.x는 설계 당시 표기**라는 점을 함께 읽어야 한다.
+필드·인덱스·전이 규칙 자체는 현재 구현과 동일하며, 저장소 엔진 차이에 따른
+스키마 변경은 없다. 이전 정책과 검증 기록은
+[003 quickstart](../003-migrate-isar-spm/quickstart.md)를 따른다.
 
 ---
 

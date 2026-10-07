@@ -12,7 +12,7 @@ class ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(ClosetimoSpacing.space20),
       decoration: BoxDecoration(
         color: ClosetimoColors.primary,
         borderRadius: BorderRadius.circular(18),
@@ -37,7 +37,7 @@ class ProfileCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: ClosetimoSpacing.md - 2),
+          const SizedBox(width: ClosetimoSpacing.space14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,7 +51,7 @@ class ProfileCard extends StatelessWidget {
                     color: ClosetimoColors.onPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: ClosetimoSpacing.space2),
                 Text(
                   monthsTogether <= 0
                       ? '오늘부터 함께해요'

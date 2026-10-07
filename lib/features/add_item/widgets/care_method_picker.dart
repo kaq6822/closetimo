@@ -17,10 +17,10 @@ class CareMethodPicker extends StatelessWidget {
   final ValueChanged<CareMethod> onChanged;
 
   IconData _iconOf(CareMethod m) => switch (m) {
-        CareMethod.dryClean => Icons.circle_outlined,
-        CareMethod.machine => Icons.local_laundry_service_outlined,
-        CareMethod.handWash => Icons.pan_tool_outlined,
-      };
+    CareMethod.dryClean => Icons.circle_outlined,
+    CareMethod.machine => Icons.local_laundry_service_outlined,
+    CareMethod.handWash => Icons.pan_tool_outlined,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class CareMethodPicker extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i < CareMethod.values.length; i++) ...[
-          if (i > 0) const SizedBox(width: ClosetimoSpacing.sm + 2),
+          if (i > 0) const SizedBox(width: ClosetimoSpacing.space10),
           Expanded(
             child: _CareTile(
               icon: _iconOf(CareMethod.values[i]),
@@ -73,14 +73,14 @@ class _CareTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: 8,
+            horizontal: ClosetimoSpacing.space8,
             vertical: ClosetimoSpacing.md,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 20, color: color),
-              const SizedBox(height: ClosetimoSpacing.sm + 2),
+              const SizedBox(height: ClosetimoSpacing.space10),
               Text(
                 label,
                 style: TextStyle(

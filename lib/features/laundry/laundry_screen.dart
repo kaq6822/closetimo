@@ -40,7 +40,7 @@ class LaundryScreen extends ConsumerWidget {
                   ClosetimoSpacing.lg,
                   ClosetimoSpacing.md,
                   ClosetimoSpacing.lg,
-                  ClosetimoSpacing.huge + 32,
+                  ClosetimoSpacing.space76,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,7 +83,9 @@ class LaundryScreen extends ConsumerWidget {
                     const SizedBox(height: ClosetimoSpacing.xl),
                     if (items.isEmpty)
                       const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 60),
+                        padding: EdgeInsets.symmetric(
+                          vertical: ClosetimoSpacing.space60,
+                        ),
                         child: Center(
                           child: Text(
                             '세탁할 옷이 없어요.',
@@ -112,8 +114,7 @@ class LaundryScreen extends ConsumerWidget {
                               if (selection.length == items.length) {
                                 selectionCtl.clear();
                               } else {
-                                selectionCtl
-                                    .selectAll(items.map((i) => i.id));
+                                selectionCtl.selectAll(items.map((i) => i.id));
                               }
                             },
                             child: Text(
@@ -124,7 +125,7 @@ class LaundryScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: ClosetimoSpacing.sm + 4),
+                      const SizedBox(height: ClosetimoSpacing.space12),
                       Column(
                         children: [
                           for (final it in items) ...[
@@ -134,7 +135,7 @@ class LaundryScreen extends ConsumerWidget {
                               onToggleSelection: () =>
                                   selectionCtl.toggle(it.id),
                             ),
-                            const SizedBox(height: ClosetimoSpacing.md - 4),
+                            const SizedBox(height: ClosetimoSpacing.space12),
                           ],
                         ],
                       ),

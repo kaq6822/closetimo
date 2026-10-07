@@ -14,6 +14,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar_plus/isar_plus.dart';
+import 'package:closetimo/data/providers/isar_provider.dart';
+import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/user_preferences.dart';
+import 'package:closetimo/data/models/wear_event.dart';
+import 'package:closetimo/features/item_detail/widgets/stats_grid.dart';
 
 import 'package:closetimo/main.dart' as app;
 
@@ -45,116 +52,177 @@ void main() {
       await app.main();
       await tester.pumpAndSettle();
 
-      // ── 1. 홈 (빈 상태) ────────────────────────────────
-      expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
-      expect(find.text('전체 아이템'), findsOneWidget);
-      await shot(tester, '01_home_empty');
+      const verifyRestart = bool.fromEnvironment('E2E_VERIFY_RESTART');
+      const prepareRestart = bool.fromEnvironment('E2E_PREPARE_RESTART');
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(app.ClosetimoApp)),
+      );
+      final isar = await container.read(isarProvider.future);
+      if (!verifyRestart) {
+        // ── 1. 홈 (빈 상태) ────────────────────────────────
+        expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
+        expect(find.text('전체 아이템'), findsOneWidget);
+        await shot(tester, '01_home_empty');
 
-      // ── 2. 신규 옷 등록 ────────────────────────────────
-      await tapVisible(tester, find.byIcon(Icons.add_rounded));
-      expect(find.text('신규 옷 등록'), findsOneWidget);
-      await shot(tester, '02_add_blank');
+        // ── 2. 신규 옷 등록 ────────────────────────────────
+        await tapVisible(tester, find.byIcon(Icons.add_rounded));
+        expect(find.text('신규 옷 등록'), findsOneWidget);
+        await shot(tester, '02_add_blank');
 
-      await tester.enterText(find.byType(TextField).at(0), '오버사이즈 캐시미어 코트');
-      await tester.enterText(find.byType(TextField).at(1), 'ZARA');
-      await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField).at(0), '오버사이즈 캐시미어 코트');
+        await tester.enterText(find.byType(TextField).at(1), 'ZARA');
+        await tester.pumpAndSettle();
 
-      // 세탁 주기 스테퍼 + 1회 (기본 5 → 6)
-      await tapVisible(tester, find.byIcon(Icons.add_rounded));
-      expect(find.text('6'), findsOneWidget);
+        // 세탁 주기 스테퍼 + 1회 (기본 5 → 6)
+        await tapVisible(tester, find.byIcon(Icons.add_rounded));
+        expect(find.text('6'), findsOneWidget);
 
-      // 카테고리: 기본 아우터 → 상의로 변경
-      await tapVisible(tester, find.text('상의'));
+        // 카테고리: 기본 아우터 → 상의로 변경
+        await tapVisible(tester, find.text('상의'));
 
-      // 세탁 방법: HAND WASH 선택
-      await tapVisible(tester, find.text('HAND WASH'));
+        // 세탁 방법: HAND WASH 선택
+        await tapVisible(tester, find.text('HAND WASH'));
 
-      // 구매일: 날짜 피커 열고 오늘 날짜로 확인
-      await tapVisible(tester, find.text('구매일 선택'));
-      await shot(tester, '03_date_picker');
-      await tester.tap(find.text('확인'));
-      await tester.pumpAndSettle();
+        // 구매일: 날짜 피커 열고 오늘 날짜로 확인
+        await tapVisible(tester, find.text('구매일 선택'));
+        await shot(tester, '03_date_picker');
+        await tester.tap(find.text('확인'));
+        await tester.pumpAndSettle();
 
-      await shot(tester, '04_add_filled');
+        await shot(tester, '04_add_filled');
 
-      await tapVisible(tester, find.text('등록하기'));
-      // 저장 토스트와 함께 홈으로 복귀
-      expect(find.text('새 옷이 옷장에 등록됐어요'), findsOneWidget);
-      await shot(tester, '05_home_after_save_toast');
-      await waitToastGone(tester);
+        await tapVisible(tester, find.text('등록하기'));
+        // 저장 토스트와 함께 홈으로 복귀
+        expect(find.text('새 옷이 옷장에 등록됐어요'), findsOneWidget);
+        await shot(tester, '05_home_after_save_toast');
+        await waitToastGone(tester);
 
-      // 홈 통계 반영 확인
-      expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
-      await shot(tester, '06_home_with_data');
+        // 홈 통계 반영 확인
+        expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
+        await shot(tester, '06_home_with_data');
 
-      // ── 3. 옷장 탭: 그리드·검색 ─────────────────────────
-      await tester.tap(find.text('옷장'));
-      await tester.pumpAndSettle();
-      expect(find.text('내 옷장'), findsOneWidget);
-      expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
-      await shot(tester, '07_wardrobe_grid');
+        // ── 3. 옷장 탭: 그리드·검색 ─────────────────────────
+        await tester.tap(find.text('옷장'));
+        await tester.pumpAndSettle();
+        expect(find.text('내 옷장'), findsOneWidget);
+        expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
+        await shot(tester, '07_wardrobe_grid');
 
-      await tester.enterText(find.byType(TextField).first, '존재하지않는옷');
-      await tester.pumpAndSettle();
-      expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
-      await shot(tester, '08_wardrobe_search_empty');
+        await tester.enterText(find.byType(TextField).first, '존재하지않는옷');
+        await tester.pumpAndSettle();
+        expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
+        await shot(tester, '08_wardrobe_search_empty');
 
-      await tester.enterText(find.byType(TextField).first, '캐시미어');
-      await tester.pumpAndSettle();
-      expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).first, '');
-      await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField).first, '캐시미어');
+        await tester.pumpAndSettle();
+        expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
+        await tester.enterText(find.byType(TextField).first, '');
+        await tester.pumpAndSettle();
 
-      // ── 4. 옷 상세: 착용 기록 + 세탁 바구니 ──────────────
-      await tapVisible(tester, find.text('오버사이즈 캐시미어 코트'));
-      expect(find.text('착용 히스토리'), findsOneWidget);
-      await shot(tester, '09_item_detail');
+        // ── 4. 옷 상세: 착용 기록 + 세탁 바구니 ──────────────
+        await tapVisible(tester, find.text('오버사이즈 캐시미어 코트'));
+        expect(find.text('착용 히스토리'), findsOneWidget);
+        await shot(tester, '09_item_detail');
 
-      await tapVisible(tester, find.text('착용 기록하기'));
-      expect(find.text('오늘의 착용'), findsOneWidget);
-      await shot(tester, '10_wear_sheet');
-      await tester.enterText(find.byType(TextField).last, '오피스 미팅');
-      await tester.tap(find.text('기록'));
-      await tester.pumpAndSettle();
-      expect(find.text('오늘의 착용이 기록되었어요'), findsOneWidget);
-      await waitToastGone(tester);
-      // 타임라인에 기록 반영
-      expect(find.text('오피스 미팅'), findsOneWidget);
+        await tapVisible(tester, find.text('착용 기록하기'));
+        expect(find.text('오늘의 착용'), findsOneWidget);
+        await shot(tester, '10_wear_sheet');
+        await tester.enterText(find.byType(TextField).last, '오피스 미팅');
+        await tester.tap(find.text('기록'));
+        await tester.pumpAndSettle();
+        expect(find.text('오늘의 착용이 기록되었어요'), findsOneWidget);
+        await waitToastGone(tester);
+        // 타임라인에 기록 반영
+        expect(find.text('오피스 미팅'), findsOneWidget);
 
-      await tapVisible(tester, find.text('세탁 바구니'));
-      expect(find.text('세탁 바구니에 담겼어요'), findsOneWidget);
-      await waitToastGone(tester);
-      expect(find.text('바구니에서 제외'), findsOneWidget);
-      await shot(tester, '11_detail_after_wear_laundry');
+        // 주기 6회에 도달할 때까지 실제 UI로 기록한다.
+        for (var count = 2; count <= 6; count++) {
+          await tapVisible(tester, find.text('착용 기록하기'));
+          await tester.tap(find.text('기록'));
+          await tester.pumpAndSettle();
+          await waitToastGone(tester);
+          final item = isar.items.where().findAll().single;
+          expect(item.wearSinceWash, count);
+          expect(
+            tester.widget<StatsGrid>(find.byType(StatsGrid)).item.wearSinceWash,
+            count,
+          );
+          expect(item.status, count == 6 ? ItemStatus.dirty : ItemStatus.clean);
+        }
+        await shot(tester, '11a_wash_cycle_reached');
 
-      // 상세 → 뒤로 (옷장 복귀)
-      await tapVisible(tester, find.byIcon(Icons.arrow_back_ios_new_rounded));
+        await tapVisible(tester, find.text('세탁 바구니'));
+        expect(find.text('세탁 바구니에 담겼어요'), findsOneWidget);
+        await waitToastGone(tester);
+        expect(find.text('바구니에서 제외'), findsOneWidget);
+        await shot(tester, '11_detail_after_wear_laundry');
 
-      // ── 5. 세탁 탭: 선택 → 세탁 완료 ────────────────────
-      await tester.tap(find.text('세탁'));
-      await tester.pumpAndSettle();
-      expect(find.text('세탁 바구니'), findsOneWidget);
-      expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
-      await shot(tester, '12_laundry_list');
+        // 상세 → 뒤로 (옷장 복귀)
+        await tapVisible(tester, find.byIcon(Icons.arrow_back_ios_new_rounded));
 
-      await tapVisible(tester, find.text('모두 선택'));
-      await tapVisible(tester, find.text('선택 항목 세탁 완료 처리'));
-      expect(find.text('1점의 세탁이 완료됐어요'), findsOneWidget);
-      await shot(tester, '13_laundry_completed_toast');
-      await waitToastGone(tester);
-      expect(find.text('세탁할 옷이 없어요.'), findsOneWidget);
-      await shot(tester, '14_laundry_empty');
+        expect(find.text('세탁 필요'), findsOneWidget);
+        await shot(tester, '11b_wardrobe_dirty');
 
-      // ── 6. 설정 탭: 토글 ────────────────────────────────
-      await tester.tap(find.text('설정'));
-      await tester.pumpAndSettle();
-      expect(find.text('세탁 알림'), findsOneWidget);
-      await shot(tester, '15_settings');
-      final firstSwitch = find.byType(Switch).first;
-      final before = tester.widget<Switch>(firstSwitch).value;
-      await tapVisible(tester, firstSwitch);
-      expect(tester.widget<Switch>(firstSwitch).value, !before);
-      await shot(tester, '16_settings_toggled');
+        // ── 5. 세탁 탭: 선택 → 세탁 완료 ────────────────────
+        await tester.tap(find.text('세탁'));
+        await tester.pumpAndSettle();
+        expect(find.text('세탁 바구니'), findsOneWidget);
+        expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
+        await shot(tester, '12_laundry_list');
+
+        await tapVisible(tester, find.text('모두 선택'));
+        await tapVisible(tester, find.text('선택 항목 세탁 완료 처리'));
+        expect(find.text('1점의 세탁이 완료됐어요'), findsOneWidget);
+        await shot(tester, '13_laundry_completed_toast');
+        await waitToastGone(tester);
+        expect(find.text('세탁할 옷이 없어요.'), findsOneWidget);
+        final washed = isar.items.where().findAll().single;
+        expect(washed.wearSinceWash, 0);
+        expect(washed.status, ItemStatus.clean);
+        expect(washed.inLaundry, isFalse);
+        await shot(tester, '14_laundry_empty');
+
+        // ── 6. 설정 탭: 토글 ────────────────────────────────
+        await tester.tap(find.text('설정'));
+        await tester.pumpAndSettle();
+        expect(find.text('세탁 알림'), findsOneWidget);
+        await shot(tester, '15_settings');
+        final firstSwitch = find.byType(Switch).first;
+        final before = tester.widget<Switch>(firstSwitch).value;
+        await tapVisible(tester, firstSwitch);
+        expect(tester.widget<Switch>(firstSwitch).value, !before);
+        await shot(tester, '16_settings_toggled');
+
+        expect(
+          isar.userPreferences.get(UserPreferences.singletonId)!.lastTab,
+          '/settings',
+        );
+        if (prepareRestart) {
+          await shot(tester, 'restart_01_before_terminate');
+          return;
+        }
+      } else {
+        // 별도 flutter drive 프로세스로 시작해 메모리 상태 없이 복원을 검증한다.
+        expect(find.text('세탁 알림'), findsOneWidget);
+        expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+        final restored = isar.items.where().findAll().single;
+        expect(restored.name, '오버사이즈 캐시미어 코트');
+        expect(restored.washCycle, 6);
+        expect(restored.totalWears, 6);
+        expect(restored.wearSinceWash, 0);
+        expect(restored.status, ItemStatus.clean);
+        expect(restored.inLaundry, isFalse);
+        expect(restored.lastWashedAt, isNotNull);
+        final events = isar.wearEvents.where().findAll();
+        expect(events.where((e) => e.kind == EventKind.wear).length, 6);
+        expect(events.where((e) => e.kind == EventKind.wash).length, 1);
+        expect(events.any((e) => e.note == '오피스 미팅'), isTrue);
+        expect(
+          isar.userPreferences.get(UserPreferences.singletonId)!.lastTab,
+          '/settings',
+        );
+        await shot(tester, 'restart_02_restored_settings');
+      }
 
       // ── 7. 수정 플로우 ──────────────────────────────────
       await tester.tap(find.text('옷장'));
@@ -188,6 +256,7 @@ void main() {
       await shot(tester, '20_delete_dialog');
       await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
+      await shot(tester, '20b_after_delete_tap');
       expect(find.text('내 옷장'), findsOneWidget);
       expect(find.text('수선한 캐시미어 코트'), findsNothing);
       await waitToastGone(tester);

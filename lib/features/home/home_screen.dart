@@ -37,7 +37,8 @@ class HomeScreen extends ConsumerWidget {
               perBucket: {},
             ),
             builder: (ctx, snap) {
-              final s = snap.data ??
+              final s =
+                  snap.data ??
                   const WardrobeStats(
                     total: 0,
                     clean: 0,
@@ -49,7 +50,7 @@ class HomeScreen extends ConsumerWidget {
                   ClosetimoSpacing.lg,
                   ClosetimoSpacing.lg,
                   ClosetimoSpacing.lg,
-                  ClosetimoSpacing.huge + 32,
+                  ClosetimoSpacing.space76,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

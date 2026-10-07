@@ -54,8 +54,10 @@ class HistoryTimeline extends ConsumerWidget {
             const SizedBox(height: ClosetimoSpacing.sm),
             if (onEdit != null)
               ListTile(
-                leading: const Icon(Icons.edit_outlined,
-                    color: ClosetimoColors.ink),
+                leading: const Icon(
+                  Icons.edit_outlined,
+                  color: ClosetimoColors.ink,
+                ),
                 title: const Text(
                   '메모 편집',
                   style: TextStyle(
@@ -71,8 +73,10 @@ class HistoryTimeline extends ConsumerWidget {
               ),
             if (onDelete != null)
               ListTile(
-                leading: const Icon(Icons.delete_outline,
-                    color: ClosetimoColors.error),
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: ClosetimoColors.error,
+                ),
                 title: const Text(
                   '기록 삭제',
                   style: TextStyle(
@@ -103,7 +107,7 @@ class HistoryTimeline extends ConsumerWidget {
         final events = snap.data ?? const [];
         if (events.isEmpty) {
           return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
+            padding: EdgeInsets.symmetric(vertical: ClosetimoSpacing.space24),
             child: Text(
               '아직 기록된 이벤트가 없어요.',
               style: TextStyle(
@@ -115,7 +119,7 @@ class HistoryTimeline extends ConsumerWidget {
           );
         }
         return Padding(
-          padding: const EdgeInsets.only(left: 42),
+          padding: const EdgeInsets.only(left: ClosetimoSpacing.space42),
           child: Stack(
             // 세로선(left: -27)과 이벤트 아이콘(left: -42)이 음수 좌표에
             // 그려지므로 기본 Clip.hardEdge를 끄지 않으면 모두 잘려 보인다.
@@ -132,13 +136,14 @@ class HistoryTimeline extends ConsumerWidget {
                 children: [
                   for (final e in events)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 22),
+                      padding: const EdgeInsets.only(
+                        bottom: ClosetimoSpacing.space22,
+                      ),
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onLongPress:
-                            e.kind == EventKind.wear && _hasActions
-                                ? () => _showActions(context, e)
-                                : null,
+                        onLongPress: e.kind == EventKind.wear && _hasActions
+                            ? () => _showActions(context, e)
+                            : null,
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -175,11 +180,9 @@ class HistoryTimeline extends ConsumerWidget {
                                     color: ClosetimoColors.muted,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: ClosetimoSpacing.space2),
                                 Text(
-                                  e.kind == EventKind.wash
-                                      ? '세탁 완료'
-                                      : '착용 기록',
+                                  e.kind == EventKind.wash ? '세탁 완료' : '착용 기록',
                                   style: const TextStyle(
                                     fontFamily: 'Manrope',
                                     fontSize: 15,
@@ -188,7 +191,9 @@ class HistoryTimeline extends ConsumerWidget {
                                   ),
                                 ),
                                 if (e.note != null && e.note!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
+                                  const SizedBox(
+                                    height: ClosetimoSpacing.space2,
+                                  ),
                                   Text(
                                     e.note!,
                                     style: const TextStyle(

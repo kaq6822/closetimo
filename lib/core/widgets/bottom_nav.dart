@@ -9,26 +9,26 @@ enum BottomNavTab { home, wardrobe, laundry, settings }
 
 extension BottomNavTabMeta on BottomNavTab {
   String get label => switch (this) {
-        BottomNavTab.home => '홈',
-        BottomNavTab.wardrobe => '옷장',
-        BottomNavTab.laundry => '세탁',
-        BottomNavTab.settings => '설정',
-      };
+    BottomNavTab.home => '홈',
+    BottomNavTab.wardrobe => '옷장',
+    BottomNavTab.laundry => '세탁',
+    BottomNavTab.settings => '설정',
+  };
 
   IconData get icon => switch (this) {
-        BottomNavTab.home => Icons.home_rounded,
-        BottomNavTab.wardrobe => Icons.checkroom_rounded,
-        BottomNavTab.laundry => Icons.local_laundry_service_rounded,
-        BottomNavTab.settings => Icons.person_rounded,
-      };
+    BottomNavTab.home => Icons.home_rounded,
+    BottomNavTab.wardrobe => Icons.checkroom_rounded,
+    BottomNavTab.laundry => Icons.local_laundry_service_rounded,
+    BottomNavTab.settings => Icons.person_rounded,
+  };
 
   /// 단일 출처화 — go_router path와 활성 탭 판정이 본 게터만 참조한다.
   String get path => switch (this) {
-        BottomNavTab.home => '/home',
-        BottomNavTab.wardrobe => '/wardrobe',
-        BottomNavTab.laundry => '/laundry',
-        BottomNavTab.settings => '/settings',
-      };
+    BottomNavTab.home => '/home',
+    BottomNavTab.wardrobe => '/wardrobe',
+    BottomNavTab.laundry => '/laundry',
+    BottomNavTab.settings => '/settings',
+  };
 
   static BottomNavTab fromLocation(String location) {
     for (final t in BottomNavTab.values) {
@@ -56,7 +56,7 @@ class BottomNav extends StatelessWidget {
           ClosetimoSpacing.md,
           ClosetimoSpacing.md,
         ),
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: ClosetimoSpacing.space6),
         decoration: BoxDecoration(
           color: surfaces.containerLowest.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(ClosetimoRadius.full),
@@ -66,8 +66,9 @@ class BottomNav extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: BottomNavTab.values.map((t) {
             final active = t == current;
-            final color =
-                active ? ClosetimoColors.primary : ClosetimoColors.muted;
+            final color = active
+                ? ClosetimoColors.primary
+                : ClosetimoColors.muted;
             return InkWell(
               borderRadius: BorderRadius.circular(ClosetimoRadius.full),
               onTap: () => onTap(t),
@@ -80,14 +81,13 @@ class BottomNav extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(t.icon, size: 22, color: color),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: ClosetimoSpacing.xs),
                     Text(
                       t.label,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
-                        fontWeight:
-                            active ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                         color: color,
                       ),
                     ),

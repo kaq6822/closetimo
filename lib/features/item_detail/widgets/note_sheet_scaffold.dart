@@ -34,8 +34,9 @@ class NoteSheetScaffold extends StatefulWidget {
 }
 
 class _NoteSheetScaffoldState extends State<NoteSheetScaffold> {
-  late final TextEditingController _ctl =
-      TextEditingController(text: widget.initial ?? '');
+  late final TextEditingController _ctl = TextEditingController(
+    text: widget.initial ?? '',
+  );
   late final FocusNode _focus = FocusNode();
 
   @override
@@ -91,7 +92,7 @@ class _NoteSheetScaffoldState extends State<NoteSheetScaffold> {
                   ),
                 ),
               ),
-              const SizedBox(height: ClosetimoSpacing.md + 2),
+              const SizedBox(height: ClosetimoSpacing.space18),
               Text(
                 widget.title,
                 style: const TextStyle(
@@ -131,8 +132,8 @@ class _NoteSheetScaffoldState extends State<NoteSheetScaffold> {
                   filled: true,
                   fillColor: surfaces.containerLow,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
+                    horizontal: ClosetimoSpacing.space18,
+                    vertical: ClosetimoSpacing.space14,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(ClosetimoRadius.lg),

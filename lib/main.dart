@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/router.dart';
 import 'app/theme/app_theme.dart';
+import 'app/theme/tokens.dart';
 import 'data/providers/app_providers.dart';
 import 'data/providers/isar_provider.dart';
 
@@ -79,7 +80,7 @@ class _ErrorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(ClosetimoSpacing.xl),
         child: Center(
           child: Text(
             '앱 초기화에 실패했어요.\n$error',
