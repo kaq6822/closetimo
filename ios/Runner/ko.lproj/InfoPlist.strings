@@ -1,0 +1,3 @@
+/* 한국어 로케일 앱 이름. 그 외 로케일은 Info.plist의 "Closetimo"를 쓴다. */
+"CFBundleDisplayName" = "옷장이모";
+"CFBundleName" = "옷장이모";

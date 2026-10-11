@@ -47,7 +47,7 @@ flutter test
 dart run tool/check_design_tokens.dart            # 디자인 토큰 가드 (헌법 II)
 
 # 4. 실기기 E2E (앱 데이터를 초기화해야 결정적인 결과가 나온다)
-xcrun simctl uninstall booted com.closetimo.closetimoApp
+xcrun simctl uninstall booted com.closetimo.app
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/full_flow_verification_test.dart -d <device-id>
 ```

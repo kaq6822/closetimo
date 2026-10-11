@@ -201,7 +201,14 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       message = _isEdit ? '수정에 실패했어요' : '등록에 실패했어요';
     }
     if (!context.mounted) return;
-    showClosetimoToast(context, message);
+    // #22 N-02 — 수정은 하단 탭이 없는 상세로 돌아가(실패 시엔 수정 화면에 머묾)
+    // 하단 토스트가 "착용 기록하기" 등을 덮으므로 상단에 띄운다. 신규 등록은
+    // 옷장 등 탭 화면으로 돌아가므로 하단 탭 위(기본)를 유지한다.
+    showClosetimoToast(
+      context,
+      message,
+      placement: _isEdit ? ToastPlacement.top : ToastPlacement.bottom,
+    );
     if (success) context.pop();
     if (mounted) setState(() => _saving = false);
   }
@@ -250,7 +257,6 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         ClosetimoSpacing.lg,
                         ClosetimoSpacing.md,
                         ClosetimoSpacing.lg,
-                        // 하단 고정 CTA 바에 폼이 가려지지 않는 여유.
                         ClosetimoSpacing.space120,
                       ),
                       child: Column(
@@ -268,6 +274,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           const SizedBox(height: ClosetimoSpacing.space26),
                           const _FieldLabel(label: '의류 명칭'),
                           _FieldInput(
+                            label: '의류 명칭',
                             initial: _draft.name,
                             hint: 'e.g. 오버사이즈 캐시미어 코트',
                             onChanged: (v) => setState(
@@ -277,6 +284,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '브랜드'),
                           _FieldInput(
+                            label: '브랜드',
                             initial: _draft.brand,
                             hint: 'e.g. ZARA',
                             onChanged: (v) => setState(
@@ -293,9 +301,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           ),
                           const SizedBox(height: ClosetimoSpacing.sm),
                           const Padding(
-                            padding: EdgeInsets.only(
-                              left: ClosetimoSpacing.space4,
-                            ),
+                            padding: EdgeInsets.only(left: ClosetimoSpacing.xs),
                             child: Text(
                               '설정한 횟수만큼 착용하면 세탁 알림을 보냅니다.',
                               style: TextStyle(
@@ -464,11 +470,14 @@ class _DateField extends StatelessWidget {
 
 class _FieldInput extends StatefulWidget {
   const _FieldInput({
+    required this.label,
     required this.initial,
     required this.hint,
     required this.onChanged,
   });
 
+  /// 스크린리더가 읽을 필드 이름. 화면의 _FieldLabel과 같은 문구(#17).
+  final String label;
   final String initial;
   final String hint;
   final ValueChanged<String> onChanged;
@@ -491,29 +500,33 @@ class _FieldInputState extends State<_FieldInput> {
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    return TextField(
-      controller: _ctl,
-      onChanged: widget.onChanged,
-      style: const TextStyle(
-        fontFamily: 'Manrope',
-        fontSize: 15,
-        color: ClosetimoColors.ink,
-      ),
-      decoration: InputDecoration(
-        hintText: widget.hint,
-        filled: true,
-        fillColor: surfaces.containerLow,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: ClosetimoSpacing.space18,
-          vertical: ClosetimoSpacing.space16,
+    // #17 — 힌트("e.g. …")만으로는 필드 이름을 알 수 없어 라벨을 붙인다.
+    return Semantics(
+      label: widget.label,
+      child: TextField(
+        controller: _ctl,
+        onChanged: widget.onChanged,
+        style: const TextStyle(
+          fontFamily: 'Manrope',
+          fontSize: 15,
+          color: ClosetimoColors.ink,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-          borderSide: BorderSide.none,
+        decoration: InputDecoration(
+          hintText: widget.hint,
+          filled: true,
+          fillColor: surfaces.containerLow,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: ClosetimoSpacing.space18,
+            vertical: ClosetimoSpacing.space16,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );

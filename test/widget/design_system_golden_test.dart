@@ -202,6 +202,7 @@ void main() {
         tester,
         const SizedBox(width: 400, child: TopBar(title: '옷장이모')),
       );
+      expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull);
       await expectLater(
         find.byType(TopBar),
         matchesGoldenFile('goldens/top_bar_title.png'),

@@ -16,7 +16,7 @@
 // 실제로 하나도 발화하지 않는다는 것을 확인하는 방어적 가드로 유효하다.
 //
 // 실행 (앱 데이터가 비어 있어야 하므로 사전에 시뮬레이터에서 앱 삭제 권장):
-//   xcrun simctl uninstall booted com.closetimo.closetimoApp
+//   xcrun simctl uninstall booted com.closetimo.app
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/offline_smoke_test.dart -d <simulator>
 
@@ -28,56 +28,17 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:closetimo/main.dart' as app;
 
-/// 모든 Dart HTTP 요청을 예외로 만드는 오버라이드.
+import 'support/e2e_helpers.dart';
+
+/// Dart HTTP 클라이언트 생성 단계에서 차단해 모든 요청 진입점을 막는다.
 class _BlockingHttpOverrides extends HttpOverrides {
-  /// 차단된 요청 수. 테스트 후 검증과 보고에 사용한다.
   static int blockedCount = 0;
 
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    return _BlockingHttpClient(super.createHttpClient(context));
-  }
-}
-
-/// `HttpClient`은 `abstract interface class`이므로 상속이 아니라 위임으로
-/// 구현한다. 요청 진입점(`openUrl`)에서 즉시 실패시키고 나머지는 내부
-/// 클라이언트로 그대로 전달한다.
-class _BlockingHttpClient implements HttpClient {
-  _BlockingHttpClient(this._inner);
-
-  final HttpClient _inner;
-
-  Never _blocked() {
-    _BlockingHttpOverrides.blockedCount++;
+    blockedCount++;
     throw const SocketException('Network access blocked by offline smoke test');
   }
-
-  @override
-  Future<HttpClientRequest> openUrl(String method, Uri url) => _blocked();
-
-  @override
-  Future<HttpClientRequest> getUrl(Uri url) => _blocked();
-
-  @override
-  Future<HttpClientRequest> postUrl(Uri url) => _blocked();
-
-  @override
-  Future<HttpClientRequest> putUrl(Uri url) => _blocked();
-
-  @override
-  Future<HttpClientRequest> patchUrl(Uri url) => _blocked();
-
-  @override
-  Future<HttpClientRequest> headUrl(Uri url) => _blocked();
-
-  @override
-  Future<HttpClientRequest> deleteUrl(Uri url) => _blocked();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      //noSuchMethod forwards to the real client so unrelated members work.
-      // ignore: avoid_dynamic_calls
-      (_inner as dynamic).noSuchMethod(invocation);
 }
 
 void main() {
@@ -85,7 +46,7 @@ void main() {
 
   Future<void> shot(WidgetTester tester, String name) async {
     await tester.pumpAndSettle();
-    await binding.takeScreenshot(name);
+    await takeShot(binding, tester, name);
   }
 
   Future<void> tapVisible(WidgetTester tester, Finder f) async {
@@ -112,6 +73,11 @@ void main() {
       addTearDown(() {
         HttpOverrides.global = previousOverrides;
       });
+
+      // 차단 장치가 실제로 작동하는지 확인한 뒤 앱의 시도만 집계한다.
+      expect(() => HttpClient(), throwsA(isA<SocketException>()));
+      expect(_BlockingHttpOverrides.blockedCount, 1);
+      _BlockingHttpOverrides.blockedCount = 0;
 
       await app.main();
       await tester.pumpAndSettle();
@@ -196,12 +162,10 @@ void main() {
       expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
       await shot(tester, '08_offline_home_after_flow');
 
-      // ── 차단이 실제로 성립했는지 확인 ────────────────────
-      // 5작업이 모두 성공했는데도 Dart HTTP 요청이 발생했다면, 앱이 우연히
-      // 네트워크에 의존한 것이 아니라 테스트가 격리를 제대로 못 한 것이다.
-      // 여기서 0이 아니면 차단 장치가 동작하지 않은 것이다.
+      // 핵심 흐름에서 HTTP 클라이언트 생성 시도가 없었는지 검증한다.
+      expect(_BlockingHttpOverrides.blockedCount, 0);
       debugPrint(
-        'Offline smoke test: blockedHttpRequests='
+        'Offline smoke test: blockedHttpClients='
         '${_BlockingHttpOverrides.blockedCount}',
       );
     },

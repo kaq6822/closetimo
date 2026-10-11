@@ -19,7 +19,7 @@
 //     --target=integration_test/perf_wardrobe_test.dart -d <physical-device>
 //
 // 실행 (앱 데이터가 비어 있어야 하므로 사전에 시뮬레이터에서 앱 삭제 권장):
-//   xcrun simctl uninstall booted com.closetimo.closetimoApp
+//   xcrun simctl uninstall booted com.closetimo.app
 
 import 'dart:io';
 
@@ -39,6 +39,8 @@ import 'package:closetimo/features/wardrobe/widgets/wardrobe_filter_bar.dart';
 import 'package:closetimo/features/wardrobe/widgets/garment_tile.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
 import 'package:closetimo/main.dart' as app;
+
+import 'support/e2e_helpers.dart';
 
 /// SC-004 기준. 검증 없이 완화하지 않는다.
 const int kSearchFilterBudgetMs = 200;
@@ -223,7 +225,7 @@ void main() {
         'frames over 60fps budget '
         '${scrollSample.overBudgetRatioPercent.toStringAsFixed(1)}%',
       );
-      await binding.takeScreenshot('perf_wardrobe_100');
+      await takeShot(binding, tester, 'perf_wardrobe_100');
 
       final text = report.join('\n');
       binding.reportData ??= <String, dynamic>{};

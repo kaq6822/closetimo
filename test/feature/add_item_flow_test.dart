@@ -341,4 +341,55 @@ void main() {
       expect(find.text('openEdit'), findsOneWidget);
     });
   });
+
+  // #22 N-02 — 수정 저장 토스트는 상세(하단 탭 없음)로 돌아가므로 상단, 신규 등록
+  // 토스트는 탭 화면으로 돌아가므로 하단(탭 위)에 뜬다. 기본 뷰포트 800×600.
+  Future<double> toastCenterY(WidgetTester tester, String message) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final toast = find.ancestor(
+      of: find.text(message),
+      matching: find.byType(Container),
+    );
+    expect(toast, findsWidgets);
+    return tester.getCenter(toast.first).dy;
+  }
+
+  testWidgets('N-02: 수정 완료 토스트는 상단에 뜬다', (tester) async {
+    final repo = _InMemoryItemRepository();
+    repo.items.add(
+      Item(
+        name: '기존 코트',
+        category: Category.outer,
+        washCycle: 5,
+        createdAt: DateTime(2026, 1, 1),
+      )..id = 1,
+    );
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('openEdit'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('수정 완료'));
+    expect(await toastCenterY(tester, '옷 정보를 수정했어요'), lessThan(300));
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('N-02: 신규 등록 토스트는 하단(탭 위)을 유지한다', (tester) async {
+    final repo = _InMemoryItemRepository();
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '테스트 코트');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('등록하기'));
+    expect(await toastCenterY(tester, '새 옷이 옷장에 등록됐어요'), greaterThan(300));
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
 }

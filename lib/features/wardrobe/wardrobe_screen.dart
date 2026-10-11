@@ -27,11 +27,29 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
   String _query = '';
   WardrobeSort _sort = WardrobeSort.statusCleanFirst;
 
-  /// 그리드가 sliver로 바뀌면 스크롤 위치가 콘텐츠 축소 시 남아 남는다.
+  /// 그리드가 sliver로 바뀌면 스크롤 위치가 콘텐츠 축소 시 남는다.
   /// 마지막 옷을 삭제하면 그리드가 사라져 화면 높이가 확 줄고, 스크롤이
   /// 되감기지 않으면 "내 옷장" 제목이 화면 위로 밀려난 빈 화면이 보인다.
   /// 옷장이 비면 최상단으로 되돌린다.
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void didUpdateWidget(WardrobeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // indexedStack 셸이 State를 보존하므로, 홈 카테고리 카드가 새 `?category=`로
+    // 진입하면 여기서 필터를 맞춘다(FR-019). 칩 선택은 URL에 먼저 반영되므로
+    // `_category`와 같으면 건드리지 않는다. 목록이 통째로 바뀌므로 맨 위로 올린다.
+    final next = widget.initialCategory;
+    if (next != oldWidget.initialCategory && next != _category) {
+      _category = next;
+      // 탭 전환 중 build 단계에서 호출되므로 레이아웃이 끝난 뒤 이동한다.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -52,6 +70,16 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
     });
   }
 
+  /// 칩 선택을 `?category=`에도 반영해, 이후 홈 카드가 같은 카테고리로
+  /// 다시 진입해도 쿼리 변화로 감지되게 한다.
+  void _onCategoryChanged(Category? c) {
+    setState(() => _category = c);
+    context.goNamed(
+      Routes.wardrobe,
+      queryParameters: {if (c != null) 'category': c.name},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = ref.watch(itemRepositoryProvider);
@@ -64,7 +92,10 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
       children: [
         TopBar(
           rightSlot: TopBarPlusAction(
-            onTap: () => context.pushNamed(Routes.addItem),
+            onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+              context.pushNamed(Routes.addItem);
+            },
           ),
         ),
         Expanded(
@@ -107,7 +138,7 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                       category: _category,
                       sort: _sort,
                       onQueryChanged: (v) => setState(() => _query = v),
-                      onCategoryChanged: (c) => setState(() => _category = c),
+                      onCategoryChanged: _onCategoryChanged,
                       onSortChanged: (s) => setState(() => _sort = s),
                     ),
                     const SizedBox(height: ClosetimoSpacing.xl),

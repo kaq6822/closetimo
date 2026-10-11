@@ -130,5 +130,12 @@ Future<void> pumpGoldenHost(
       ),
     ),
   );
+  // 이미지 디코딩은 fake async 밖에서 완료해야 골든에 자산이 포함된다.
+  await tester.runAsync(() async {
+    for (final element in find.byType(Image).evaluate()) {
+      final image = element.widget as Image;
+      await precacheImage(image.image, element);
+    }
+  });
   await tester.pumpAndSettle();
 }

@@ -59,7 +59,11 @@ flutter run --dart-define=SEED_DEMO=true
 첫 실행 시 sandbox에 주 저장소(`closetimo_plus.isar` + `.lock`)가 생성된다. 업데이트
 설치에서는 기존 `closetimo.isar`를 읽어 새 저장소로 이전하되 원본 파일은 보존한다. 위치:
 - iOS: `<simulator>/data/Containers/Data/Application/<UUID>/Documents/`
-- Android: `/data/data/com.example.closetimo/files/`
+- Android: `/data/data/com.closetimo.app/files/`
+
+앱 ID는 Android `applicationId`·iOS 번들 ID 모두 `com.closetimo.app`이다(스토어 게시 후 변경 불가).
+스토어용 release 빌드(`flutter build appbundle`)는 업로드 키가 필요하다 —
+[docs/release/android-signing.md](../../docs/release/android-signing.md).
 
 ---
 
@@ -98,18 +102,19 @@ flutter test
 
 # 통합(E2E) — emulator·simulator 필요. 실제 Isar 저장소를 사용하므로
 # 결정적 결과를 위해 실행 전 앱을 삭제해 빈 상태에서 시작한다.
-xcrun simctl uninstall booted com.closetimo.closetimoApp   # iOS 시뮬레이터 기준
+xcrun simctl uninstall booted com.closetimo.app   # iOS 시뮬레이터 기준
 flutter drive \
   --driver=test_driver/integration_test.dart \
   --target=integration_test/full_flow_verification_test.dart \
   -d <device-id>
 ```
 
-통합 테스트 3종과 각각의 검증 범위:
+통합 테스트 4종과 각각의 검증 범위:
 
 | target | 검증 대상 | 범위 한계 |
 |---|---|---|
 | `full_flow_verification_test.dart` | 등록→옷장→상세(착용·메모)→세탁→설정→수정→삭제, 단계별 스크린샷 | SC-006 사용자 성공률은 증명하지 못함 |
+| `restart_persistence_test.dart` | 위젯 트리 제거·재구성 후 파일 저장소·마지막 탭 복원 | 실제 프로세스 종료는 `tool/verify_full_flow.sh`로 별도 검증 |
 | `offline_smoke_test.dart` | Dart HTTP 차단 상태에서 핵심 5작업 (SC-007) | OS 비행기 모드 전체 오프라인과 동일한 증거가 아님 |
 | `perf_wardrobe_test.dart` | 100점 기준 검색·필터·정렬 지연 + 프레임 (SC-004/T080) | profile 빌드는 **실기기에만** 가능. 시뮬레이터는 debug 모드로만 실행된다 |
 
@@ -117,7 +122,7 @@ flutter drive \
 앱 Documents 및 호스트 `build/verification/perf_wardrobe_report.txt`에 기록된다. 호스트 리포트는 앱 삭제 이후에도 보존된다.
 
 > 사용자 개인 데이터가 있는 실기기는 임의로 앱을 삭제(초기화)하지 않는다.
-> 성능 검증은 시드를 100건 삽입하므로 반드시 빈 상태의 시뮬레이터에서 수행한다.
+> 성능 검증은 시드를 100건 삽입하므로 빈 상태의 전용 테스트 기기에서 수행한다. 공식 성능 판정은 실기기 profile 모드로 실행한다.
 
 테스트 시 Isar Plus는 임시 디렉토리 인스턴스를 사용하고, 최초 실행에 native test core를
 시스템 임시 디렉토리에 준비한다(`test/support/isar_plus_test_support.dart`).

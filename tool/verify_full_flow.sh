@@ -2,7 +2,7 @@
 # 전용 iOS Simulator에서 초기화 → 준비 → 프로세스 종료 → 복원을 검증한다.
 set -eu
 device_id="${1:?Provide a dedicated iOS Simulator UDID}"
-bundle_id=com.closetimo.closetimoApp
+bundle_id=com.closetimo.app
 # 물리 기기 ID는 simctl에 존재하지 않으므로 초기화 전에 실패한다.
 xcrun simctl bootstatus "$device_id" -b
 if xcrun simctl get_app_container "$device_id" "$bundle_id" app >/dev/null 2>&1; then

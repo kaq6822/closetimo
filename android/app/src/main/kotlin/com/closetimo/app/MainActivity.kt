@@ -1,4 +1,4 @@
-package com.closetimo.closetimo_app
+package com.closetimo.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/widgets/bottom_nav.dart';
 import '../../core/widgets/chip_filter.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/soft_button.dart';
@@ -62,6 +63,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   }
 
   // ignore_for_file: use_build_context_synchronously
+  // #22 — 상세 화면에 머무는 토스트는 방금 누른 버튼(스크롤 후 화면 하단에 오기
+  // 쉬움)을 가리지 않도록 상단바 아래에 띄운다. 화면을 벗어나는 토스트는 기본(하단).
   Future<void> _recordWear() async {
     final result = await WearRecordSheet.show(context);
     if (result == null) return;
@@ -70,7 +73,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         .recordWear(widget.id, note: result.note);
     await _refresh();
     if (!context.mounted) return;
-    showClosetimoToast(context, '오늘의 착용이 기록되었어요');
+    showClosetimoToast(
+      context,
+      '오늘의 착용이 기록되었어요',
+      placement: ToastPlacement.top,
+    );
   }
 
   Future<void> _toggleLaundry() async {
@@ -79,7 +86,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await ref.read(laundryRepositoryProvider).toggle(widget.id);
     await _refresh();
     if (!context.mounted) return;
-    showClosetimoToast(context, wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요');
+    showClosetimoToast(
+      context,
+      wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요',
+      placement: ToastPlacement.top,
+    );
   }
 
   Future<void> _editEventNote(WearEvent event) async {
@@ -89,7 +100,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         .read(eventRepositoryProvider)
         .updateEventNote(event.id, result.note);
     if (!context.mounted) return;
-    showClosetimoToast(context, '메모를 수정했어요');
+    showClosetimoToast(context, '메모를 수정했어요', placement: ToastPlacement.top);
   }
 
   Future<void> _deleteEvent(WearEvent event) async {
@@ -98,7 +109,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await ref.read(eventRepositoryProvider).deleteWearEvent(event.id);
     await _refresh();
     if (!context.mounted) return;
-    showClosetimoToast(context, '착용 기록을 삭제했어요');
+    showClosetimoToast(context, '착용 기록을 삭제했어요', placement: ToastPlacement.top);
   }
 
   // 002 FR-001 — 수정 화면 진입 후 복귀 시 상세를 갱신한다.
@@ -119,7 +130,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     showClosetimoToast(context, '옷을 옷장에서 삭제했어요');
     // FR-012 — 삭제 후에는 진입 경로(홈·세탁 타일 포함)와 무관하게 옷장 탭으로
     // 복귀해야 한다. pop()은 진입 스택으로 돌아가므로 goNamed로 탭을 전환한다.
-    context.goNamed(Routes.wardrobe);
+    // 단, 옷장에서 push로 들어왔다면(push 아래 기준 URI가 옷장) pop해서
+    // 칩 필터(`?category=`)·검색어·스크롤을 그대로 유지한다(#13 부수 효과 방지).
+    final base = GoRouter.of(context).routerDelegate.currentConfiguration.uri;
+    if (base.path == BottomNavTab.wardrobe.path && context.canPop()) {
+      context.pop();
+    } else {
+      context.goNamed(Routes.wardrobe);
+    }
   }
 
   @override

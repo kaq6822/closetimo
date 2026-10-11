@@ -45,5 +45,10 @@
 # Spec Kit 로컬 캐시 (툴이 생성하는 카탈로그 캐시, 소스 아님)
 .specify/extensions/.cache/
 
-# 골든 실패 진단 이미지는 기준 PNG와 구분하며 커밋하지 않는다.
-test/widget/failures/
+# 서명 키 — 절대 커밋하지 않는다 (docs/release/android-signing.md)
+**/key.properties
+*.jks
+*.keystore
+
+# 골든 테스트 실패 이미지
+test/**/failures/

@@ -24,12 +24,14 @@ import 'package:closetimo/features/item_detail/widgets/stats_grid.dart';
 
 import 'package:closetimo/main.dart' as app;
 
+import 'support/e2e_helpers.dart';
+
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> shot(WidgetTester tester, String name) async {
     await tester.pumpAndSettle();
-    await binding.takeScreenshot(name);
+    await takeShot(binding, tester, name);
   }
 
   /// 스크롤로 노출을 보장한 뒤 탭한다.
