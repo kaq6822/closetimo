@@ -80,7 +80,8 @@ class ClosetimoSurfaces extends ThemeExtension<ClosetimoSurfaces> {
     if (other is! ClosetimoSurfaces) return this;
     return ClosetimoSurfaces(
       containerLowest:
-          Color.lerp(containerLowest, other.containerLowest, t) ?? containerLowest,
+          Color.lerp(containerLowest, other.containerLowest, t) ??
+          containerLowest,
       containerLow:
           Color.lerp(containerLow, other.containerLow, t) ?? containerLow,
       container: Color.lerp(container, other.container, t) ?? container,
@@ -88,7 +89,7 @@ class ClosetimoSurfaces extends ThemeExtension<ClosetimoSurfaces> {
           Color.lerp(containerHigh, other.containerHigh, t) ?? containerHigh,
       containerHighest:
           Color.lerp(containerHighest, other.containerHighest, t) ??
-              containerHighest,
+          containerHighest,
       bgMint: Color.lerp(bgMint, other.bgMint, t) ?? bgMint,
       bgMintSoft: Color.lerp(bgMintSoft, other.bgMintSoft, t) ?? bgMintSoft,
       bgChip: Color.lerp(bgChip, other.bgChip, t) ?? bgChip,

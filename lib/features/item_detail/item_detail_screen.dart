@@ -100,11 +100,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         .read(eventRepositoryProvider)
         .updateEventNote(event.id, result.note);
     if (!context.mounted) return;
-    showClosetimoToast(
-      context,
-      '메모를 수정했어요',
-      placement: ToastPlacement.top,
-    );
+    showClosetimoToast(context, '메모를 수정했어요', placement: ToastPlacement.top);
   }
 
   Future<void> _deleteEvent(WearEvent event) async {
@@ -113,11 +109,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await ref.read(eventRepositoryProvider).deleteWearEvent(event.id);
     await _refresh();
     if (!context.mounted) return;
-    showClosetimoToast(
-      context,
-      '착용 기록을 삭제했어요',
-      placement: ToastPlacement.top,
-    );
+    showClosetimoToast(context, '착용 기록을 삭제했어요', placement: ToastPlacement.top);
   }
 
   // 002 FR-001 — 수정 화면 진입 후 복귀 시 상세를 갱신한다.
@@ -186,13 +178,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   ClosetimoSpacing.lg,
                   ClosetimoSpacing.md,
                   ClosetimoSpacing.lg,
-                  ClosetimoSpacing.huge + 32,
+                  ClosetimoSpacing.space76,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     HeroImage(item: item),
-                    const SizedBox(height: ClosetimoSpacing.xl + 2),
+                    const SizedBox(height: ClosetimoSpacing.space26),
                     Text(
                       item.name,
                       style: const TextStyle(
@@ -219,7 +211,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: ClosetimoSpacing.xl + 2),
+                    const SizedBox(height: ClosetimoSpacing.space26),
                     StatsGrid(item: item),
                     const SizedBox(height: ClosetimoSpacing.xl),
                     PrimaryButton(
@@ -227,7 +219,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       leading: const Icon(Icons.add_rounded),
                       onPressed: _recordWear,
                     ),
-                    const SizedBox(height: ClosetimoSpacing.sm + 4),
+                    const SizedBox(height: ClosetimoSpacing.space12),
                     SoftButton(
                       label: item.inLaundry ? '바구니에서 제외' : '세탁 바구니',
                       leading: const Icon(Icons.local_laundry_service_rounded),
@@ -243,7 +235,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         color: ClosetimoColors.ink,
                       ),
                     ),
-                    const SizedBox(height: ClosetimoSpacing.md + 2),
+                    const SizedBox(height: ClosetimoSpacing.space18),
                     HistoryTimeline(
                       itemId: item.id,
                       onEdit: _editEventNote,

@@ -12,9 +12,7 @@ class DeleteEventDialog {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('이 착용 기록을 삭제할까요?'),
-        content: const Text(
-          '삭제하면 옷의 착용 카운터와 상태가 함께 조정돼요. 되돌릴 수 없어요.',
-        ),
+        content: const Text('삭제하면 옷의 착용 카운터와 상태가 함께 조정돼요. 되돌릴 수 없어요.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),

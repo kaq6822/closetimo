@@ -49,15 +49,58 @@ abstract final class ClosetimoColors {
 }
 
 /// 간격(spacing) 토큰. design.md §7 — 1.4rem 베이스라인(=22.4px ≈ 4 grid).
-/// scale 1 = 4px, 단위는 모두 logical px.
+///
+/// 두 계층으로 구성한다.
+///  1. `space<N>` 원시 그리드 — design.md의 4-grid(2px 단위)를 그대로 노출한다.
+///     위젯에서 하드코딩된 숫자 간격을 기계적으로 배제하려면 **값이 아니라
+///     토큰 참조**를 강제해야 하므로, 검사 도구(`tool/check_design_tokens.dart`)가
+///     이 목록을 허용 값 집합으로 쓴다.
+///  2. 의미 단계 별칭 — design.md가 직접 지목한 값에 이름을 붙인다.
+///
+/// 단위는 모두 logical px다.
 abstract final class ClosetimoSpacing {
-  static const double xs = 4; // scale 1
-  static const double sm = 8; // scale 2
-  static const double md = 16; // scale 3 (카드 내부 패딩 표준)
+  // ── 4-grid 원시 스텝 ──
+  static const double space2 = 2; // scale 0.5 (아이콘·텍스트 광학 정렬)
+  static const double space4 = 4; // scale 1
+  static const double space5 = 5; // 상태 라벨의 세로 패딩
+  static const double space28 = 28; // 세탁 주기 숫자 영역 너비
+  static const double space34 = 34; // 세탁 주기 조절 버튼 치수
+  static const double space6 = 6; // scale 1.5 (컴포넌트 최소 치수)
+  static const double space8 = 8; // scale 2
+  static const double space10 = 10; // scale 2.5 (칩·라벨 좌우 패딩)
+  static const double space12 = 12; // scale 3 (그리드 카드 간격)
+  static const double space14 = 14; // scale 3.5 (카드 내부 행 간격)
+  static const double space16 = 16; // scale 4
+  static const double space18 = 18; // scale 4.5 (입력 필드 좌우 패딩)
+  static const double space20 = 20; // scale 5 (카드 패딩)
+  static const double space22 = 22; // scale 5.5 (타임라인 행 간격)
+  static const double space24 = 24; // scale 6
+  static const double space26 = 26; // scale 6.5 (폼 필드 간격)
+  static const double space32 = 32; // scale 8
+  static const double space40 = 40; // scale 10 (빈 상태 상단 여백)
+  static const double space42 = 42; // scale 10.5 (타임라인 라인 오프셋)
+  static const double space44 = 44; // scale 11 (≈2.75rem)
+  static const double space52 = 52; // scale 13 (SoftButton 최소 높이)
+  static const double space56 = 56; // scale 14 (PrimaryButton 최소 높이)
+  static const double space60 = 60; // scale 15 (빈 상태 세로 여백)
+  static const double space76 = 76; // scale 19 (하단 탭바 회피 여백)
+  static const double space120 = 120; // scale 30 (고정 하단 CTA 여백)
+
+  // ── 의미 단계 별칭 (design.md §7 매핑) ──
+  static const double xs = space4; // scale 1
+  static const double sm = space8; // scale 2
+  static const double md = space16; // scale 3 (카드 내부 패딩 표준, spacing-3 1rem)
   static const double lg = 22.4; // scale 4 (베이스라인 1.4rem)
-  static const double xl = 24; // 리스트 아이템 간 수직 간격
-  static const double xxl = 32; // 섹션 간 수직 간격
-  static const double huge = 44; // scale 8 (≈2.75rem 주요 섹션 호흡)
+  static const double xl = space24; // 리스트 아이템 간 수직 간격
+  static const double xxl = space32; // 섹션 간 수직 간격
+  static const double huge = space44; // scale 8 (≈2.75rem 주요 섹션 호흡)
+}
+
+/// 컴포넌트 고정 치수 토큰. 간격 스케일과 별개지만 design.md 밖의 임의 숫자를
+/// 막기 위해 같은 원칙(토큰 참조)으로 관리한다.
+abstract final class ClosetimoSize {
+  /// 세탁 목록 타일의 정사각 사진 크기.
+  static const double tileThumbnail = 62;
 }
 
 /// 라운딩(corner radius) 토큰. design.md §5 "둥글기".
@@ -66,8 +109,11 @@ abstract final class ClosetimoRadius {
   static const double sm = 12;
   static const double md = 14;
   static const double lg = 16; // 의류 칩
+  static const double lgPlus = 18; // 필터 카드 등 중간 라운딩
+  static const double xlMinus = 20; // 홈 섹션 카드
   static const double xl = 24; // 옷 카드 (1.5rem)
   static const double xxl = 28;
+  static const double hairline = 2; // 타임라인 세로 라인 등 헤어라인 요소
 
   /// 알약 모양 — 매우 큰 값으로 충분히 둥글게.
   static const double full = 999;
@@ -85,10 +131,6 @@ abstract final class ClosetimoElevation {
   ];
 
   static const cardShadow = [
-    BoxShadow(
-      color: Color(0x08000000),
-      offset: Offset(0, 2),
-      blurRadius: 8,
-    ),
+    BoxShadow(color: Color(0x08000000), offset: Offset(0, 2), blurRadius: 8),
   ];
 }

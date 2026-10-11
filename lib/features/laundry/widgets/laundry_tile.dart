@@ -37,7 +37,7 @@ class LaundryTile extends ConsumerWidget {
         ? 0.0
         : (item.wearSinceWash / item.washCycle).clamp(0.0, 1.0);
     return Container(
-      padding: const EdgeInsets.all(ClosetimoSpacing.md - 2),
+      padding: const EdgeInsets.all(ClosetimoSpacing.space14),
       decoration: BoxDecoration(
         color: selected ? surfaces.bgMintSoft : surfaces.containerLowest,
         borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
@@ -68,7 +68,7 @@ class LaundryTile extends ConsumerWidget {
                       imagePath: item.imagePath,
                       fallback: Color(item.fallbackColor),
                     ),
-                    const SizedBox(width: ClosetimoSpacing.md - 2),
+                    const SizedBox(width: ClosetimoSpacing.space14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +85,7 @@ class LaundryTile extends ConsumerWidget {
                               color: ClosetimoColors.ink,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: ClosetimoSpacing.space4),
                           Text(
                             '${item.category.label} · ${item.careMethod.label}',
                             style: const TextStyle(
@@ -106,7 +106,7 @@ class LaundryTile extends ConsumerWidget {
                                   color: ClosetimoColors.ink,
                                 ),
                               ),
-                              const SizedBox(width: ClosetimoSpacing.sm + 2),
+                              const SizedBox(width: ClosetimoSpacing.space10),
                               Expanded(
                                 child: ProgressBar(
                                   value: progress,
@@ -123,7 +123,7 @@ class LaundryTile extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: ClosetimoSpacing.sm + 2),
+          const SizedBox(width: ClosetimoSpacing.space10),
           _CheckCircle(
             label: '${item.name} 선택',
             selected: selected,
@@ -145,7 +145,11 @@ class _Thumb extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(ClosetimoRadius.md),
-      child: SizedBox(width: 62, height: 62, child: _resolve(ref)),
+      child: SizedBox(
+        width: ClosetimoSize.tileThumbnail,
+        height: ClosetimoSize.tileThumbnail,
+        child: _resolve(ref),
+      ),
     );
   }
 
@@ -187,8 +191,8 @@ class _CheckCircle extends StatelessWidget {
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: Container(
-          width: 28,
-          height: 28,
+          width: ClosetimoSpacing.space28,
+          height: ClosetimoSpacing.space28,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: selected

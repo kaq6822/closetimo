@@ -40,8 +40,7 @@ class _FakeItemRepo implements ItemRepository {
     Category? category,
     String query = '',
     required WardrobeSort sort,
-  }) =>
-      const Stream.empty();
+  }) => const Stream.empty();
   @override
   Stream<List<Item>> watchRecentlyWorn({int limit = 2}) => const Stream.empty();
   @override
@@ -96,15 +95,14 @@ Widget _harness(_FakeItemRepo itemRepo) {
 }
 
 Item _seed() => Item(
-      name: '삭제 대상 코트',
-      category: Category.outer,
-      washCycle: 5,
-      createdAt: DateTime(2026, 1, 1),
-    )..id = 1;
+  name: '삭제 대상 코트',
+  category: Category.outer,
+  washCycle: 5,
+  createdAt: DateTime(2026, 1, 1),
+)..id = 1;
 
 void main() {
-  testWidgets('US2 AC1: 오버플로 → 삭제하기 → 확인 → delete + 옷장 탭 복귀',
-      (tester) async {
+  testWidgets('US2 AC1: 오버플로 → 삭제하기 → 확인 → delete + 옷장 탭 복귀', (tester) async {
     final repo = _FakeItemRepo(_seed());
     await tester.pumpWidget(_harness(repo));
     await tester.pumpAndSettle();
@@ -126,8 +124,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('US2 AC2: 삭제 취소 시 아무것도 삭제되지 않고 상세 유지',
-      (tester) async {
+  testWidgets('US2 AC2: 삭제 취소 시 아무것도 삭제되지 않고 상세 유지', (tester) async {
     final repo = _FakeItemRepo(_seed());
     await tester.pumpWidget(_harness(repo));
     await tester.pumpAndSettle();

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _InMemoryEventRepo implements EventRepository {
   _InMemoryEventRepo(this.items, {DateTime? clock})
-      : _now = clock ?? DateTime(2026, 5, 19);
+    : _now = clock ?? DateTime(2026, 5, 19);
 
   final Map<int, Item> items;
   final List<WearEvent> events = [];
@@ -33,9 +33,10 @@ class _InMemoryEventRepo implements EventRepository {
   }
 
   @override
-  Stream<List<WearEvent>> watchForItem(int itemId) =>
-      Stream.value(events.where((e) => e.itemId == itemId).toList()
-        ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt)));
+  Stream<List<WearEvent>> watchForItem(int itemId) => Stream.value(
+    events.where((e) => e.itemId == itemId).toList()
+      ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt)),
+  );
 
   @override
   Future<void> recordWear(int itemId, {String? note}) async {
@@ -49,12 +50,14 @@ class _InMemoryEventRepo implements EventRepository {
     if (item.wearSinceWash >= item.washCycle) {
       item.status = ItemStatus.dirty;
     }
-    events.add(WearEvent(
-      itemId: itemId,
-      kind: EventKind.wear,
-      occurredAt: _now,
-      note: normalized,
-    )..id = _nextId++);
+    events.add(
+      WearEvent(
+        itemId: itemId,
+        kind: EventKind.wear,
+        occurredAt: _now,
+        note: normalized,
+      )..id = _nextId++,
+    );
   }
 
   @override
@@ -85,13 +88,13 @@ class _InMemoryEventRepo implements EventRepository {
     final item = items[itemId];
     if (item == null) return;
     item
-      ..wearSinceWash =
-          item.wearSinceWash > 0 ? item.wearSinceWash - 1 : 0
+      ..wearSinceWash = item.wearSinceWash > 0 ? item.wearSinceWash - 1 : 0
       ..totalWears = item.totalWears > 0 ? item.totalWears - 1 : 0;
-    final remaining = events
-        .where((e) => e.itemId == itemId && e.kind == EventKind.wear)
-        .toList()
-      ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    final remaining =
+        events
+            .where((e) => e.itemId == itemId && e.kind == EventKind.wear)
+            .toList()
+          ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
     item.lastWornAt = remaining.isEmpty ? null : remaining.first.occurredAt;
     if (item.status == ItemStatus.dirty &&
         item.wearSinceWash < item.washCycle) {
@@ -180,10 +183,7 @@ void main() {
     )..id = 3;
     final repo = _InMemoryEventRepo({3: item});
 
-    expect(
-      () => repo.recordWear(3, note: 'a' * 81),
-      throwsArgumentError,
-    );
+    expect(() => repo.recordWear(3, note: 'a' * 81), throwsArgumentError);
     expect(item.totalWears, 0);
   });
 
@@ -222,39 +222,38 @@ void main() {
     )..id = 100;
     repo.events.add(washEvent);
 
-    expect(
-      () => repo.updateEventNote(100, '시도'),
-      throwsStateError,
-    );
+    expect(() => repo.updateEventNote(100, '시도'), throwsStateError);
   });
 
-  test('US3 AC7: deleteWearEvent가 카운터 -1 + lastWornAt 재계산 + dirty→clean 복귀',
-      () async {
-    final item = Item(
-      name: '런닝 셔츠',
-      category: Category.activewear,
-      washCycle: 2,
-      createdAt: DateTime(2026, 1, 1),
-    )..id = 6;
-    final repo = _InMemoryEventRepo({6: item});
+  test(
+    'US3 AC7: deleteWearEvent가 카운터 -1 + lastWornAt 재계산 + dirty→clean 복귀',
+    () async {
+      final item = Item(
+        name: '런닝 셔츠',
+        category: Category.activewear,
+        washCycle: 2,
+        createdAt: DateTime(2026, 1, 1),
+      )..id = 6;
+      final repo = _InMemoryEventRepo({6: item});
 
-    repo.now = DateTime(2026, 5, 1);
-    await repo.recordWear(6);
-    repo.now = DateTime(2026, 5, 5);
-    await repo.recordWear(6); // 임계 도달 → dirty
+      repo.now = DateTime(2026, 5, 1);
+      await repo.recordWear(6);
+      repo.now = DateTime(2026, 5, 5);
+      await repo.recordWear(6); // 임계 도달 → dirty
 
-    expect(item.status, ItemStatus.dirty);
-    expect(item.wearSinceWash, 2);
-    expect(item.lastWornAt, DateTime(2026, 5, 5));
+      expect(item.status, ItemStatus.dirty);
+      expect(item.wearSinceWash, 2);
+      expect(item.lastWornAt, DateTime(2026, 5, 5));
 
-    final latest = (await repo.watchForItem(6).first).first; // 5/5
-    await repo.deleteWearEvent(latest.id);
+      final latest = (await repo.watchForItem(6).first).first; // 5/5
+      await repo.deleteWearEvent(latest.id);
 
-    expect(item.wearSinceWash, 1);
-    expect(item.totalWears, 1);
-    expect(item.status, ItemStatus.clean); // 자동 복귀
-    expect(item.lastWornAt, DateTime(2026, 5, 1)); // 남은 wear의 최신값
-  });
+      expect(item.wearSinceWash, 1);
+      expect(item.totalWears, 1);
+      expect(item.status, ItemStatus.clean); // 자동 복귀
+      expect(item.lastWornAt, DateTime(2026, 5, 1)); // 남은 wear의 최신값
+    },
+  );
 
   test('마지막 wear 이벤트를 삭제하면 lastWornAt이 null', () async {
     final item = Item(
@@ -312,9 +311,6 @@ void main() {
     )..id = 300;
     repo.events.add(washEvent);
 
-    expect(
-      () => repo.deleteWearEvent(300),
-      throwsStateError,
-    );
+    expect(() => repo.deleteWearEvent(300), throwsStateError);
   });
 }

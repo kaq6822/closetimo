@@ -31,9 +31,10 @@
 **Project Type**: 모바일 단일 앱 (Flutter cross-platform, 백엔드 없음).
 
 **Performance Goals**:
-- 옷장 그리드 100점 렌더링 시작 → 첫 프레임 200ms 이내 (SC-004 매핑)
+- 옷 100점 상태에서 검색·필터·정렬 조건 변경 → production 스트림 결과의 화면 레이아웃 반영 200ms 이내 (SC-004)
+- 검색 갱신 프레임 지연 200ms 이내는 별도 지표(T080)로 측정하며, totalSpan의 역수로 FPS를 추정하지 않는다.
 - 일반 스크롤 60 fps 유지
-- 옷 등록·착용 기록 입력 시 100ms 이내 UI 반영 (SC-003 매핑)
+- 착용 바텀시트의 "기록" 확정 이후 100ms 이내 UI 반영 (SC-003)
 
 **Constraints**:
 - 오프라인 우선: 모든 핵심 작업이 네트워크 없이 동작 (FR-025, SC-007)
@@ -146,17 +147,21 @@ lib/
         └── app_providers.dart      # Riverpod providers (repositories·streams)
 
 test/
-├── unit/
-│   ├── repositories/               # in-memory Isar로 repo 단위 테스트
-│   └── theme/
+├── unit/                          # 순수 로직·토큰 검사·이전 테스트
+├── feature/                       # 화면·repository 회귀 테스트
 ├── widget/
-│   ├── widgets/                    # 공용 위젯 골든 테스트
-│   └── features/                   # 화면 단위 위젯 테스트
-└── helpers/
-    └── isar_test_helper.dart
+│   ├── design_system_golden_test.dart
+│   ├── golden_harness.dart
+│   └── goldens/                   # 기준 PNG 14개
+└── support/
+    └── isar_plus_test_support.dart
 
-integration_test/                   # US별 개별 E2E는 feature-level 테스트로 흡수(T057 합의)
-└── full_flow_verification_test.dart # 전체 사용자 여정 E2E + 단계별 스크린샷
+integration_test/
+├── full_flow_verification_test.dart # 세탁 주기·수정·삭제·재실행 복원
+├── offline_smoke_test.dart         # Dart HTTP 차단 상태의 핵심 5작업
+└── perf_wardrobe_test.dart          # 실제 화면 조건 변경·스트림·프레임 측정
+
+tool/verify_full_flow.sh            # 설치 유지·프로세스 종료·별도 복원 실행
 
 test_driver/
 └── integration_test.dart           # flutter drive 스크린샷 수집 드라이버

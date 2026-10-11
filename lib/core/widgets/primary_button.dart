@@ -30,7 +30,9 @@ class PrimaryButton extends StatelessWidget {
           onTap: onPressed,
           customBorder: const StadiumBorder(),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 56),
+            constraints: const BoxConstraints(
+              minHeight: ClosetimoSpacing.space56,
+            ),
             padding: const EdgeInsets.symmetric(
               horizontal: ClosetimoSpacing.xl,
               vertical: ClosetimoSpacing.md,

@@ -22,7 +22,10 @@ class StatusLabel extends StatelessWidget {
     final text = isClean ? '깨끗함' : '세탁 필요';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ClosetimoSpacing.space10,
+        vertical: ClosetimoSpacing.space5,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(ClosetimoRadius.full),
@@ -31,7 +34,7 @@ class StatusLabel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: fg),
-          const SizedBox(width: 4),
+          const SizedBox(width: ClosetimoSpacing.xs),
           Text(
             text,
             style: TextStyle(

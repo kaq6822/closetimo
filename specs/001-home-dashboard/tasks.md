@@ -101,7 +101,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T037 [P] [US1] CategoryPicker 위젯 — `lib/features/add_item/widgets/category_picker.dart`. `Category` enum(9종, "전체" 제외)을 wrap chip으로 표시.
 - [X] T038 [US1] AddItemScreen — `lib/features/add_item/add_item_screen.dart`에 위 위젯들을 조립한 폼. 상단 TopBar(좌측 백버튼·중앙 "신규 옷 등록"·우측 "저장" 텍스트 버튼), 하단 글래스모피즘 "등록하기" 버튼. `canSave`가 false면 저장 버튼 비활성. 저장 시 `itemRepositoryProvider`의 `create` 호출 → pop + `showClosetimoToast("새 옷이 옷장에 등록됐어요")`.
 - [X] T039 [US1] /add-item 라우트 결선 — `lib/app/router.dart`의 빈 자리에 `AddItemScreen()`을 연결하고 slide-up transition 설정. 폼 dirty 상태에서 백버튼 시 확인 다이얼로그(routes.md §4).
-- [X] T040 [US1] 통합 테스트 — `integration_test/add_item_flow_test.dart`에 빈 옷장 → /add-item 진입 → 명칭 입력 → 카테고리 선택 → 저장 → 옷장 그리드 최상단 노출 → 토스트 노출 검증(US1 AC1~3 매핑).
+- [X] T040 [US1] 시나리오 테스트 — `test/feature/add_item_flow_test.dart`(integration_test 미사용 합의에 따라 feature-level로 커버)에 빈 옷장 → /add-item 진입 → 명칭 입력 → 카테고리 선택 → 저장 → 옷장 그리드 최상단 노출 → 토스트 노출 검증(US1 AC1~3 매핑).
 
 **Checkpoint**: US1 단독으로 동작 — 사용자가 첫 옷을 등록할 수 있다. SC-001(30초 4단계 등록), SC-006(전체 사이클의 시작) 부분 검증 가능.
 
@@ -167,7 +167,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T060 [US4] LaundryScreen — `lib/features/laundry/laundry_screen.dart`. TopBar + h1 "세탁 바구니" + 부제 + PrimaryButton "선택 항목 세탁 완료 처리"(선택 0건이면 비활성, FR-017) + "(N) ... 모두 선택" 행 + LaundryTile 리스트. 빈 상태 "세탁할 옷이 없어요." 표시.
 - [X] T061 [US4] 선택 상태 관리 — `lib/features/laundry/laundry_selection_provider.dart`에 `final laundrySelectionProvider = NotifierProvider<LaundrySelectionNotifier, Set<int>>(...)`로 화면 단위 선택 집합 유지. `toggleAll`, `toggleOne`, `clear` 메서드.
 - [X] T062 [US4] /laundry 라우트 결선 — `lib/app/router.dart` shell의 laundry 탭에 `LaundryScreen` 연결.
-- [X] T063 [US4] 통합 테스트 — `integration_test/laundry_flow_test.dart`에 옷 3점 등록 → 모두 바구니 추가 → 2점만 선택 → 세탁 완료 → 2점만 `clean`+0/N로 초기화, 1점은 그대로(US4 AC1~4).
+- [X] T063 [US4] 시나리오 테스트 — `test/feature/laundry_flow_test.dart`(feature-level로 커버)에 옷 3점 등록 → 모두 바구니 추가 → 2점만 선택 → 세탁 완료 → 2점만 `clean`+0/N로 초기화, 1점은 그대로(US4 AC1~4).
 
 **Checkpoint**: 착용-세탁 전체 사이클이 닫힌다. SC-006(전체 사이클 90% 성공률), SC-007(오프라인 5가지 작업) 검증 가능.
 
@@ -204,13 +204,17 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 **Purpose**: 디자인 회귀 가드, 성능 검증, 문서 정리.
 
-- [ ] T077 [P] 디자인 시스템 골든 테스트 — README의 후속 작업으로 연기 (폰트 자산 선행) — `test/widget/widgets/` 아래 PrimaryButton·SoftButton·ChipFilter·StatusLabel·ProgressBar·TopBar의 라이트 모드 골든 PNG를 등록(`flutter test --update-goldens`). 헌법 II 회귀 가드.
-- [X] T078 [P] Repository 단위 테스트 — `test/feature/{wear_record_test,laundry_flow_test,wardrobe_filter_test}.dart`에서 in-memory fake로 EventRepository(recordWear의 자동 dirty 전이 + `note` 저장/trim/빈 입력 null 정규화/80자 가드, `updateEventNote`가 Item 카운터를 변경하지 않음 + wash 이벤트 거부, `deleteWearEvent`의 카운터 -1 / `lastWornAt` 재계산 / `dirty→clean` 자동 복귀 / 카운터 0-floor / wash 이벤트 거부), LaundryRepository(completeWashFor의 트랜잭션 원자성), ItemRepository(create·watchFiltered 정렬 분기)를 검증. 시그니처 변경(`recordWear(int, {String? note})`)에 따라 in-memory fake 일괄 갱신 완료. 실제 Isar 인스턴스를 띄우는 통합 회귀는 후속 phase로 연기(T080/T081).
-- [X] T079 [P] DateFormatter 단위 테스트 — `test/unit/utils/date_formatter_test.dart`에서 "오늘/어제/N일 전/M/d/yyyy.MM.dd" 분기 검증(가짜 Clock 사용).
-- [X] T080 성능 검증 — `integration_test/perf_wardrobe_test.dart`로 옷 100점 시드 후 그리드 첫 프레임 200ms 이내(SC-004, 실측 ~140ms) + 스크롤 프레임 타이밍 확인. iOS 시뮬레이터는 `--profile`/`--release` 빌드를 지원하지 않아(물리 기기 전용) debug 빌드로 측정했으며, debug 오버헤드를 감안한 스모크 임계값(<35ms/frame)으로 심각한 회귀만 감지한다. SC-004의 공식 60fps 판정은 물리 기기 `--profile` 빌드로 재확인 필요(파일 상단 주석 참고).
-- [X] T081 오프라인 동작 검증 — `integration_test/offline_smoke_test.dart`에서 비행기 모드 가정(`HttpOverrides.global`로 모든 외부 호출 차단) 후 US1~US5 핵심 5작업(등록·탐색·착용 기록·세탁 완료·설정)이 예외 없이 완주됨을 확인(SC-007).
+- [X] T077 [P] 디자인 시스템 골든 테스트 — `test/widget/design_system_golden_test.dart`에 PrimaryButton(기본·비활성·아이콘 슬롯)·SoftButton(기본·leading)·ChipFilter(활성·비활성)·StatusLabel(clean·dirty)·ProgressBar(normal·만차·alert)·TopBar(타이틀·서브타이틀)의 라이트 모드 골든을 등록하고 기준 PNG 14개를 `test/widget/goldens/`에 생성했다(`flutter test --update-goldens`). 하네스 `test/widget/golden_harness.dart`는 폰트(Manrope/Inter/Pretendard + SDK의 MaterialIcons)·화면 크기·픽셀 밀도·테마·로케일을 고정해 재현 가능하게 한다. 기준 이미지는 육안 확인했고, `primary` 색상과 `ClosetimoSpacing.md` 값을 의도적으로 바꾸면 골든이 실제로 실패하는 것(6건/7건)까지 확인해 회귀 가드로 유효함을 검증했다. 동시에 `tool/check_design_tokens.dart`를 색상 일치에서 **하드코딩 간격 검사까지** 확장(`tool/design_token_check.dart`에 검사 로직 분리, `test/unit/design_token_check_test.dart`에 정상·위반 사례 22건 검증)했고 최초 45건 외에 리뷰에서 누락된 리터럴 32건을 추가 교체하고 숫자가 섞인 계산식 33건을 동일 치수의 토큰으로 정리했다. 헌법 II 회귀 가드.
+- [X] T078 [P] Repository 단위 테스트 — `test/feature/{wear_record_test,laundry_flow_test,wardrobe_filter_test}.dart`에서 in-memory fake로 EventRepository(recordWear의 자동 dirty 전이 + `note` 저장/trim/빈 입력 null 정규화/80자 가드, `updateEventNote`가 Item 카운터를 변경하지 않음 + wash 이벤트 거부, `deleteWearEvent`의 카운터 -1 / `lastWornAt` 재계산 / `dirty→clean` 자동 복귀 / 카운터 0-floor / wash 이벤트 거부), LaundryRepository(completeWashFor의 트랜잭션 원자성), ItemRepository(create·watchFiltered 정렬 분기)를 검증. 시그니처 변경(`recordWear(int, {String? note})`)에 따라 in-memory fake 일괄 갱신 완료. 실제 Isar repository 회귀는 002·003의 `isar_item_repository_test.dart`와 `storage_repository_regression_test.dart`에서 추가 검증한다.
+- [X] T079 [P] DateFormatter 단위 테스트 — `test/unit/date_formatter_test.dart`에서 "오늘/어제/N일 전/M/d/yyyy.MM.dd" 분기 검증(가짜 Clock 사용).
+- [ ] T080 성능 검증 — 실제 조건 변경 콜백부터 production repository 스트림 결과의 그리드 개수·첫 타일 ID가 레이아웃에 반영될 때까지 측정하도록 `integration_test/perf_wardrobe_test.dart`를 보완했다. 100점·8개 시나리오·각 5회 표본의 최댓값을 200ms 기준으로 판정한다. 이전 복제 필터 로직의 0.22~0.92ms는 화면 반영 시간을 측정하지 않았으므로 SC-004 통과 근거에서 제외한다. debug 실행은 측정 경로 검증만 가능하며 최종 성능 판정에는 전용 실기기 profile 실행이 필요하다.
+  - 보완한 측정 경로의 debug 실행: 2026-10-07 iPhone 17 Pro / iOS 26.5 Simulator에서 8개 시나리오·40개 표본 모두 200ms 이내, 전체 최댓값 90.59ms. 이는 profile 판정의 대체가 아니다. 호스트 리포트: `build/verification/perf_wardrobe_report.txt`.
+  - 재실행: 빈 상태의 전용 실기기에서 `flutter drive --profile --driver=test_driver/integration_test.dart --target=integration_test/perf_wardrobe_test.dart -d <device-id>` 실행. 개인 데이터가 있는 기기를 초기화하거나 시드를 삽입하지 않는다.
+- [X] T081 오프라인 동작 검증 — `integration_test/offline_smoke_test.dart`에서 `HttpOverrides.global`로 Dart HTTP 클라이언트를 차단한 뒤 실제 앱·실제 로컬 저장소로 핵심 5작업(등록·탐색·착용 기록·세탁 처리·홈 조회)을 검증한다. iPhone 17 Pro/iOS 26.5 시뮬레이터에서 통과했고, 차단된 HTTP 요청 0건을 로그로 확인했다. 전역 오버라이드는 `addTearDown`으로 복구한다. 단계별 스크린샷 8장은 `build/ios_verify_shots/`에 저장된다(SC-007).
+  - **검증 범위 한계(중요)**: `HttpOverrides`는 Dart VM의 `dart:io` HTTP 경로만 막는다. 네이티브 소켓, 플랫폼 채널을 통한 네이티브 네트워크, OS 비행기 모드는 차단 대상이 아니다. 따라서 이 결과는 **OS 비행기 모드 전체 오프라인과 동일한 증거가 아니다.** 비행기 모드 수동 검증은 별도 미검증 항목으로 남아 있다.
 - [X] T082 토큰 검증 스크립트 — `tool/check_design_tokens.dart`에 `design.md`의 헥스 코드와 `tokens.dart` 상수의 일치 여부 검사기를 작성하고 `quickstart.md §4` 단계로 통합.
-- [X] T083 quickstart 매뉴얼 시나리오 회귀 — quickstart.md §8의 7단계를 `integration_test/full_flow_verification_test.dart`(등록·탐색·착용·세탁·설정)로 자동 회귀 확인하고, 7단계(앱 강제 종료 → 재실행 → 데이터·마지막 탭 보존)는 `integration_test/restart_persistence_test.dart`로 검증(SC-005·SC-006). 시뮬레이터에서 OS 프로세스를 직접 종료 후 재실행하면 `flutter drive` 테두리에서 앱이 언인스톨되는 제약이 있어, 위젯 트리를 다시 빌드(`app.main()` 재호출)해 재시작을 시뮬레이션한다(Isar는 실제 파일 저장소이므로 유효한 검증).
+- [X] T083 quickstart 매뉴얼 시나리오 회귀 — 실제 UI로 세탁 주기 6회까지 기록해 dirty 전환 및 세탁 후 clean·0회 복원을 검증한다. `tool/verify_full_flow.sh <simulator-udid>`는 빈 상태에서 준비 실행 → 앱 프로세스 종료 → 별도 실행으로 마지막 탭·알림 설정·의류·착용 6건·세탁 1건·메모 영속성을 확인한 뒤 수정·삭제를 검증한다. 2026-10-07 iPhone 17 Pro / iOS 26.5 Simulator에서 준비·복원 두 실행 모두 통과했다. 두 번째 실행 로그의 `source=alreadyMigrated, items=1, events=7`과 마지막 탭·설정·의류·이벤트 assertion으로 복원을 확인했다. 스크린샷은 `build/ios_verify_shots/`에 저장했다.
+  - SC-006 첫 사용자 성공률 90%는 이 자동화 테스트로 증명하지 못한다. 비설명 조건의 사용자 평가를 별도 미검증 항목으로 남긴다.
 - [X] T084 README 작성 — repo 루트 `README.md`에 프로젝트 소개, 빠른 시작 링크(`specs/001-home-dashboard/quickstart.md`), 헌법 링크, 기술 스택을 한국어로 정리.
 - [X] T085 PR 체크리스트 회귀 — README §"PR 체크리스트" 섹션 — quickstart.md §6의 6개 항목(analyze·format·test·integration·spec 동기화·헌법 준수)을 모두 통과한 상태로 PR 준비. spec.md의 SC-001~007 매핑 표를 PR description에 첨부.
 - [X] T093 앱 ID 확정(#25) — Android `namespace`·`applicationId`와 iOS 번들 ID를 `com.closetimo.app`으로 통일(`MainActivity.kt` 패키지 이동, QA 스크립트·문서의 패키지 ID 갱신). Dart 패키지명(`pubspec` `name: closetimo`)은 유지. `test/unit/release_config_test.dart`로 회귀 가드.
@@ -219,7 +223,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T091 [P] 접근성 라벨 누락(QA F-07, #17) — 상단바 뒤로·+(`top_bar.dart` "뒤로 가기"/"옷 등록"), 등록 폼 입력("의류 명칭"/"브랜드"), 세탁 주기 ±("착용 횟수 줄이기/늘리기", 비활성 상태 포함), 세탁 바구니 체크("<옷 이름> 선택" + checked), 설정 스위치 행(`MergeSemantics`), 토스트(`liveRegion`), 카테고리 칩 selected 상태, 세탁 바구니 타일 "<옷 이름> 상세 보기"(썸네일+정보 영역 탭으로 상세 진입), 설정 알림 행 전체 탭 토글, 첨부 사진 영역 "의류 사진 변경", 세탁 타일 낭독 순서(이름 먼저). 회귀: `test/feature/accessibility_labels_test.dart`. QA 하네스(`tool/qa/android_qa.sh`)는 위치 기반 `_unlabeled` 대신 라벨로 요소를 찾는다.
 - [X] T092 [P] 옷 상세 토스트가 방금 누른 버튼을 가림(QA F-12, #22) — `lib/core/widgets/toast.dart`에 `ToastPlacement`(bottom 기본/top) 추가. 옷 상세에 머무는 토스트(착용 기록·세탁 바구니·메모 수정·기록 삭제)는 상단바 아래(top)에 띄우고, 화면을 벗어나는 토스트(삭제 후 옷장 복귀·옷 없음)는 하단 탭 위(bottom)를 유지. 옷 정보 수정 저장 토스트도 상세로 돌아가므로 top(신규 등록은 bottom). 회귀: `test/feature/item_detail_toast_placement_test.dart`(A23 뷰포트에서 버튼·상단바 비겹침).
 
-**Checkpoint**: 모든 spec FR/SC 검증 통과. v1.0 출시 가능 상태.
+**Checkpoint**: 자동화 회귀와 보완한 전체 흐름은 통과했다. T080의 전용 실기기 profile 판정·SC-006 첫 사용자 평가·OS 비행기 모드 검증은 미완료이며, 모든 SC가 검증되었다고 판정하지 않는다.
 
 ---
 

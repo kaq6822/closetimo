@@ -61,7 +61,7 @@ description: "옷 정보 수정 & 삭제의 구현 작업 목록"
 
 ## Phase 4: 테스트 & 검증
 
-- [X] T014 [P] update 회귀 테스트 — `test/feature/item_edit_delete_test.dart`에 in-memory fake ItemRepository로 (a) 스칼라 필드 갱신 + 파생 필드 보존, (b) 세탁 주기 하향 → dirty / 상향 → clean 재평가(FR-004, AC3·4), (c) 빈 name → ArgumentError, (d) 사진 3-way 의도(교체/제거/유지) 검증.
+- [X] T014 [P] update 회귀 테스트 — `test/feature/add_item_flow_test.dart`(수정 모드 폼 플로우)와 `test/feature/isar_item_repository_test.dart`(실제 Isar update 검증)에 in-memory fake ItemRepository로 (a) 스칼라 필드 갱신 + 파생 필드 보존, (b) 세탁 주기 하향 → dirty / 상향 → clean 재평가(FR-004, AC3·4), (c) 빈 name → ArgumentError, (d) 사진 3-way 의도(교체/제거/유지) 검증.
 - [X] T015 [P] delete 회귀 테스트 — 같은 파일에 (a) Item 삭제 시 연관 WearEvent 전량 제거(wear·wash 모두, SC-004), (b) 미존재 id no-op, (c) 이미지 경로 삭제 호출 확인(fake ImageStore) 검증.
 - [X] T016 검증 — `dart run build_runner build --delete-conflicting-outputs` → `flutter analyze`(경고 0) → `flutter test`(전체) → `dart run tool/check_design_tokens.dart` 순으로 통과 확인.
 

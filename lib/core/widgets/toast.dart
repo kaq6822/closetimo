@@ -100,7 +100,7 @@ class _ToastBubbleState extends State<_ToastBubble>
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: ClosetimoSpacing.lg,
-          vertical: ClosetimoSpacing.sm + 2,
+          vertical: ClosetimoSpacing.space10,
         ),
         decoration: BoxDecoration(
           color: surfaces.containerLowest,
@@ -115,7 +115,7 @@ class _ToastBubbleState extends State<_ToastBubble>
               size: 16,
               color: ClosetimoColors.primary,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: ClosetimoSpacing.space8),
             Flexible(
               child: Text(
                 widget.message,

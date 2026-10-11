@@ -62,9 +62,9 @@ class GarmentTile extends ConsumerWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                ClosetimoSpacing.md - 2,
-                ClosetimoSpacing.md - 2,
-                ClosetimoSpacing.md - 2,
+                ClosetimoSpacing.space14,
+                ClosetimoSpacing.space14,
+                ClosetimoSpacing.space14,
                 ClosetimoSpacing.md,
               ),
               child: Column(
@@ -81,7 +81,7 @@ class GarmentTile extends ConsumerWidget {
                       color: ClosetimoColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: ClosetimoSpacing.space10),
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -103,7 +103,7 @@ class GarmentTile extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: ClosetimoSpacing.space2),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

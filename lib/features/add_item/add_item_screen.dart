@@ -257,7 +257,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         ClosetimoSpacing.lg,
                         ClosetimoSpacing.md,
                         ClosetimoSpacing.lg,
-                        120,
+                        ClosetimoSpacing.space120,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -271,7 +271,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             onPicked: _pickPhoto,
                             onRemove: _isEdit ? _removePhoto : null,
                           ),
-                          const SizedBox(height: ClosetimoSpacing.xl + 2),
+                          const SizedBox(height: ClosetimoSpacing.space26),
                           const _FieldLabel(label: '의류 명칭'),
                           _FieldInput(
                             label: '의류 명칭',
@@ -301,7 +301,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           ),
                           const SizedBox(height: ClosetimoSpacing.sm),
                           const Padding(
-                            padding: EdgeInsets.only(left: 4),
+                            padding: EdgeInsets.only(left: ClosetimoSpacing.xs),
                             child: Text(
                               '설정한 횟수만큼 착용하면 세탁 알림을 보냅니다.',
                               style: TextStyle(
@@ -437,7 +437,10 @@ class _DateField extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: ClosetimoSpacing.space18,
+            vertical: ClosetimoSpacing.space16,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -513,8 +516,8 @@ class _FieldInputState extends State<_FieldInput> {
           filled: true,
           fillColor: surfaces.containerLow,
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 16,
+            horizontal: ClosetimoSpacing.space18,
+            vertical: ClosetimoSpacing.space16,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(ClosetimoRadius.lg),

@@ -189,7 +189,7 @@ ScrollPosition _wardrobeScroll(WidgetTester tester) => tester
     .state<ScrollableState>(
       find
           .descendant(
-            of: find.byType(SingleChildScrollView),
+            of: find.byType(CustomScrollView),
             matching: find.byType(Scrollable),
           )
           .first,
@@ -254,10 +254,7 @@ void main() {
     await tester.pumpWidget(_harness(many));
     await tester.pumpAndSettle();
 
-    await tester.drag(
-      find.byType(SingleChildScrollView),
-      const Offset(0, -800),
-    );
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
     await tester.pumpAndSettle();
     expect(_wardrobeScroll(tester).pixels, greaterThan(0));
 

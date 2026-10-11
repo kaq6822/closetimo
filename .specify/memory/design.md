@@ -86,3 +86,6 @@ The system relies on a **1.4rem (scale 4)** baseline.
 *   Use `spacing-8` (2.75rem) for major section breathing room.
 *   Use `spacing-3` (1rem) for internal card padding.
 *   Always err on the side of *too much* space rather than too little. In luxury design, space is the ultimate signifier of value.```
+## 구현 치수 보완 (2026-10-07)
+
+기존 화면의 시각적 치수를 유지하며 토큰으로 관리한다. `ClosetimoSpacing.space5`는 상태 라벨 세로 패딩 5px, `space28`은 세탁 주기 숫자 영역 너비 28px, `space34`는 세탁 주기 조절 버튼 크기 34px이다. 숫자 토큰 교체로 화면 치수를 변경하지 않는다.

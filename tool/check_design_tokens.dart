@@ -1,55 +1,84 @@
-// T082 — design.md ↔ lib/app/theme/tokens.dart 헥스 코드 일치 검증.
+// T082 — 디자인 토큰 가드.
+//
+// 검사 항목:
+//   1. design.md의 핵심 컬러가 tokens.dart에 일치하는가 (색상 토큰)
+//   2. lib/ 아래 위젯이 숫자 리터럴로 간격을 지정하지 않았는가 (하드코딩 간격)
 //
 // 사용법:
 //   dart run tool/check_design_tokens.dart
 // 헌법 II(디자인 시스템 일관성)의 자동 가드. CI에서도 실행할 수 있다.
+// 검사 로직 자체는 `tool/design_token_check.dart`에 있고, 단위 테스트가
+// 정상 사례와 위반 사례를 모두 검증한다.
 
 import 'dart:io';
 
-void main(List<String> args) {
-  final tokens = File('lib/app/theme/tokens.dart').readAsStringSync();
-  final design = File('.specify/memory/design.md').readAsStringSync();
+import 'design_token_check.dart';
 
-  // design.md에 명시된 핵심 컬러(소문자 hex 6자리).
-  const required = {
-    '#47645e': 'primary (Sage)',
-    '#3c5852': 'primary_dim',
-    '#dffef7': 'on-primary',
-    '#fafaf5': 'background / surface',
-    '#f3f4ee': 'surface-container-low',
-    '#ffffff': 'surface-container-lowest',
-    '#ecefe7': 'surface-container',
-    '#e3e2e2': 'secondary_container (chip bg)',
-    '#576342': 'tertiary',
-    '#5b6159': 'on_surface_variant',
-    '#2e342d': 'on_background',
-    '#9f403d': 'error',
-    '#aeb4aa': 'outline-variant',
-  };
+const _tokensPath = 'lib/app/theme/tokens.dart';
+const _designPath = '.specify/memory/design.md';
+
+/// 하드코딩 검사에서 제외할 경로(토큰 정의 자체와 생성 파일).
+const _excludedPrefixes = [
+  'lib/app/theme/tokens.dart',
+  '.g.dart',
+  '.freezed.dart',
+];
+
+void main(List<String> args) {
+  final tokens = File(_tokensPath).readAsStringSync();
+  final design = File(_designPath).readAsStringSync();
 
   var failed = 0;
-  required.forEach((hex, label) {
-    final ok = design.toLowerCase().contains(hex) &&
-        _tokenFileContains(tokens, hex);
-    if (!ok) {
-      stderr.writeln('✗ MISSING $hex ($label)');
-      failed++;
-    }
-  });
+
+  // ── 1. 색상 토큰 일치 ──
+  final colorViolations = checkDesignColors(
+    tokenSource: tokens,
+    designSource: design,
+  );
+  for (final v in colorViolations) {
+    stderr.writeln('✗ MISSING ${v.hex} (${v.label})');
+  }
+  if (colorViolations.isEmpty) {
+    stdout.writeln(
+      '✓ ${requiredDesignColors.length}개 핵심 색상 토큰 모두 '
+      'design.md ↔ tokens.dart 일치',
+    );
+  } else {
+    failed += colorViolations.length;
+    stderr.writeln('${colorViolations.length}개 색상 토큰 불일치 — 헌법 II 위반');
+  }
+
+  // ── 2. 하드코딩 간격 ──
+  final hardcodeViolations = _scanLib();
+  for (final v in hardcodeViolations) {
+    stderr.writeln('✗ $v');
+  }
+  if (hardcodeViolations.isEmpty) {
+    stdout.writeln('✓ lib/ 하드코딩 간격 0건');
+  } else {
+    failed += hardcodeViolations.length;
+    stderr.writeln(
+      '${hardcodeViolations.length}건 하드코딩 간격 — 헌법 II 위반 '
+      '(ClosetimoSpacing 토큰을 사용하세요)',
+    );
+  }
 
   if (failed == 0) {
-    stdout.writeln('✓ ${required.length}개 핵심 토큰 모두 design.md ↔ tokens.dart 일치');
     exit(0);
-  } else {
-    stderr.writeln('$failed개 토큰 불일치 — 헌법 II 위반');
-    exit(1);
   }
+  exit(1);
 }
 
-bool _tokenFileContains(String source, String hex) {
-  // tokens.dart의 Color 리터럴은 alpha 채널이 0xFF가 기본이지만
-  // outlineVariantGhost처럼 일부 토큰은 투명도가 다르다(0x26AEB4AA 등).
-  // 따라서 RRGGBB 6자리만 케이스 무시로 검출한다.
-  final rgb = hex.substring(1).toUpperCase();
-  return source.toUpperCase().contains(rgb);
+/// lib/ 아래 Dart 소스에서 하드코딩 간격을 수집한다.
+List<HardcodeViolation> _scanLib() {
+  final violations = <HardcodeViolation>[];
+  for (final entity in Directory('lib').listSync(recursive: true)) {
+    if (entity is! File || !entity.path.endsWith('.dart')) continue;
+    if (_excludedPrefixes.any(entity.path.contains)) continue;
+    violations.addAll(
+      checkHardcodedSpacing(path: entity.path, lines: entity.readAsLinesSync()),
+    );
+  }
+  violations.sort((a, b) => a.path.compareTo(b.path));
+  return violations;
 }

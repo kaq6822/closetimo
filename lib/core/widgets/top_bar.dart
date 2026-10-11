@@ -39,12 +39,12 @@ class TopBar extends StatelessWidget {
               semanticLabel: '뒤로 가기',
               onTap: onBack!,
             ),
-          if (onBack != null) const SizedBox(width: 8),
+          if (onBack != null) const SizedBox(width: ClosetimoSpacing.space8),
           if (subtitle == null) ...[
             Image.asset(
               closetimoSymbolAsset,
               key: const ValueKey('topBarBrandSymbol'),
-              width: 28,
+              width: ClosetimoSpacing.space28,
               excludeFromSemantics: true,
             ),
             const SizedBox(width: ClosetimoSpacing.sm),
@@ -89,7 +89,7 @@ class _IconButton extends StatelessWidget {
         onTap: onTap,
         radius: 22,
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(ClosetimoSpacing.sm),
           child: Icon(icon, size: 18, color: ClosetimoColors.ink),
         ),
       ),

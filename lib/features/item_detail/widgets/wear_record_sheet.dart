@@ -35,8 +35,7 @@ class WearRecordSheet extends StatelessWidget {
       hint: '예: 오피스 미팅, 약간 더웠음',
       confirmLabel: '기록',
       confirmIcon: Icons.check_rounded,
-      onConfirm: (note) =>
-          Navigator.of(context).pop(WearRecordResult(note)),
+      onConfirm: (note) => Navigator.of(context).pop(WearRecordResult(note)),
     );
   }
 }

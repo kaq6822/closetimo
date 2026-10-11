@@ -40,7 +40,7 @@ class LaundryPreview extends ConsumerWidget {
         final items = (snap.data ?? const []).take(3).toList();
         if (items.isEmpty && tips.isEmpty) return const SizedBox.shrink();
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(ClosetimoSpacing.space20),
           decoration: BoxDecoration(
             color: surfaces.containerLow,
             borderRadius: BorderRadius.circular(20),
@@ -55,7 +55,7 @@ class LaundryPreview extends ConsumerWidget {
                     size: 18,
                     color: ClosetimoColors.tertiary,
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: ClosetimoSpacing.sm),
                   Text(
                     '세탁 바구니',
                     style: TextStyle(
@@ -71,15 +71,16 @@ class LaundryPreview extends ConsumerWidget {
                 const SizedBox(height: ClosetimoSpacing.md),
                 for (var i = 0; i < items.length; i++) ...[
                   _Row(item: items[i]),
-                  if (i < items.length - 1) const SizedBox(height: 12),
+                  if (i < items.length - 1)
+                    const SizedBox(height: ClosetimoSpacing.space12),
                 ],
               ],
               if (tips.isNotEmpty) ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: ClosetimoSpacing.space18),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                    horizontal: ClosetimoSpacing.space16,
+                    vertical: ClosetimoSpacing.space14,
                   ),
                   decoration: BoxDecoration(
                     color: surfaces.container,
@@ -124,7 +125,7 @@ class _Row extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: ClosetimoSpacing.space12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +140,7 @@ class _Row extends StatelessWidget {
                   color: ClosetimoColors.ink,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: ClosetimoSpacing.space6),
               Row(
                 children: [
                   Expanded(
@@ -148,7 +149,7 @@ class _Row extends StatelessWidget {
                       variant: ProgressBarVariant.alert,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: ClosetimoSpacing.sm),
                   Text(
                     '${item.wearSinceWash}/${item.washCycle}',
                     style: const TextStyle(

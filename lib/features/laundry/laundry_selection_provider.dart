@@ -21,4 +21,5 @@ class LaundrySelectionNotifier extends Notifier<Set<int>> {
 
 final laundrySelectionProvider =
     NotifierProvider<LaundrySelectionNotifier, Set<int>>(
-        LaundrySelectionNotifier.new);
+      LaundrySelectionNotifier.new,
+    );

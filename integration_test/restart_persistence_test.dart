@@ -1,16 +1,6 @@
-// 재시작 지속성 검증 (T083, quickstart.md §8 7단계 / SC-005·SC-006): 실기기/시뮬레이터 필요.
-//
-// Isar는 파일 기반 저장소이므로, OS 프로세스를 실제로 죽이지 않고도 위젯
-// 트리를 다시 빌드(`app.main()` 재호출)하는 것으로 "앱 강제 종료 → 재실행"을
-// 유효하게 재현할 수 있다: 이전 `runApp`의 `ProviderScope`가 언마운트되며
-// `isarProvider`의 `ref.onDispose`가 실제 Isar 인스턴스를 닫고, 새 `runApp`이
-// 동일 파일에서 다시 연다. 등록한 옷·마지막 탭이 재구동 후에도 보존되는지
-// 확인한다.
-//
-// 실행 전 앱 데이터를 비워야 한다:
-//   xcrun simctl uninstall booted com.closetimo.app
-//   flutter drive --driver=test_driver/integration_test.dart \
-//     --target=integration_test/restart_persistence_test.dart -d <simulator>
+// 위젯 트리 재구성 후 파일 저장소·마지막 탭 복원 회귀 테스트.
+// 실제 OS 프로세스 종료 검증은 tool/verify_full_flow.sh로 별도 실행한다.
+// 실행 전 전용 테스트 기기의 앱 데이터를 비운다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,7 +38,7 @@ void main() {
     expect(find.text('세탁 알림'), findsOneWidget);
     await shot(tester, 'restart_01_before_settings');
 
-    // ── "강제 종료 → 재실행" 시뮬레이션 ─────────────────────
+    // ── 위젯 트리 제거 → 재구성 ─────────────────────
     // 기존 위젯 트리를 완전히 제거해 ProviderScope(및 Isar 인스턴스)를
     // 정리한 뒤, 동일 파일 저장소를 대상으로 앱을 다시 부팅한다.
     await tester.pumpWidget(const SizedBox.shrink());

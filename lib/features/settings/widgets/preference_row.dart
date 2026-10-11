@@ -29,13 +29,13 @@ class PreferenceRow extends StatelessWidget {
     return MergeSemantics(
       child: Material(
         color: surfaces.containerLowest,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(ClosetimoRadius.md),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: toggleable ? () => onToggle!(!toggleValue!) : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: 18,
+              horizontal: ClosetimoSpacing.space18,
               vertical: ClosetimoSpacing.md,
             ),
             child: Row(
@@ -69,7 +69,7 @@ class PreferenceRow extends StatelessWidget {
                           color: ClosetimoColors.muted,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: ClosetimoSpacing.space4),
                       const Icon(
                         Icons.chevron_right_rounded,
                         size: 18,

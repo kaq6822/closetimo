@@ -15,7 +15,7 @@ class StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 22),
+      padding: const EdgeInsets.symmetric(vertical: ClosetimoSpacing.space22),
       decoration: BoxDecoration(
         color: surfaces.containerLow,
         borderRadius: BorderRadius.circular(20),
@@ -74,7 +74,7 @@ class _StatCell extends StatelessWidget {
             height: 1.1,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: ClosetimoSpacing.space6),
         Text(
           label,
           style: const TextStyle(

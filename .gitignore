@@ -49,3 +49,6 @@
 **/key.properties
 *.jks
 *.keystore
+
+# 골든 테스트 실패 이미지
+test/**/failures/

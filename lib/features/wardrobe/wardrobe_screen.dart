@@ -26,7 +26,12 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
   late Category? _category = widget.initialCategory;
   String _query = '';
   WardrobeSort _sort = WardrobeSort.statusCleanFirst;
-  final _scrollController = ScrollController();
+
+  /// 그리드가 sliver로 바뀌면 스크롤 위치가 콘텐츠 축소 시 남는다.
+  /// 마지막 옷을 삭제하면 그리드가 사라져 화면 높이가 확 줄고, 스크롤이
+  /// 되감기지 않으면 "내 옷장" 제목이 화면 위로 밀려난 빈 화면이 보인다.
+  /// 옷장이 비면 최상단으로 되돌린다.
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void didUpdateWidget(WardrobeScreen oldWidget) {
@@ -52,6 +57,19 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
     super.dispose();
   }
 
+  /// 옷장이 비었을 때만 스크롤을 초기화한다.
+  ///
+  /// build 중 `jumpTo`를 부르면 "setState/build 중 스크롤 위치 변경" 오류가
+  /// 나므로 다음 프레임으로 미룬다.
+  void _resetScrollIfEmpty(List<Item> items) {
+    if (items.isNotEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (_scrollController.offset == 0) return;
+      _scrollController.jumpTo(0);
+    });
+  }
+
   /// 칩 선택을 `?category=`에도 반영해, 이후 홈 카드가 같은 카테고리로
   /// 다시 진입해도 쿼리 변화로 감지되게 한다.
   void _onCategoryChanged(Category? c) {
@@ -74,66 +92,85 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
       children: [
         TopBar(
           rightSlot: TopBarPlusAction(
-            onTap: () => context.pushNamed(Routes.addItem),
+            onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+              context.pushNamed(Routes.addItem);
+            },
           ),
         ),
         Expanded(
-          child: SingleChildScrollView(
+          // 전체 화면을 하나의 스크롤 뷰로 두고 그리드는 sliver로 끼운다.
+          // 이전 구현은 `SingleChildScrollView` 안에
+          // `GridView.builder(shrinkWrap: true, NeverScrollableScrollPhysics)`
+          // 를 넣어, 스크롤 여부와 무관하게 100개 타일을 전부 한 번에
+          // 레이아웃·페인트했다(T080 측정에서 첫 프레임 build 20ms로 확인).
+          // sliver 그리드는 화면에 보이는 타일만 빌드한다.
+          child: CustomScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(
-              ClosetimoSpacing.lg,
-              ClosetimoSpacing.md,
-              ClosetimoSpacing.lg,
-              ClosetimoSpacing.huge + 32,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '내 옷장',
-                  style: Theme.of(context).textTheme.displaySmall,
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  ClosetimoSpacing.lg,
+                  ClosetimoSpacing.md,
+                  ClosetimoSpacing.lg,
+                  0,
                 ),
-                const SizedBox(height: ClosetimoSpacing.sm),
-                const Text(
-                  '당신만을 위해 큐레이션된 에센셜 컬렉션입니다.\n'
-                  '청결도와 착용 빈도에 따라 정리되어 있습니다.',
-                  style: TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 14,
-                    color: ClosetimoColors.muted,
-                    height: 1.5,
-                  ),
+                sliver: SliverList.list(
+                  children: [
+                    Text(
+                      '내 옷장',
+                      style: Theme.of(context).textTheme.displaySmall,
+                    ),
+                    const SizedBox(height: ClosetimoSpacing.sm),
+                    const Text(
+                      '당신만을 위해 큐레이션된 에센셜 컬렉션입니다.\n'
+                      '청결도와 착용 빈도에 따라 정리되어 있습니다.',
+                      style: TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 14,
+                        color: ClosetimoColors.muted,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: ClosetimoSpacing.xl),
+                    WardrobeFilterBar(
+                      query: _query,
+                      category: _category,
+                      sort: _sort,
+                      onQueryChanged: (v) => setState(() => _query = v),
+                      onCategoryChanged: _onCategoryChanged,
+                      onSortChanged: (s) => setState(() => _sort = s),
+                    ),
+                    const SizedBox(height: ClosetimoSpacing.xl),
+                  ],
                 ),
-                const SizedBox(height: ClosetimoSpacing.xl),
-                WardrobeFilterBar(
-                  query: _query,
-                  category: _category,
-                  sort: _sort,
-                  onQueryChanged: (v) => setState(() => _query = v),
-                  onCategoryChanged: _onCategoryChanged,
-                  onSortChanged: (s) => setState(() => _sort = s),
-                ),
-                const SizedBox(height: ClosetimoSpacing.xl),
-                StreamBuilder<List<Item>>(
-                  stream: stream,
-                  builder: (ctx, snap) {
-                    final items = snap.data ?? const [];
-                    if (snap.connectionState == ConnectionState.waiting &&
-                        !snap.hasData) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: Center(
-                          child: CircularProgressIndicator.adaptive(),
+              ),
+              StreamBuilder<List<Item>>(
+                stream: stream,
+                builder: (ctx, snap) {
+                  final items = snap.data ?? const [];
+                  _resetScrollIfEmpty(items);
+                  if (snap.connectionState == ConnectionState.waiting &&
+                      !snap.hasData) {
+                    return const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          vertical: ClosetimoSpacing.space40,
                         ),
-                      );
-                    }
-                    if (items.isEmpty) {
-                      // 검색어·필터 없이 비어 있으면 옷장 자체가 빈 것이므로
-                      // "검색 무결과"와 구분해 첫 등록을 유도한다.
-                      final filtered =
-                          _query.trim().isNotEmpty || _category != null;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 60),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    );
+                  }
+                  if (items.isEmpty) {
+                    // 검색어·필터 없이 비어 있으면 옷장 자체가 빈 것이므로
+                    // "검색 무결과"와 구분해 첫 등록을 유도한다.
+                    final filtered =
+                        _query.trim().isNotEmpty || _category != null;
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: ClosetimoSpacing.space60,
+                        ),
                         child: Center(
                           child: Text(
                             filtered
@@ -148,25 +185,33 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                             ),
                           ),
                         ),
-                      );
-                    }
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
+                      ),
+                    );
+                  }
+                  return SliverPadding(
+                    // 마지막 타일이 하단 탭바와 겹치지 않도록 그리드 끝에 여백을 둔다.
+                    padding: const EdgeInsets.only(
+                      left: ClosetimoSpacing.lg,
+                      right: ClosetimoSpacing.lg,
+                      bottom: ClosetimoSpacing.space76,
+                    ),
+                    sliver: SliverGrid(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 14,
-                        crossAxisSpacing: 14,
-                        childAspectRatio: 0.66,
+                            crossAxisCount: 2,
+                            mainAxisSpacing: ClosetimoSpacing.space14,
+                            crossAxisSpacing: ClosetimoSpacing.space14,
+                            childAspectRatio: 0.66,
+                          ),
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) => GarmentTile(item: items[i]),
+                        childCount: items.length,
                       ),
-                      itemCount: items.length,
-                      itemBuilder: (ctx, i) => GarmentTile(item: items[i]),
-                    );
-                  },
-                ),
-              ],
-            ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ],
