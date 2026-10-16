@@ -11,6 +11,7 @@ import '../../app/theme/tokens.dart';
 import '../../core/utils/clock.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/providers/app_providers.dart';
+import 'backup/backup_flow.dart';
 import 'widgets/preference_row.dart';
 import 'widgets/profile_card.dart';
 
@@ -104,10 +105,28 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: ClosetimoSpacing.space28),
+                    // #40 — 사용자 실행형 백업·복원. 저장 위치는 OS 공유 시트·
+                    // 문서 선택기에서 사용자가 고른다.
+                    _Section(
+                      title: '데이터',
+                      caption:
+                          '백업 파일은 직접 고른 위치(파일 앱, iCloud Drive, '
+                          'Google Drive 등)에만 저장돼요. 옷 사진과 기록이 들어 있어요.',
+                      rows: [
+                        PreferenceRow(
+                          label: '데이터 백업',
+                          onTap: () => runBackup(context, ref),
+                        ),
+                        PreferenceRow(
+                          label: '백업에서 복원',
+                          onTap: () => runRestore(context, ref),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: ClosetimoSpacing.space28),
                     const _Section(
                       title: '기타',
                       rows: [
-                        PreferenceRow(label: '데이터 백업', textValue: '준비 중'),
                         PreferenceRow(label: '개인정보 처리방침', textValue: '준비 중'),
                         PreferenceRow(label: '앱 정보', textValue: 'v1.0.0'),
                       ],

@@ -164,6 +164,11 @@ class IsarItemRepository implements ItemRepository {
 
       // 사진 3-way 의도(data-model.md §3): 교체 > 제거 > 유지.
       if (replacementPath != null) {
+        // 복원된 사진(`items/{id}_r….jpg`, #40)처럼 경로가 바뀌면 이전 파일이
+        // 고아로 남지 않도록 지운다. 같은 경로면 copyTo가 이미 덮어썼다.
+        if (item.imagePath != null && item.imagePath != replacementPath) {
+          pathToDelete = item.imagePath;
+        }
         item.imagePath = replacementPath;
       } else if (patch.removePhoto) {
         pathToDelete = item.imagePath;

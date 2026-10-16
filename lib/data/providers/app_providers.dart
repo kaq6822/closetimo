@@ -8,8 +8,10 @@ import '../../core/utils/clock.dart';
 import '../models/item_tags.dart';
 import '../models/user_preferences.dart';
 import '../repositories/archive_repository.dart';
+import '../repositories/backup_repository.dart';
 import '../repositories/event_repository.dart';
 import '../repositories/isar_archive_repository.dart';
+import '../repositories/isar_backup_repository.dart';
 import '../repositories/isar_event_repository.dart';
 import '../repositories/isar_item_repository.dart';
 import '../repositories/isar_laundry_repository.dart';
@@ -56,6 +58,16 @@ final tagRepositoryProvider = Provider<TagRepository>((ref) {
 /// 집계한다. 등록 폼 제안·옷장 태그 필터·태그 관리 화면이 함께 쓴다.
 final tagUsageProvider = StreamProvider<List<TagUsage>>((ref) {
   return ref.watch(itemRepositoryProvider).watchAll().map(summarizeTags);
+});
+
+/// 사용자 실행형 백업·복원(#40).
+final backupRepositoryProvider = Provider<BackupRepository>((ref) {
+  final isar = ref.watch(isarProvider).requireValue;
+  return IsarBackupRepository(
+    isar: isar,
+    imageStore: ref.watch(imageStoreProvider),
+    clock: ref.watch(clockProvider),
+  );
 });
 
 final preferencesRepositoryProvider = Provider<PreferencesRepository>((ref) {

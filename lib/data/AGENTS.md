@@ -7,6 +7,7 @@ Isar 모델, repository 추상화·구현, Riverpod provider 배선을 담당하
 
 ```text
 data/
+├── backup/            # 사용자 실행형 백업 형식·codec(#40, specs/004-backup-restore)
 ├── migrations/        # Isar 3 → Isar Plus 이전 + 저장소 버전 업그레이드(StorageMetadata.storageVersion)
 ├── models/            # Isar Plus @collection 모델 + *.g.dart
 ├── repositories/      # 추상 인터페이스(item_repository.dart) + Isar 구현(isar_item_repository.dart)
@@ -31,4 +32,6 @@ data/
 - enum은 ordinal로 저장되므로 값은 **끝에만 추가**하고, 새 필드는 클래스 **끝에** 선언한다.
   의미가 바뀌는 변경은 `StorageMetadata.currentStorageVersion`을 올리고 `storage_migrator.dart`에
   업그레이드 단계와 구 스키마 고정본 기반 테스트를 추가한다.
+- 모델(`Item`·`WearEvent`·`UserPreferences`)에 필드를 추가하면 `backup/backup_codec.dart`의 명시 매핑과
+  `BackupFormat.currentVersion`도 함께 갱신한다(가드 테스트 `test/unit/backup_codec_test.dart`).
 - 이 레이어는 UI(위젯, BuildContext)를 알지 못한다. Flutter widget import 금지 (`providers/` 제외).

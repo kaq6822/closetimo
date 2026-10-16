@@ -568,7 +568,10 @@ void main() {
       final repo = await openAdd(tester);
       for (final label in ['저장', '저장하고 다음 옷 등록']) {
         final button = tester.widget<TextButton>(
-          find.ancestor(of: find.text(label), matching: find.byType(TextButton)),
+          find.ancestor(
+            of: find.text(label),
+            matching: find.byType(TextButton),
+          ),
         );
         expect(button.onPressed, isNull, reason: label);
       }
