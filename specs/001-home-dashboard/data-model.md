@@ -40,6 +40,8 @@ Isar Plus 1.3.x를 따르고, Isar 3.x는 설계 당시 표기**라는 점을 �
 │  • imagePath: String?       │  (앱 sandbox 기준 상대 경로)
 │  • fallbackColor: int       │  (Color.value, 이미지 없을 때)
 │  • createdAt: DateTime      │
+│  • careMode (enum, v2)      │  (wearCycle | manual)
+│  • purposes (List, v2)      │  (용도 축, 0개 이상)
 └─────────────────────────────┘
 
 ┌──────────────────────────────────┐
@@ -63,10 +65,10 @@ Isar `@collection`. 옷장의 단일 옷.
 | `id` | `Id` (int auto) | PK | — | Isar 자동 |
 | `name` | `String` | — | `name.isNotEmpty` (FR-002) | FR-001 |
 | `brand` | `String?` | — | nullable | FR-001 |
-| `category` | `Category` (enum) | `@Index()` | not null | FR-001 |
-| `careMethod` | `CareMethod` (enum) | — | not null | FR-001 |
+| `category` | `Category` (enum, 종류) | `@Index()` | not null, 새 옷 기본 `uncategorized` | FR-001, #41 |
+| `careMethod` | `CareMethod` (enum) | — | not null, 새 옷 기본 `unspecified` | FR-001, #45 |
 | `status` | `ItemStatus` (enum) | `@Index()` | `clean` 기본 | FR-008/011 |
-| `washCycle` | `int` | — | `>= 1` (FR-001) | FR-001 |
+| `washCycle` | `int` | — | `>= 1` (FR-001). `careMode = manual`이어도 값 보존 | FR-001 |
 | `wearSinceWash` | `int` | — | `>= 0` | FR-010 |
 | `totalWears` | `int` | — | `>= 0` | FR-010 |
 | `lastWornAt` | `DateTime?` | `@Index(type: IndexType.value)` | nullable | FR-010, FR-007(정렬) |
@@ -76,30 +78,67 @@ Isar `@collection`. 옷장의 단일 옷.
 | `imagePath` | `String?` | — | nullable (FR-003 → 플레이스홀더) | FR-001 |
 | `fallbackColor` | `int` | — | 기본 0xFFE5E4DC | UI 폴백 |
 | `createdAt` | `DateTime` | — | 등록 시각 | FR-004(최신 우선) |
+| `careMode` | `CareMode` (enum) | — | 기본 `wearCycle`. 필드가 없던 v1 데이터도 `wearCycle`로 읽힘 | FR-011, #45 |
+| `purposes` | `List<ItemPurpose>` | — | 0개 이상, 중복 없음·enum 순서로 정규화 | #41 |
+
+> **property 순서 규칙**: Isar Plus는 필드 선언 순서로 property index를 부여한다.
+> 새 필드는 항상 클래스 **끝**에 추가해 기존 필드 위치를 바꾸지 않는다(`careMode`·`purposes`는 v2에서 끝에 추가).
 
 ### 1.1 Enum 정의
 
+Isar Plus는 enum을 **ordinal(index)** 로 저장한다. 값의 순서를 바꾸거나 중간에 삽입·삭제하지
+않고 **끝에만 추가**한다. index는 `test/unit/item_classification_test.dart`가 고정 검증한다.
+
 ```dart
-enum Category {
-  outer('아우터'),
-  top('상의'),
-  bottom('하의'),
-  onepiece('원피스'),
-  shoes('신발'),
-  bag('가방'),
-  accessory('액세서리'),
-  activewear('운동복'),
-  etc('기타');
+enum Category {            // 종류
+  outer,        // 0 아우터
+  top,          // 1 상의
+  bottom,       // 2 하의
+  onepiece,     // 3 원피스
+  shoes,        // 4 신발
+  bag,          // 5 가방
+  accessory,    // 6 액세서리
+  activewear,   // 7 운동복 — legacy, 선택 불가(v2 마이그레이션 대상)
+  etc,          // 8 기타
+  uncategorized // 9 미분류 (v2)
 }
 
-enum CareMethod {
-  dryClean('드라이클리닝'),
-  machine('기계세탁'),
-  handWash('핸드워시');
-}
-
+enum ItemPurpose { sport }                                  // 용도: 운동 (v2)
+enum CareMethod { dryClean, machine, handWash, unspecified } // 미지정 = 3 (v2)
+enum CareMode { wearCycle, manual }                          // v2
 enum ItemStatus { clean, dirty }
+
+// 저장하지 않는 집계 전용 값(홈 2x2 카드)
+enum HomeBucket { outer, top, bottom, others }
 ```
+
+### 1.1a 분류 용어 (#41 · #37)
+
+| 용어 | 정의 | 코드 |
+|---|---|---|
+| **종류** | 옷을 찾는 기본 축. 옷 1점은 종류 1개를 가진다. | `Item.category` |
+| **미분류** | 아직 종류를 정하지 않은 상태. 새 옷의 기본값이며 아우터 등으로 집계되지 않는다. | `Category.uncategorized` |
+| **기타** (개별) | 다른 종류에 속하지 않는다고 사용자가 정한 종류. 옷장 `기타` 칩은 이 값**만** 보여준다. | `Category.etc` |
+| **그 외** (합산) | 홈 4번째 카드. 아우터·상의·하의를 **제외한 모든 종류**(원피스·신발·가방·액세서리·기타·미분류, legacy 운동복)의 합. | `HomeBucket.others` |
+| **용도** | 종류와 독립된 선택 축(0개 이상). 운동은 종류가 아니라 용도다. | `Item.purposes`, `ItemPurpose` |
+| **운동복** (legacy) | v1까지의 종류 값. 새로 선택할 수 없고 v2 마이그레이션이 `미분류 + 용도 운동`으로 옮긴다. | `Category.activewear` |
+
+화면별 포함 범위:
+
+| 화면 | 사용하는 분류 | 범위 |
+|---|---|---|
+| 등록·수정 폼 | 종류 칩(`Category.selectable`: 미분류·아우터·상의·하의·원피스·신발·가방·액세서리·기타) + 용도 칩 | 종류 1개(기본 미분류), 용도 0개 이상 |
+| 옷장 필터 | `ItemFilter` | 종류 칩 = 개별 종류 1개. 홈 '그 외'로 진입하면 합산 칩 `그 외 전체`가 선택됨. 용도 칩은 종류와 AND |
+| 옷장 검색 | `ItemFilter.query` | 이름·브랜드(FR-006). 종류·용도 조건과 AND |
+| 홈 카드 | `HomeBucket` | 아우터·상의·하의·그 외. 네 카드 합 = 전체 수. 카드 탭 → `ItemFilter.homeBucket(b)`로 같은 범위 |
+
+### 1.1b 필터 계약 `ItemFilter` (영속화하지 않음)
+
+- 필드: `categories: Set<Category>`, `purposes: Set<ItemPurpose>`, `query: String`.
+- **같은 축 안은 OR, 축 사이는 AND**. 빈 집합은 해당 축을 제한하지 않는다(전체).
+- `ItemFilter.homeBucket(b)` = `categories: b.categories`. 홈 집계(`Category.homeBucket`)와 같은
+  정의를 공유하므로 카드 수와 이동 목록 수가 항상 같다.
+- 후속 속성(색상·계절 등, #46)·사용 가능 상태(#43)·보관(#44)은 이 객체에 축을 추가해 확장한다.
 
 ### 1.2 상태 전이
 
@@ -113,11 +152,14 @@ clean ─────"착용 기록(FR-010)"─────► clean ───�
 ```
 
 추가 규칙:
-- 옷 등록 시: `status = clean`, `wearSinceWash = 0`, `totalWears = 0`, `inLaundry = false`, `createdAt = now`.
-- 착용 기록(FR-010): `wearSinceWash++`, `totalWears++`, `lastWornAt = now`. 결과적으로 `wearSinceWash >= washCycle`이면 `status = dirty`로 전환(FR-011). 사용자가 시트에서 입력한 메모(`note`, ≤80자, nullable)는 함께 생성되는 wear 이벤트에만 저장되고 `Item`에는 반영되지 않는다.
-- 세탁 완료(FR-016): `wearSinceWash = 0`, `status = clean`, `lastWashedAt = now`, `inLaundry = false`.
-- 착용 기록 삭제(FR-010b): 단일 트랜잭션으로 wear 이벤트 1건 삭제 + `wearSinceWash = max(0, prev-1)`, `totalWears = max(0, prev-1)`, `lastWornAt`은 남은 wear 이벤트의 최신 `occurredAt`(없으면 `null`)로 재계산. 결과 `wearSinceWash < washCycle`이고 직전 `status == dirty`였다면 `status = clean`으로 자동 복귀. `inLaundry`는 변경하지 않는다.
-- `inLaundry` 토글(FR-012)은 `status`를 변경하지 않는다(세탁 완료 처리 시까지 상태 보존).
+- 옷 등록 시: `status = clean`, `wearSinceWash = 0`, `totalWears = 0`, `inLaundry = false`, `createdAt = now`. 폼 기본값은 `category = uncategorized`, `careMethod = unspecified`, `careMode = wearCycle`, `washCycle = 5`, `purposes = []`.
+- **상태 계산(FR-011, #45)**: `derivedStatus = (careMode == wearCycle && wearSinceWash >= washCycle) ? dirty : clean` (`ItemCareRules` 확장). `clean`은 "횟수 기준 관리 권장 없음"이며 실제 청결을 뜻하지 않는다.
+- 착용 기록(FR-010): `wearSinceWash++`, `totalWears++`, `lastWornAt = now`. `careMode == wearCycle`이고 `wearSinceWash >= washCycle`이면 `status = dirty`로 전환(FR-011). `careMode == manual`이면 카운터만 늘고 상태는 바뀌지 않는다. 사용자가 시트에서 입력한 메모(`note`, ≤80자, nullable)는 함께 생성되는 wear 이벤트에만 저장되고 `Item`에는 반영되지 않는다.
+- 세탁 완료(FR-016): `wearSinceWash = 0`, `status = clean`, `lastWashedAt = now`, `inLaundry = false`. 관리 방식과 무관하다.
+- 착용 기록 삭제(FR-010b): 단일 트랜잭션으로 wear 이벤트 1건 삭제 + `wearSinceWash = max(0, prev-1)`, `totalWears = max(0, prev-1)`, `lastWornAt`은 남은 wear 이벤트의 최신 `occurredAt`(없으면 `null`)로 재계산. 결과 `wearSinceWash < washCycle`이고 직전 `status == dirty`였다면 `status = clean`으로 자동 복귀. `inLaundry`는 변경하지 않는다. manual 옷은 dirty가 되지 않으므로 이 복귀 규칙과 충돌하지 않는다. (세탁 경계 기준 재계산은 #38에서 갱신)
+- 수정(002 FR-004): `careMode`·`washCycle` 변경 후 `status = derivedStatus`로 재평가한다. manual로 바꾸면 dirty였던 옷도 clean이 되고, 다시 wearCycle로 켜면 보존된 `washCycle`·`wearSinceWash`로 재평가된다. 카운터는 바꾸지 않는다.
+- `inLaundry` 토글(FR-012)은 `status`를 변경하지 않는다(세탁 완료 처리 시까지 상태 보존). **관리 방식과 무관하게 모든 옷을 수동으로 담을 수 있다**(#45).
+- 관리 방법(`careMethod`)은 기록·필터용 정보다. 실제 세탁 조건은 옷의 케어 라벨을 따르며 앱은 이 값으로 세탁 조건을 추정하지 않는다. 폼은 이 안내를 표시한다.
 
 ### 1.3 검증
 
@@ -125,7 +167,7 @@ clean ─────"착용 기록(FR-010)"─────► clean ───�
 |---|---|---|
 | `name.trim().length > 0` | 옷 등록·수정 폼 (FR-002) | UI에서 저장 버튼 비활성 |
 | `washCycle >= 1` | 옷 등록·수정 폼 (FR-001) | 스테퍼 최소값 가드 |
-| `category in Category` | 옷 등록·수정 폼 (FR-001) | 칩 선택 강제 |
+| `category in Category.selectable` | 옷 등록·수정 폼 (FR-001) | 칩 선택(기본 미분류). legacy `activewear`는 선택 불가 |
 | `wearSinceWash >= 0` 및 `totalWears >= 0` | Repository 갱신 시 | assert (`deleteWearEvent`는 `max(0, x-1)`로 클램프) |
 | `note == null \|\| note.length <= 80` | 착용 기록·메모 편집 시(FR-010·FR-010a) | UI에서 80자 한도 입력 차단 + Repository에서 `ArgumentError` |
 | `note?.trim().isEmpty == true → note = null` | 시트 확정 시 정규화 (Edge Case) | 빈 문자열은 `null`로 변환 후 저장 |
@@ -199,12 +241,27 @@ spec.md의 Key Entity "Laundry Basket"은 **별도 컬렉션이 아닌 `Item.inL
 
 ## 5. 마이그레이션 정책
 
-- Isar는 schema migration이 자동(필드 추가/삭제에 강함). 하지만 enum 값 변경은 수동 마이그레이션 필요.
-- 첫 출시(v1)는 마이그레이션 없음. 후속 spec에서 스키마 변경 시:
-  1. `IsarVersion` 메타데이터를 `UserPreferences.schemaVersion` 필드에 기록.
-  2. `main.dart` 부트 시 버전 차이 감지 → migration 함수 실행 → 버전 업데이트.
+- 저장소 형식 버전은 `StorageMetadata.storageVersion`(singleton)에 기록한다. 현재 값은
+  `StorageMetadata.currentStorageVersion = 2`.
+- 부트 시 `StorageMigrator.migrateIfNeeded`(`lib/data/migrations/storage_migrator.dart`)가
+  (1) legacy Isar 3 이전(003) 또는 (2) 기존 저장소의 버전 업그레이드를 **단일 트랜잭션**으로 수행한다.
+  실패하면 아무것도 바뀌지 않고 다음 실행에서 재시도한다. 결과 source: `fresh | legacyV3 | upgraded | alreadyMigrated`.
+- enum은 ordinal 저장이므로 값 추가는 끝에만 하고, 의미를 바꾸는 변경은 아래처럼 데이터를 옮긴다.
 
----
+### v1 → v2 (#41 · #45)
+
+| 대상 | 규칙 |
+|---|---|
+| `category == activewear` | `category = uncategorized`, `purposes += [sport]`. 상의/하의로 **추정하지 않는다**. |
+| 그 외 종류 | 변경 없음 |
+| `careMode` (신규) | 필드가 없는 v1 레코드는 기본값 `wearCycle`로 읽혀 기존 횟수 기반 동작을 유지한다. 별도 쓰기 없음 |
+| `purposes` (신규) | 없으면 빈 목록으로 읽힌다 |
+| `careMethod` | 기존 index 그대로(새 값 `unspecified`=3은 끝에 추가) |
+| 카운터·`status`·`inLaundry`·날짜 | 변경 없음 |
+
+legacy Isar 3 이전 경로도 같은 규칙을 적용해 곧바로 v2로 기록한다. 회귀 테스트는
+`test/unit/storage_migrator_test.dart`(v1 스키마 고정본 `test/support/storage_v1_item_fixture.dart`로
+구 디스크 데이터를 재현)에 있다.
 
 ## 6. 시드(seed) 데이터 정책
 
@@ -213,4 +270,4 @@ spec.md의 Key Entity "Laundry Basket"은 **별도 컬렉션이 아닌 `Item.inL
 
 ---
 
-**Status**: 모든 엔티티·관계·전이·시드 정책 확정. 데이터 모델 측 NEEDS CLARIFICATION 없음.
+**Status**: 모든 엔티티·관계·전이·시드 정책 확정. 2026-10-16 #37·#41·#45로 분류 용어·관리 방식·v2 마이그레이션 추가.

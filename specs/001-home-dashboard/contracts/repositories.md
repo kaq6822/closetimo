@@ -16,11 +16,9 @@
 abstract interface class ItemRepository {
   // ── 읽기(Watch는 Riverpod stream으로 변환) ──
   Stream<List<Item>> watchAll();                                // FR-005 기반
-  Stream<List<Item>> watchByCategory(Category? c);              // FR-005
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String? query,                                              // 이름·브랜드 검색 FR-006
-    WardrobeSort sort,                                          // FR-007
+    ItemFilter filter = const ItemFilter(),                     // 종류·용도·검색어 FR-005·006, #37·#41
+    required WardrobeSort sort,                                 // FR-007
   });
   Stream<List<Item>> watchRecentlyWorn({int limit = 2});        // FR-020
 
@@ -30,14 +28,24 @@ abstract interface class ItemRepository {
 
   // ── 쓰기 ──
   Future<int> create(NewItemDraft draft);                       // FR-001 → FR-004
-  Future<void> update(int id, ItemPatch patch);                 // (수정 화면용; v1 spec엔 명시 없음)
+  Future<void> update(int id, ItemPatch patch);                 // 002. careMode·purposes 포함 전체 교체
+  Future<void> delete(int id);                                  // 002
 }
 
 class WardrobeStats {
   final int total;
   final int clean;
   final int dirty;
-  final Map<Category, int> perCategory;  // 홈 2x2 카드(FR-019). "기타"는 신발/가방/액세서리/원피스/운동복 합산.
+  final Map<HomeBucket, int> perBucket;  // 홈 2x2 카드(FR-019, #37). 모든 버킷 키 보유, 합 = total.
+}                                        // others('그 외') = 아우터·상의·하의 외 전체(미분류 포함).
+
+class ItemFilter {                        // lib/data/models/item_filter.dart (영속화 X)
+  final Set<Category> categories;        // 비면 전체. 축 안 OR
+  final Set<ItemPurpose> purposes;       // 비면 전체. 축 안 OR, 축 간 AND
+  final String query;                    // 이름·브랜드, 대소문자 무시
+  factory ItemFilter.category(Category c);        // 개별 종류(옷장 칩)
+  factory ItemFilter.homeBucket(HomeBucket b);    // 홈 카드와 같은 범위
+  bool matches(Item item);
 }
 
 enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
@@ -46,7 +54,10 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 ### 검증 / 사이드이펙트
 
 - `create`: `draft.name.trim().isEmpty`이면 `ArgumentError`. 검증 통과 시 `imagePath`는 `ImageStore.copy(draft.tempPhoto)` 결과를 저장. 생성 시 `Item` 기본값(`status=clean`, counts=0, `createdAt=now`).
-- `watchFiltered`의 검색 매칭: `(name ?? '').toLowerCase().contains(q.toLowerCase()) || (brand ?? '').toLowerCase().contains(q.toLowerCase())` (FR-006).
+- `create`: draft의 `category`(기본 미분류)·`careMethod`(기본 미지정)·`careMode`·`purposes`를 저장한다. `purposes`는 중복 제거 후 enum 순서로 정규화.
+- `update`: `ItemPatch`의 편집 필드 전체(`careMode`·`purposes` 포함, 둘 다 required)를 교체하고 `status = item.derivedStatus`로 재평가한다(#45).
+- `watchFiltered`: `filter.matches(item)`을 만족하는 옷만 내보낸다. 검색 매칭은 `name.toLowerCase().contains(q) || (brand ?? '').toLowerCase().contains(q)` (FR-006).
+- `watchStats().perBucket[b]`와 `watchFiltered(filter: ItemFilter.homeBucket(b))`의 결과 수는 항상 같다(#37).
 
 ---
 
@@ -57,7 +68,7 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 ```dart
 abstract interface class LaundryRepository {
   Stream<List<Item>> watchBasket();                  // FR-014 (inLaundry == true)
-  Future<void> toggle(int itemId);                   // FR-012
+  Future<void> toggle(int itemId);                   // FR-012 (관리 방식과 무관, #45)
   Future<void> completeWashFor(List<int> itemIds);   // FR-016
 }
 ```
@@ -95,8 +106,8 @@ txn {
   item.wearSinceWash += 1
   item.totalWears    += 1
   item.lastWornAt     = now
-  if item.wearSinceWash >= item.washCycle:
-      item.status = dirty                    # FR-011 자동 전이
+  if item.careMode == wearCycle and item.wearSinceWash >= item.washCycle:
+      item.status = dirty                    # FR-011 자동 전이 (manual이면 전이 없음, #45)
   items.put(item)
   events.put(WearEvent(itemId, kind: wear, occurredAt: now, note: note))
 }

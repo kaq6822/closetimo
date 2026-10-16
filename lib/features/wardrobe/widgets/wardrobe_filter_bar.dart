@@ -6,24 +6,27 @@ import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../core/widgets/chip_filter.dart';
 import '../../../data/models/item.dart';
+import '../../../data/models/item_filter.dart';
 import '../../../data/repositories/item_repository.dart';
 
 class WardrobeFilterBar extends StatelessWidget {
   const WardrobeFilterBar({
     required this.query,
-    required this.category,
+    required this.scope,
     required this.sort,
     required this.onQueryChanged,
-    required this.onCategoryChanged,
+    required this.onScopeChanged,
     required this.onSortChanged,
     super.key,
   });
 
   final String query;
-  final Category? category; // null = 전체
+
+  /// 종류·용도 조건(검색어 제외). 종류가 비어 있으면 '전체'.
+  final ItemFilter scope;
   final WardrobeSort sort;
   final ValueChanged<String> onQueryChanged;
-  final ValueChanged<Category?> onCategoryChanged;
+  final ValueChanged<ItemFilter> onScopeChanged;
   final ValueChanged<WardrobeSort> onSortChanged;
 
   String _sortLabel(WardrobeSort s) => switch (s) {
@@ -80,7 +83,7 @@ class WardrobeFilterBar extends StatelessWidget {
                   bottom: ClosetimoSpacing.space10,
                 ),
                 child: Text(
-                  '카테고리',
+                  '종류',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 11,
@@ -94,14 +97,38 @@ class WardrobeFilterBar extends StatelessWidget {
                 children: [
                   ChipFilter(
                     label: '전체',
-                    active: category == null,
-                    onTap: () => onCategoryChanged(null),
+                    active: scope.categories.isEmpty,
+                    onTap: () => onScopeChanged(scope.copyWith(categories: {})),
                   ),
-                  for (final c in Category.values)
+                  // #37 — 홈 '그 외' 카드처럼 여러 종류를 합산한 범위로 들어오면
+                  // 개별 '기타'와 구분되는 합산 칩을 선택 상태로 보여준다.
+                  if (scope.groupBucket case final bucket?)
+                    ChipFilter(
+                      label: '${bucket.label} 전체',
+                      active: true,
+                      onTap: () {},
+                    ),
+                  for (final c in Category.selectable)
                     ChipFilter(
                       label: c.label,
-                      active: category == c,
-                      onTap: () => onCategoryChanged(c),
+                      active:
+                          scope.categories.length == 1 &&
+                          scope.categories.contains(c),
+                      onTap: () =>
+                          onScopeChanged(scope.copyWith(categories: {c})),
+                    ),
+                  // #41 — 용도는 종류와 독립된 축(AND)이다.
+                  for (final p in ItemPurpose.values)
+                    ChipFilter(
+                      label: '용도: ${p.label}',
+                      active: scope.purposes.contains(p),
+                      onTap: () => onScopeChanged(
+                        scope.copyWith(
+                          purposes: scope.purposes.contains(p)
+                              ? ({...scope.purposes}..remove(p))
+                              : {...scope.purposes, p},
+                        ),
+                      ),
                     ),
                 ],
               ),

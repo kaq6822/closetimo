@@ -49,7 +49,8 @@ class IsarEventRepository implements EventRepository {
         ..wearSinceWash += 1
         ..totalWears += 1
         ..lastWornAt = now;
-      if (item.wearSinceWash >= item.washCycle) {
+      // #45 — manual 관리 옷은 횟수로 dirty가 되지 않는다.
+      if (item.tracksWearCycle && item.wearSinceWash >= item.washCycle) {
         item.status = ItemStatus.dirty;
       }
       isar.items.put(item);

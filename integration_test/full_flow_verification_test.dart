@@ -79,11 +79,11 @@ void main() {
         await tapVisible(tester, find.byIcon(Icons.add_rounded));
         expect(find.text('6'), findsOneWidget);
 
-        // 카테고리: 기본 아우터 → 상의로 변경
+        // 종류: 기본 미분류 → 상의로 변경(#41)
         await tapVisible(tester, find.text('상의'));
 
-        // 세탁 방법: HAND WASH 선택
-        await tapVisible(tester, find.text('HAND WASH'));
+        // 세탁 방법: 기본 미지정 → 핸드워시 선택(#45)
+        await tapVisible(tester, find.text('핸드워시'));
 
         // 구매일: 날짜 피커 열고 오늘 날짜로 확인
         await tapVisible(tester, find.text('구매일 선택'));

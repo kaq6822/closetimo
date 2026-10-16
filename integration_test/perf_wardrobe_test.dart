@@ -33,6 +33,7 @@ import 'package:isar_plus/isar_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/providers/isar_provider.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
 import 'package:closetimo/features/wardrobe/widgets/wardrobe_filter_bar.dart';
@@ -316,7 +317,10 @@ Future<_PerfSample> _measureUi(
   );
   final expected = await container
       .read(itemRepositoryProvider)
-      .watchFiltered(category: category, query: query, sort: sort)
+      .watchFiltered(
+        filter: ItemFilter(categories: {?category}, query: query),
+        sort: sort,
+      )
       .first;
   expect(expected, isNotEmpty);
   final samples = <int>[];
@@ -337,7 +341,7 @@ Future<_PerfSample> _measureUi(
     expect(find.byType(SliverGrid), findsNothing);
     bar = tester.widget<WardrobeFilterBar>(find.byType(WardrobeFilterBar));
     final sw = Stopwatch()..start();
-    bar.onCategoryChanged(category);
+    bar.onScopeChanged(ItemFilter(categories: {?category}));
     bar.onSortChanged(sort);
     bar.onQueryChanged(query);
     var reflected = false;
