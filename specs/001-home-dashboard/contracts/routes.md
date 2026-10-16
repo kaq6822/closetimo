@@ -21,6 +21,8 @@
 (전체 화면 push 라우트, 하단 탭 위에 덮음)
 /item/:id         (ItemDetailScreen)                 US3
 /add-item         (AddItemScreen, 모달 transition)   US1
+/item/:id/edit    (AddItemScreen(editId), 모달)      002
+/archive          (ArchiveScreen, 보관함)            #44
 ```
 
 ## 2. 진입점 & 초기 경로
@@ -44,6 +46,12 @@
 | `/item/:id` "착용 기록하기" | 탭 | 전환 없음(상세 유지, 데이터만 갱신) | Toast(상단): "오늘의 착용이 기록되었어요" (US3 AC1, #15) |
 | `/item/:id` 백 버튼 | 탭 | pop | 변경사항 자동 저장 |
 | `/laundry` "세탁 완료 처리" | 탭 | 같은 화면 유지 | 항목 제거 + Toast: "N점의 세탁이 완료됐어요" |
+| `/settings` 옷 관리 > `보관함` | 탭 | `/archive` | `pushNamed(Routes.archive)` (#44) |
+| `/archive` 항목 | 탭 | `/item/:id` | 보관 안내·복원 버튼이 있는 상세 |
+| `/archive` 항목 `꺼내기` | 탭 | 같은 화면 유지 | 목록에서 제거 + Toast: "<이름>을(를) 옷장으로 꺼냈어요" |
+| `/item/:id` 메뉴 `보관하기` | 탭 → 다이얼로그(사유 선택, 선택 사항) → `보관` | 상세 유지(보관 안내 표시) | Toast(상단): "보관함으로 옮겼어요. 기록은 그대로 남아요" (#44) |
+| `/item/:id` 메뉴·버튼 `옷장으로 꺼내기` | 탭 | 상세 유지 | Toast(상단): "옷장으로 다시 꺼냈어요" (#44) |
+| `/item/:id` 메뉴 `삭제하기` | 탭 → 다이얼로그("기록까지 모두 지워지고 되돌릴 수 없어요") → `삭제` | 옷장 탭 | 002 FR-012 |
 
 ### 3.1 옷장 쿼리 해석 규칙 (#37·#41)
 
@@ -73,6 +81,8 @@ abstract final class Routes {
   static const settings = 'settings';
   static const itemDetail = 'itemDetail';
   static const addItem = 'addItem';
+  static const editItem = 'editItem';
+  static const archive = 'archive';     // #44
 }
 ```
 

@@ -73,6 +73,13 @@ final ItemSchema = IsarGeneratedSchema(
 
         enumMap: {"sport": 0},
       ),
+      IsarPropertySchema(name: 'archivedAt', type: IsarType.dateTime),
+      IsarPropertySchema(
+        name: 'archiveReason',
+        type: IsarType.byte,
+
+        enumMap: {"unspecified": 0, "seasonal": 1, "noLongerOwned": 2},
+      ),
     ],
     indexes: [
       IsarIndexSchema(
@@ -171,6 +178,12 @@ int serializeItem(IsarWriter writer, Item object) {
     }
     IsarCore.endList(writer, listWriter);
   }
+  IsarCore.writeLong(
+    writer,
+    18,
+    object.archivedAt?.toUtc().microsecondsSinceEpoch ?? -9223372036854775808,
+  );
+  IsarCore.writeByte(writer, 19, object.archiveReason.index);
   return object.id;
 }
 
@@ -328,6 +341,28 @@ Item deserializeItem(IsarReader reader) {
       }
     }
   }
+  final DateTime? _archivedAt;
+  {
+    final value = IsarCore.readLong(reader, 18);
+    if (value == -9223372036854775808) {
+      _archivedAt = null;
+    } else {
+      _archivedAt = DateTime.fromMicrosecondsSinceEpoch(
+        value,
+        isUtc: true,
+      ).toLocal();
+    }
+  }
+  final ArchiveReason _archiveReason;
+  {
+    if (IsarCore.readNull(reader, 19)) {
+      _archiveReason = ArchiveReason.unspecified;
+    } else {
+      _archiveReason =
+          _itemArchiveReason[IsarCore.readByte(reader, 19)] ??
+          ArchiveReason.unspecified;
+    }
+  }
   final object = Item(
     name: _name,
     brand: _brand,
@@ -346,6 +381,8 @@ Item deserializeItem(IsarReader reader) {
     createdAt: _createdAt,
     careMode: _careMode,
     purposes: _purposes,
+    archivedAt: _archivedAt,
+    archiveReason: _archiveReason,
   );
   object.id = IsarCore.readId(reader);
   return object;
@@ -504,6 +541,27 @@ dynamic deserializeItemProp(IsarReader reader, int property) {
           }
         }
       }
+    case 18:
+      {
+        final value = IsarCore.readLong(reader, 18);
+        if (value == -9223372036854775808) {
+          return null;
+        } else {
+          return DateTime.fromMicrosecondsSinceEpoch(
+            value,
+            isUtc: true,
+          ).toLocal();
+        }
+      }
+    case 19:
+      {
+        if (IsarCore.readNull(reader, 19)) {
+          return ArchiveReason.unspecified;
+        } else {
+          return _itemArchiveReason[IsarCore.readByte(reader, 19)] ??
+              ArchiveReason.unspecified;
+        }
+      }
     default:
       throw ArgumentError('Unknown property: $property');
   }
@@ -528,6 +586,8 @@ sealed class _ItemUpdate {
     int? fallbackColor,
     DateTime? createdAt,
     CareMode? careMode,
+    DateTime? archivedAt,
+    ArchiveReason? archiveReason,
   });
 }
 
@@ -555,6 +615,8 @@ class _ItemUpdateImpl implements _ItemUpdate {
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
     Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     return collection.updateProperties(
           [id],
@@ -575,6 +637,8 @@ class _ItemUpdateImpl implements _ItemUpdate {
             if (fallbackColor != ignore) 14: fallbackColor as int?,
             if (createdAt != ignore) 15: createdAt as DateTime?,
             if (careMode != ignore) 16: careMode as CareMode?,
+            if (archivedAt != ignore) 18: archivedAt as DateTime?,
+            if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
           },
         ) >
         0;
@@ -600,6 +664,8 @@ sealed class _ItemUpdateAll {
     int? fallbackColor,
     DateTime? createdAt,
     CareMode? careMode,
+    DateTime? archivedAt,
+    ArchiveReason? archiveReason,
   });
 }
 
@@ -627,6 +693,8 @@ class _ItemUpdateAllImpl implements _ItemUpdateAll {
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
     Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     return collection.updateProperties(id, {
       if (name != ignore) 1: name as String?,
@@ -645,6 +713,8 @@ class _ItemUpdateAllImpl implements _ItemUpdateAll {
       if (fallbackColor != ignore) 14: fallbackColor as int?,
       if (createdAt != ignore) 15: createdAt as DateTime?,
       if (careMode != ignore) 16: careMode as CareMode?,
+      if (archivedAt != ignore) 18: archivedAt as DateTime?,
+      if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
     });
   }
 }
@@ -673,6 +743,8 @@ sealed class _ItemQueryUpdate {
     int? fallbackColor,
     DateTime? createdAt,
     CareMode? careMode,
+    DateTime? archivedAt,
+    ArchiveReason? archiveReason,
   });
 }
 
@@ -700,6 +772,8 @@ class _ItemQueryUpdateImpl implements _ItemQueryUpdate {
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
     Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     return query.updateProperties(limit: limit, {
       if (name != ignore) 1: name as String?,
@@ -718,6 +792,8 @@ class _ItemQueryUpdateImpl implements _ItemQueryUpdate {
       if (fallbackColor != ignore) 14: fallbackColor as int?,
       if (createdAt != ignore) 15: createdAt as DateTime?,
       if (careMode != ignore) 16: careMode as CareMode?,
+      if (archivedAt != ignore) 18: archivedAt as DateTime?,
+      if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
     });
   }
 }
@@ -752,6 +828,8 @@ class _ItemQueryBuilderUpdateImpl implements _ItemQueryUpdate {
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
     Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     final q = query.build();
     try {
@@ -772,6 +850,8 @@ class _ItemQueryBuilderUpdateImpl implements _ItemQueryUpdate {
         if (fallbackColor != ignore) 14: fallbackColor as int?,
         if (createdAt != ignore) 15: createdAt as DateTime?,
         if (careMode != ignore) 16: careMode as CareMode?,
+        if (archivedAt != ignore) 18: archivedAt as DateTime?,
+        if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
       });
     } finally {
       q.close();
@@ -807,6 +887,11 @@ const _itemCareMethod = {
 const _itemStatus = {0: ItemStatus.clean, 1: ItemStatus.dirty};
 const _itemCareMode = {0: CareMode.wearCycle, 1: CareMode.manual};
 const _itemPurposes = {0: ItemPurpose.sport};
+const _itemArchiveReason = {
+  0: ArchiveReason.unspecified,
+  1: ArchiveReason.seasonal,
+  2: ArchiveReason.noLongerOwned,
+};
 
 extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
   QueryBuilder<Item, Item, QAfterFilterCondition> idEqualTo(int value) {
@@ -2193,6 +2278,137 @@ extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
       );
     });
   }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 18));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtIsNotNull() {
+    return QueryBuilder.apply(not(), (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 18));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtEqualTo(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtGreaterThan(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  archivedAtGreaterThanOrEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtLessThan(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtLessThanOrEqualTo(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtBetween(
+    DateTime? lower,
+    DateTime? upper,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 18, lower: lower, upper: upper),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonEqualTo(
+    ArchiveReason value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonGreaterThan(
+    ArchiveReason value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  archiveReasonGreaterThanOrEqualTo(ArchiveReason value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonLessThan(
+    ArchiveReason value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  archiveReasonLessThanOrEqualTo(ArchiveReason value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonBetween(
+    ArchiveReason lower,
+    ArchiveReason upper,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 19, lower: lower.index, upper: upper.index),
+      );
+    });
+  }
 }
 
 extension ItemQueryObject on QueryBuilder<Item, Item, QFilterCondition> {}
@@ -2413,6 +2629,30 @@ extension ItemQuerySortBy on QueryBuilder<Item, Item, QSortBy> {
       return query.addSortBy(16, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchivedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchivedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchiveReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchiveReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19, sort: Sort.desc);
+    });
+  }
 }
 
 extension ItemQuerySortThenBy on QueryBuilder<Item, Item, QSortThenBy> {
@@ -2631,6 +2871,30 @@ extension ItemQuerySortThenBy on QueryBuilder<Item, Item, QSortThenBy> {
       return query.addSortBy(16, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchivedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchivedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchiveReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchiveReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19, sort: Sort.desc);
+    });
+  }
 }
 
 extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
@@ -2741,6 +3005,18 @@ extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
       return query.addDistinctBy(17);
     });
   }
+
+  QueryBuilder<Item, Item, QAfterDistinct> distinctByArchivedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(18);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterDistinct> distinctByArchiveReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(19);
+    });
+  }
 }
 
 extension ItemQueryProperty1 on QueryBuilder<Item, Item, QProperty> {
@@ -2849,6 +3125,18 @@ extension ItemQueryProperty1 on QueryBuilder<Item, Item, QProperty> {
   QueryBuilder<Item, List<ItemPurpose>, QAfterProperty> purposesProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(17);
+    });
+  }
+
+  QueryBuilder<Item, DateTime?, QAfterProperty> archivedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(18);
+    });
+  }
+
+  QueryBuilder<Item, ArchiveReason, QAfterProperty> archiveReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(19);
     });
   }
 }
@@ -2962,6 +3250,19 @@ extension ItemQueryProperty2<R> on QueryBuilder<Item, R, QAfterProperty> {
       return query.addProperty(17);
     });
   }
+
+  QueryBuilder<Item, (R, DateTime?), QAfterProperty> archivedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(18);
+    });
+  }
+
+  QueryBuilder<Item, (R, ArchiveReason), QAfterProperty>
+  archiveReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(19);
+    });
+  }
 }
 
 extension ItemQueryProperty3<R1, R2>
@@ -3072,6 +3373,19 @@ extension ItemQueryProperty3<R1, R2>
   purposesProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(17);
+    });
+  }
+
+  QueryBuilder<Item, (R1, R2, DateTime?), QOperations> archivedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(18);
+    });
+  }
+
+  QueryBuilder<Item, (R1, R2, ArchiveReason), QOperations>
+  archiveReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(19);
     });
   }
 }

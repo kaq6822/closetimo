@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/data/migrations/storage_migrator.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/storage_metadata.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/data/models/wear_event.dart';
@@ -432,6 +433,58 @@ void main() {
       final shoes = store.items.get(3)!;
       expect(shoes.category, Category.shoes);
       expect(shoes.careMethod, CareMethod.machine);
+    });
+
+    test('보관 필드(#44)가 없는 구 데이터는 활성 옷으로 읽히고 버전을 올리지 않는다', () async {
+      const name = 'closetimo_v1_archive_fixture';
+      final createdAt = DateTime.utc(2026, 3, 1);
+      final v1 = openV1(name);
+      v1.write((isar) {
+        isar.itemsV1.putAll([
+          ItemV1(
+            name: '린넨 셔츠',
+            category: Category.top,
+            washCycle: 3,
+            wearSinceWash: 1,
+            totalWears: 6,
+            inLaundry: true,
+            createdAt: createdAt,
+          )..id = 1,
+        ]);
+        isar.storageMetadatas.put(
+          StorageMetadata(
+            storageVersion: StorageMetadata.currentStorageVersion,
+            migratedAt: createdAt,
+            legacyItemCount: 0,
+            legacyEventCount: 0,
+            source: StorageSource.fresh,
+          ),
+        );
+      });
+      v1.close();
+
+      final store = openCurrent(name);
+      addTearDown(() {
+        if (store.isOpen) store.close(deleteFromDisk: true);
+      });
+
+      final shirt = store.items.get(1)!;
+      expect(shirt.archivedAt, isNull);
+      expect(shirt.archiveReason, ArchiveReason.unspecified);
+      expect(shirt.isArchived, isFalse);
+      expect(shirt.inLaundry, isTrue);
+      expect(shirt.totalWears, 6);
+      // 기본 필터(활성만)에 그대로 포함된다.
+      expect(const ItemFilter().matches(shirt), isTrue);
+
+      // 추가식 필드라 업그레이드 단계 없이 그대로 유지된다.
+      final result = await const StorageMigrator().migrateIfNeeded(
+        newStore: store,
+        directory: directory.path,
+        clock: migratedAt,
+      );
+      expect(result.source, MigrationSource.alreadyMigrated);
+      expect(store.items.get(1)!.archivedAt, isNull);
     });
   });
 }

@@ -12,7 +12,8 @@ features/
 ├── item_detail/  # 옷 상세 (히어로 이미지, 착용 기록, 히스토리 타임라인)
 ├── add_item/     # 옷 등록 (사진, 카테고리, 세탁 방법, freezed draft 폼 state)
 ├── laundry/      # 세탁 바구니 (선택 provider, 세탁 완료 처리)
-└── settings/     # 설정 (프로필, 환경설정)
+├── settings/     # 설정 (프로필, 환경설정, 옷 관리 > 보관함 진입)
+└── archive/      # 보관함 (보관한 옷 확인·복원, #44)
 ```
 
 각 모듈 내부 구조: `<feature>_screen.dart`(진입점) + `widgets/`(전용 위젯) + 필요 시 폼/선택 state 파일.

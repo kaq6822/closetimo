@@ -42,6 +42,8 @@ Isar Plus 1.3.x를 따르고, Isar 3.x는 설계 당시 표기**라는 점을 �
 │  • createdAt: DateTime      │
 │  • careMode (enum, v2)      │  (wearCycle | manual)
 │  • purposes (List, v2)      │  (용도 축, 0개 이상)
+│  • archivedAt: DateTime?    │  (보관 시각, null = 활성, #44)
+│  • archiveReason (enum)     │  (unspecified | seasonal | noLongerOwned, #44)
 └─────────────────────────────┘
 
 ┌──────────────────────────────────┐
@@ -80,9 +82,11 @@ Isar `@collection`. 옷장의 단일 옷.
 | `createdAt` | `DateTime` | — | 등록 시각 | FR-004(최신 우선) |
 | `careMode` | `CareMode` (enum) | — | 기본 `wearCycle`. 필드가 없던 v1 데이터도 `wearCycle`로 읽힘 | FR-011, #45 |
 | `purposes` | `List<ItemPurpose>` | — | 0개 이상, 중복 없음·enum 순서로 정규화 | #41 |
+| `archivedAt` | `DateTime?` | — | null = 활성. null이 아니면 보관 상태(보관 여부의 단일 진실 원천) | #44 |
+| `archiveReason` | `ArchiveReason` (enum) | — | 기본 `unspecified`. 보관하지 않았거나 사유를 고르지 않으면 `unspecified` (Isar Plus는 nullable enum 미지원) | #44 |
 
 > **property 순서 규칙**: Isar Plus는 필드 선언 순서로 property index를 부여한다.
-> 새 필드는 항상 클래스 **끝**에 추가해 기존 필드 위치를 바꾸지 않는다(`careMode`·`purposes`는 v2에서 끝에 추가).
+> 새 필드는 항상 클래스 **끝**에 추가해 기존 필드 위치를 바꾸지 않는다(`careMode`·`purposes`는 v2에서, `archivedAt`·`archiveReason`은 #44에서 끝에 추가).
 
 ### 1.1 Enum 정의
 
@@ -107,6 +111,7 @@ enum ItemPurpose { sport }                                  // 용도: 운동 (v
 enum CareMethod { dryClean, machine, handWash, unspecified } // 미지정 = 3 (v2)
 enum CareMode { wearCycle, manual }                          // v2
 enum ItemStatus { clean, dirty }
+enum ArchiveReason { unspecified, seasonal, noLongerOwned }  // #44
 
 // 저장하지 않는 집계 전용 값(홈 2x2 카드)
 enum HomeBucket { outer, top, bottom, others }
@@ -134,11 +139,13 @@ enum HomeBucket { outer, top, bottom, others }
 
 ### 1.1b 필터 계약 `ItemFilter` (영속화하지 않음)
 
-- 필드: `categories: Set<Category>`, `purposes: Set<ItemPurpose>`, `query: String`.
+- 필드: `categories: Set<Category>`, `purposes: Set<ItemPurpose>`, `query: String`,
+  `archive: ArchiveScope`(#44, `active | archived | all`, **기본 `active`**).
+- 보관 축이 기본값(`active`)이므로 별도 지정이 없는 옷장 목록·검색·홈 카드 이동은 보관한 옷을 포함하지 않는다.
 - **같은 축 안은 OR, 축 사이는 AND**. 빈 집합은 해당 축을 제한하지 않는다(전체).
 - `ItemFilter.homeBucket(b)` = `categories: b.categories`. 홈 집계(`Category.homeBucket`)와 같은
   정의를 공유하므로 카드 수와 이동 목록 수가 항상 같다.
-- 후속 속성(색상·계절 등, #46)·사용 가능 상태(#43)·보관(#44)은 이 객체에 축을 추가해 확장한다.
+- 후속 속성(색상·계절 등, #46)·사용 가능 상태(#43)는 이 객체에 축을 추가해 확장한다(보관 #44는 `archive` 축으로 추가됨).
 
 ### 1.2 상태 전이
 
@@ -160,6 +167,33 @@ clean ─────"착용 기록(FR-010)"─────► clean ───�
 - 수정(002 FR-004): `careMode`·`washCycle` 변경 후 `status = derivedStatus`로 재평가한다. manual로 바꾸면 dirty였던 옷도 clean이 되고, 다시 wearCycle로 켜면 보존된 `washCycle`·`wearSinceWash`로 재평가된다. 카운터는 바꾸지 않는다.
 - `inLaundry` 토글(FR-012)은 `status`를 변경하지 않는다(세탁 완료 처리 시까지 상태 보존). **관리 방식과 무관하게 모든 옷을 수동으로 담을 수 있다**(#45).
 - 관리 방법(`careMethod`)은 기록·필터용 정보다. 실제 세탁 조건은 옷의 케어 라벨을 따르며 앱은 이 값으로 세탁 조건을 추정하지 않는다. 폼은 이 안내를 표시한다.
+
+### 1.2a 보관 (#44)
+
+옷을 지우지 않고 활성 옷장에서 빼는 상태다. 삭제(002)는 옷·사진·착용/세탁 기록을 모두 제거하지만
+보관은 **기록을 모두 유지**한다.
+
+| 사유 | 의미 | 기대 행동 |
+|---|---|---|
+| `seasonal` (계절 보관) | 계절이 지나 잠시 넣어 둔 옷 | 계절이 바뀌면 복원 |
+| `noLongerOwned` (더 이상 갖고 있지 않음) | 처분·양도·분실 등 | 기록 보존용. 필요하면 복원 가능 |
+| `unspecified` (사유 없음) | 사유를 고르지 않은 보관 | 사유 선택은 선택 사항 |
+
+통계·화면 정책(사유와 무관하게 동일):
+
+| 대상 | 보관한 옷 |
+|---|---|
+| 옷장 목록·검색(`ItemFilter` 기본) | 제외 |
+| 홈 통계(전체·깨끗·관리 필요)·2x2 카드(`watchStats`) | 제외 |
+| 홈 최근 입은 옷(`watchRecentlyWorn`) | 제외 |
+| 세탁 바구니(`watchBasket`)·홈 바구니 미리보기 | 제외. 보관 시 `inLaundry = false`, 보관 중에는 담기 불가 |
+| 보관함 화면(`ArchiveRepository.watchArchived`) | 최근 보관 순으로 표시 |
+| 옷 상세 | 진입 가능. 착용 기록·바구니 버튼 대신 보관 안내와 복원 버튼 표시 |
+| 해당 옷의 `WearEvent`·카운터(`totalWears` 등)·`status`·사진 | 변경 없음(보존) |
+
+상태 전이:
+- 보관(`archive`): `archivedAt = now`(이미 보관 중이면 유지), `archiveReason = 선택값`, `inLaundry = false`. 다른 필드는 바꾸지 않는다.
+- 복원(`restore`): `archivedAt = null`, `archiveReason = unspecified`. 카운터·상태·기록은 보관 전 그대로이며 바구니에는 다시 담지 않는다.
 
 ### 1.3 검증
 
@@ -259,6 +293,13 @@ spec.md의 Key Entity "Laundry Basket"은 **별도 컬렉션이 아닌 `Item.inL
 | `careMethod` | 기존 index 그대로(새 값 `unspecified`=3은 끝에 추가) |
 | 카운터·`status`·`inLaundry`·날짜 | 변경 없음 |
 
+### 보관 필드 추가 (#44, 저장소 버전 변경 없음)
+
+`archivedAt`·`archiveReason`은 클래스 끝에 추가한 **추가식 필드**이고 기존 값의 의미를 바꾸지 않으므로
+`StorageMetadata.currentStorageVersion`은 2를 유지하고 업그레이드 단계도 없다. 필드가 없는 구 데이터(v1·v2)는
+`archivedAt = null`(활성), `archiveReason = unspecified`로 읽힌다. 회귀 테스트는 `test/unit/storage_migrator_test.dart`
+(v1 고정본을 현재 스키마로 읽기)에 있다.
+
 legacy Isar 3 이전 경로도 같은 규칙을 적용해 곧바로 v2로 기록한다. 회귀 테스트는
 `test/unit/storage_migrator_test.dart`(v1 스키마 고정본 `test/support/storage_v1_item_fixture.dart`로
 구 디스크 데이터를 재현)에 있다.
@@ -270,4 +311,4 @@ legacy Isar 3 이전 경로도 같은 규칙을 적용해 곧바로 v2로 기록
 
 ---
 
-**Status**: 모든 엔티티·관계·전이·시드 정책 확정. 2026-10-16 #37·#41·#45로 분류 용어·관리 방식·v2 마이그레이션 추가.
+**Status**: 모든 엔티티·관계·전이·시드 정책 확정. 2026-10-16 #37·#41·#45로 분류 용어·관리 방식·v2 마이그레이션 추가, #44로 보관 상태 추가.

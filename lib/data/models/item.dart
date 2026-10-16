@@ -15,6 +15,8 @@ class Item {
     this.careMethod = CareMethod.unspecified,
     this.careMode = CareMode.wearCycle,
     this.purposes = const [],
+    this.archivedAt,
+    this.archiveReason = ArchiveReason.unspecified,
     this.status = ItemStatus.clean,
     this.wearSinceWash = 0,
     this.totalWears = 0,
@@ -74,6 +76,39 @@ class Item {
   /// 같은 값이 중복되지 않도록 repository가 정규화해 저장한다. 기본값은 불변
   /// 목록이므로 제자리 수정하지 말고 새 목록을 대입한다.
   List<ItemPurpose> purposes;
+
+  // ── 보관(#44) 추가 필드. 필드가 없는 구 데이터는 null(= 활성)로 읽힌다. ──
+
+  /// 보관한 시각. null이 아니면 보관 상태이며 활성 옷장·홈 통계·검색·세탁
+  /// 바구니에서 제외된다. 착용·세탁 기록과 카운터는 그대로 유지한다.
+  DateTime? archivedAt;
+
+  /// 보관 사유(선택). 보관하지 않았거나 사유를 고르지 않았으면
+  /// [ArchiveReason.unspecified]다(Isar Plus는 nullable enum을 지원하지 않는다).
+  /// 보관 여부는 이 값이 아니라 [archivedAt]으로 판단한다.
+  ArchiveReason archiveReason;
+}
+
+/// 보관 사유(#44). ordinal 저장이므로 **끝에만 추가**한다.
+/// 두 사유 모두 활성 통계·홈 집계·검색·바구니에서 제외하는 정책은 같고,
+/// 의미(다시 꺼낼 예정인지)만 다르다. 둘 다 복원할 수 있다.
+/// - [unspecified]: 사유 없음(활성 옷이거나 사유를 고르지 않은 보관).
+/// - [seasonal]: 계절이 지나 잠시 넣어 둔 옷. 다시 꺼낼 예정.
+/// - [noLongerOwned]: 처분·양도 등으로 더 이상 갖고 있지 않은 옷. 기록 보존용.
+enum ArchiveReason { unspecified, seasonal, noLongerOwned }
+
+extension ArchiveReasonLabel on ArchiveReason {
+  String get label => switch (this) {
+    ArchiveReason.unspecified => '사유 없음',
+    ArchiveReason.seasonal => '계절 보관',
+    ArchiveReason.noLongerOwned => '더 이상 갖고 있지 않음',
+  };
+}
+
+/// 보관 상태 규칙(#44).
+extension ItemArchiveRules on Item {
+  /// 보관 중인지. [Item.archivedAt]이 단일 진실 원천이다.
+  bool get isArchived => archivedAt != null;
 }
 
 /// 옷의 종류(#41). Isar Plus는 enum을 ordinal(index)로 저장하므로 값의 순서를

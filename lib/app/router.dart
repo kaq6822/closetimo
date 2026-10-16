@@ -12,6 +12,7 @@ import '../core/widgets/top_bar.dart';
 import '../data/models/item.dart';
 import '../data/models/item_filter.dart';
 import '../features/add_item/add_item_screen.dart';
+import '../features/archive/archive_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/item_detail/item_detail_screen.dart';
 import '../features/laundry/laundry_screen.dart';
@@ -28,6 +29,9 @@ abstract final class Routes {
   static const itemDetail = 'itemDetail';
   static const addItem = 'addItem';
   static const editItem = 'editItem';
+
+  /// 보관함(#44). 설정 > 옷 관리에서 push로 진입한다.
+  static const archive = 'archive';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -121,6 +125,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           }
           return _slideUpPage(AddItemScreen(editId: id));
         },
+      ),
+      GoRoute(
+        path: '/archive',
+        name: Routes.archive,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (ctx, st) => const ArchiveScreen(),
       ),
     ],
   );

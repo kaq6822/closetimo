@@ -89,10 +89,14 @@ class IsarItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchRecentlyWorn({int limit = 2}) {
-    return _items.where().lastWornAtIsNotNull().sortByLastWornAtDesc().watch(
-      fireImmediately: true,
-      limit: limit,
-    );
+    // 보관한 옷은 홈 최근 착용에서 제외한다(#44).
+    return _items
+        .where()
+        .lastWornAtIsNotNull()
+        .and()
+        .archivedAtIsNull()
+        .sortByLastWornAtDesc()
+        .watch(fireImmediately: true, limit: limit);
   }
 
   @override
@@ -103,7 +107,10 @@ class IsarItemRepository implements ItemRepository {
       };
       var clean = 0;
       var dirty = 0;
-      for (final i in items) {
+      // 보관한 옷은 활성 통계·홈 카드 집계에서 제외한다(#44). 기본
+      // ItemFilter(활성만)와 같은 범위라 perBucket과 목록 수가 일치한다.
+      final active = items.where((i) => !i.isArchived).toList();
+      for (final i in active) {
         if (i.status == ItemStatus.clean) {
           clean++;
         } else {
@@ -113,7 +120,7 @@ class IsarItemRepository implements ItemRepository {
         perBucket[bucket] = perBucket[bucket]! + 1;
       }
       return WardrobeStats(
-        total: items.length,
+        total: active.length,
         clean: clean,
         dirty: dirty,
         perBucket: perBucket,

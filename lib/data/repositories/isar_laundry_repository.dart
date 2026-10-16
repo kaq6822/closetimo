@@ -18,6 +18,8 @@ class IsarLaundryRepository implements LaundryRepository {
     return _isar.items
         .where()
         .inLaundryEqualTo(true)
+        .and()
+        .archivedAtIsNull()
         .sortByCreatedAtDesc()
         .watch(fireImmediately: true);
   }
@@ -27,6 +29,8 @@ class IsarLaundryRepository implements LaundryRepository {
     _isar.write((isar) {
       final item = isar.items.get(itemId);
       if (item == null) return;
+      // 보관한 옷은 바구니에 담지 않는다(#44). 담겨 있던 값을 빼는 것은 허용.
+      if (item.isArchived && !item.inLaundry) return;
       item.inLaundry = !item.inLaundry;
       isar.items.put(item);
     });
