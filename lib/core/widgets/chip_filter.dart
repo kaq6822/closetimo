@@ -36,8 +36,12 @@ class ChipFilter extends StatelessWidget {
               horizontal: ClosetimoSpacing.md,
               vertical: ClosetimoSpacing.sm,
             ),
+            // #19 — 큰 글꼴에서도 칩 라벨을 단어 중간에서 줄바꿈하지 않는다.
             child: Text(
               label,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 13,

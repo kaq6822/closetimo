@@ -8,7 +8,7 @@
 ```text
 features/
 ├── home/         # 홈 대시보드 (통계, 카테고리 벤토, 최근 착용, 세탁 미리보기)
-├── wardrobe/     # 옷장 그리드 (필터 바, 의류 타일)
+├── wardrobe/     # 옷장 그리드 (필터 바, 의류 타일, selection/ 다중 선택 인프라)
 ├── item_detail/  # 옷 상세 (히어로 이미지, 착용 기록, 히스토리 타임라인)
 ├── add_item/     # 옷 등록 (사진, 카테고리, 세탁 방법, freezed draft 폼 state)
 ├── laundry/      # 세탁 바구니 (선택 provider, 세탁 완료 처리)
@@ -32,3 +32,25 @@ features/
   `lib/core/widgets/`로 승격한다.
 - 화면·플로우 변경 시 `test/feature/`에 위젯 테스트를 추가·갱신한다
   (예: `add_item_flow_test.dart`, `wear_record_test.dart`).
+
+## 옷장 다중 선택 인프라 (`wardrobe/selection/`, #43)
+
+다중 착용 기록(#39)·일괄 편집(#46)은 아래 구조를 재사용하고 **액션만 추가**한다.
+
+- `item_selection.dart`
+  - `ItemSelection { bool active; Set<int> ids; int count; contains(id) }` — 불변 값.
+  - `wardrobeSelectionProvider` (`ItemSelectionController`):
+    `start([id])` 모드 진입(길게 누르기) · `toggle(id)` · `selectAll(ids)` ·
+    `clear()` 선택만 비움(모드 유지) · `exit()` 모드 종료 · `retainOnly(visibleIds)`
+    목록에서 사라진 옷 선택 해제.
+- `selection_action_bar.dart`
+  - `SelectionActionBar(count, filterSummary, onSelectAll, onClear, onExit, actions)` —
+    선택 수·필터 조건 요약·모두 선택·선택 초기화·종료를 공통 표시한다.
+  - `SelectionAction(label, icon, onPressed)` — 선택 0개면 바가 자동 비활성화한다.
+- 화면 배선(`wardrobe_screen.dart`): 목록 emit마다 `retainOnly`, 홈 카드 진입으로 필터가
+  바뀌면 `exit`, 시스템 뒤로 가기는 선택 모드에서 `exit`. 필터 요약은
+  `wardrobe/filter_summary.dart`의 `describeItemFilter(ItemFilter)`.
+- 타일(`GarmentTile`)은 선택 모드에서 탭=토글, 우상단에 선택 표시, 빠른 동작 메뉴 숨김.
+- 새 액션 추가 예: `SelectionAction(label: '착용 기록', icon: …, onPressed: () => …(selection.ids))`
+  를 `wardrobe_screen.dart`의 `actions`에 넣고, 완료 후 `exit()` + 토스트. 여러 옷 쓰기는
+  repository에 일괄 메서드를 계약(contracts/repositories.md) 먼저 추가해 원자적으로 처리한다.

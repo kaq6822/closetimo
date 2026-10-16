@@ -246,6 +246,29 @@ void main() {
     expect(find.text('셀비지 데님'), findsNothing);
   });
 
+  testWidgets('#33: 검색어가 남은 채 홈 카드로 들어오면 검색어가 초기화되고 카드 범위가 보인다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(items));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '니트');
+    await tester.pumpAndSettle();
+    expect(find.text('셀비지 데님'), findsNothing);
+
+    await _tapTab(tester, BottomNavTab.home);
+    await _tapHomeCard(tester, Category.bottom);
+
+    // 이전 검색어 "니트"가 남아 "검색 결과가 없습니다."가 되던 결함(#33).
+    expect(find.text('셀비지 데님'), findsOneWidget);
+    expect(find.text('검색 결과가 없습니다.'), findsNothing);
+    // 검색창 표시도 함께 비워진다.
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      isEmpty,
+    );
+  });
+
   testWidgets('홈 카드로 필터가 바뀌면 옷장 스크롤이 맨 위로 돌아간다', (tester) async {
     final many = [
       for (var i = 0; i < 12; i++) _item(10 + i, '하의 $i', Category.bottom),

@@ -101,13 +101,20 @@ class _CareTile extends StatelessWidget {
               children: [
                 Icon(icon, size: 20, color: color),
                 const SizedBox(height: ClosetimoSpacing.space10),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: color,
+                // #19 — 큰 글꼴(2.0)에서 "드라이클리/닝"처럼 단어 중간에서
+                // 줄바꿈하지 않도록 한 줄을 유지하고, 넘치면 글자를 줄인다.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
                   ),
                 ),
               ],
