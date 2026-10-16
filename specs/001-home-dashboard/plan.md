@@ -10,7 +10,7 @@
 
 ## Technical Context
 
-**Language/Version**: Dart 3.12+ / Flutter 3.44 (stable)
+**Language/Version**: Dart 3.12+ / Flutter 3.44.x (stable, 검증 기준 3.44.6)
 
 **Primary Dependencies**:
 - `flutter` (UI 프레임워크)

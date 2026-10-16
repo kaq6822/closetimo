@@ -15,29 +15,39 @@
 ```dart
 abstract interface class ItemRepository {
   // ── 읽기(Watch는 Riverpod stream으로 변환) ──
-  Stream<List<Item>> watchAll();                                // FR-005 기반
-  Stream<List<Item>> watchByCategory(Category? c);              // FR-005
+  Stream<List<Item>> watchAll();                                // 보관 포함 전체(raw). 화면은 watchFiltered 사용
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String? query,                                              // 이름·브랜드 검색 FR-006
-    WardrobeSort sort,                                          // FR-007
+    ItemFilter filter = const ItemFilter(),                     // 종류·용도·검색어·보관 FR-005·006, #37·#41·#44
+    required WardrobeSort sort,                                 // FR-007
   });
-  Stream<List<Item>> watchRecentlyWorn({int limit = 2});        // FR-020
+  Stream<List<Item>> watchRecentlyWorn({int limit = 2});        // FR-020 (보관 제외, #44)
 
   Future<Item?> get(int id);                                    // 옷 상세 진입
 
-  Stream<WardrobeStats> watchStats();                           // FR-018, FR-019
+  Stream<WardrobeStats> watchStats();                           // FR-018, FR-019 (보관 제외, #44)
 
   // ── 쓰기 ──
   Future<int> create(NewItemDraft draft);                       // FR-001 → FR-004
-  Future<void> update(int id, ItemPatch patch);                 // (수정 화면용; v1 spec엔 명시 없음)
+  Future<void> update(int id, ItemPatch patch);                 // 002. careMode·purposes 포함 전체 교체
+  Future<void> delete(int id);                                  // 002
 }
 
 class WardrobeStats {
   final int total;
   final int clean;
   final int dirty;
-  final Map<Category, int> perCategory;  // 홈 2x2 카드(FR-019). "기타"는 신발/가방/액세서리/원피스/운동복 합산.
+  final Map<HomeBucket, int> perBucket;  // 홈 2x2 카드(FR-019, #37). 모든 버킷 키 보유, 합 = total.
+}                                        // others('그 외') = 아우터·상의·하의 외 전체(미분류 포함).
+
+class ItemFilter {                        // lib/data/models/item_filter.dart (영속화 X)
+  final Set<Category> categories;        // 비면 전체. 축 안 OR
+  final Set<ItemPurpose> purposes;       // 비면 전체. 축 안 OR, 축 간 AND
+  final String query;                    // 이름·브랜드, 대소문자 무시
+  final ArchiveScope archive;            // #44. active(기본) | archived | all
+  final bool readyToWear;                // #43 '입을 수 있음' = status==clean && !inLaundry (축 간 AND)
+  factory ItemFilter.category(Category c);        // 개별 종류(옷장 칩)
+  factory ItemFilter.homeBucket(HomeBucket b);    // 홈 카드와 같은 범위
+  bool matches(Item item);
 }
 
 enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
@@ -46,7 +56,11 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 ### 검증 / 사이드이펙트
 
 - `create`: `draft.name.trim().isEmpty`이면 `ArgumentError`. 검증 통과 시 `imagePath`는 `ImageStore.copy(draft.tempPhoto)` 결과를 저장. 생성 시 `Item` 기본값(`status=clean`, counts=0, `createdAt=now`).
-- `watchFiltered`의 검색 매칭: `(name ?? '').toLowerCase().contains(q.toLowerCase()) || (brand ?? '').toLowerCase().contains(q.toLowerCase())` (FR-006).
+- `create`: draft의 `category`(기본 미분류)·`careMethod`(기본 미지정)·`careMode`·`purposes`를 저장한다. `purposes`는 중복 제거 후 enum 순서로 정규화.
+- `update`: `ItemPatch`의 편집 필드 전체(`careMode`·`purposes` 포함, 둘 다 required)를 교체하고 `status = item.derivedStatus`로 재평가한다(#45).
+- `watchFiltered`: `filter.matches(item)`을 만족하는 옷만 내보낸다. 검색 매칭은 `name.toLowerCase().contains(q) || (brand ?? '').toLowerCase().contains(q)` (FR-006).
+- `watchStats().perBucket[b]`와 `watchFiltered(filter: ItemFilter.homeBucket(b))`의 결과 수는 항상 같다(#37). 둘 다 보관한 옷을 제외한다(#44).
+- `watchStats`·`watchRecentlyWorn`은 보관한 옷(`archivedAt != null`)을 제외한다(#44, data-model.md §1.2a).
 
 ---
 
@@ -57,18 +71,43 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 ```dart
 abstract interface class LaundryRepository {
   Stream<List<Item>> watchBasket();                  // FR-014 (inLaundry == true)
-  Future<void> toggle(int itemId);                   // FR-012
-  Future<void> completeWashFor(List<int> itemIds);   // FR-016
+  Future<void> toggle(int itemId);                   // FR-012 (관리 방식과 무관, #45)
+  Future<int> completeWashFor(List<int> itemIds);    // FR-016, 처리된 수 반환
 }
 ```
 
 ### 사이드이펙트
 
-- `toggle`: `Item.inLaundry`를 반전. 상태 전이 없음(FR-012 명시).
+- `watchBasket`: `inLaundry == true`이고 보관하지 않은(`archivedAt == null`) 옷(#44).
+- `toggle`: `Item.inLaundry`를 반전. 상태 전이 없음(FR-012 명시). 보관한 옷을 담으려는 호출은 무시한다(#44).
 - `completeWashFor`:
+  0. `inLaundry == true`가 아닌(또는 존재하지 않는) `itemId`는 건너뛰고, 실제 처리한 수를 반환한다(토스트 표시용).
   1. 각 `itemId`의 Item을 `status=clean, wearSinceWash=0, lastWashedAt=now, inLaundry=false`로 갱신(FR-016).
   2. 각 Item에 대해 `WearEvent(kind: wash, occurredAt: now)` 1건 추가(FR-013 타임라인 보강).
   3. 모두 단일 `isar.write`로 묶어 원자성 보장.
+
+---
+
+## 2a. `ArchiveRepository` (#44)
+
+옷 보관·복원. `LaundryRepository`가 `Item.inLaundry`를 다루듯 `Item.archivedAt`·`archiveReason`을 다룬다.
+`ItemRepository`와 분리해 기존 구현·테스트 대역에 영향을 주지 않는다.
+
+```dart
+abstract interface class ArchiveRepository {
+  Stream<List<Item>> watchArchived();                                       // 보관함, archivedAt 내림차순
+  Future<void> archive(int itemId, {ArchiveReason reason = ArchiveReason.unspecified});
+  Future<void> restore(int itemId);
+}
+```
+
+### 사이드이펙트
+
+- `archive`: 단일 `isar.write`로 `archivedAt = now`(이미 보관 중이면 유지), `archiveReason = reason`, `inLaundry = false`.
+  WearEvent·카운터·`status`·사진은 그대로 둔다. 미존재 `itemId`는 no-op.
+- `restore`: `archivedAt = null`, `archiveReason = unspecified`. 기록·카운터·상태 보존, 바구니 자동 재담기 없음. 미존재·활성 옷은 no-op.
+- 연관 규칙: `LaundryRepository.watchBasket`은 보관한 옷을 내보내지 않고, `toggle`은 보관한 옷을 바구니에 **담는** 호출을 무시한다.
+- 삭제(`ItemRepository.delete`)와의 차이: 삭제는 기록까지 제거하고 되돌릴 수 없으며, 보관은 기록을 유지하고 복원할 수 있다.
 
 ---
 
@@ -95,8 +134,8 @@ txn {
   item.wearSinceWash += 1
   item.totalWears    += 1
   item.lastWornAt     = now
-  if item.wearSinceWash >= item.washCycle:
-      item.status = dirty                    # FR-011 자동 전이
+  if item.careMode == wearCycle and item.wearSinceWash >= item.washCycle:
+      item.status = dirty                    # FR-011 자동 전이 (manual이면 전이 없음, #45)
   items.put(item)
   events.put(WearEvent(itemId, kind: wear, occurredAt: now, note: note))
 }
@@ -133,7 +172,11 @@ txn {
   events.delete(eventId)
 
   item = items.get(itemId)
-  item.wearSinceWash = max(0, item.wearSinceWash - 1)
+  # 현재 주기 = 가장 최근 wash 이벤트 이후 wear (같은 occurredAt이면 id가 큰 쪽이 이후).
+  # wash 이벤트가 없으면(카운터만 있는 기존 데이터 포함) 전부 현재 주기.
+  lastWash = events.where().itemIdEqualTo(itemId).filter().kindEqualTo(wash)의 최신 (occurredAt, id)
+  if lastWash == null or (ev.occurredAt, ev.id) > (lastWash.occurredAt, lastWash.id):
+      item.wearSinceWash = max(0, item.wearSinceWash - 1)
   item.totalWears    = max(0, item.totalWears - 1)
   # lastWornAt 재계산: 같은 itemId의 남은 wear 이벤트 중 최신 occurredAt, 없으면 null
   remaining = events

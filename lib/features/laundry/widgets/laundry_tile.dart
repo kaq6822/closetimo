@@ -1,5 +1,6 @@
 // US4 T059 — 세탁 바구니 리스트 타일.
 
+import '../../../core/widgets/item_placeholder.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -154,7 +155,7 @@ class _Thumb extends ConsumerWidget {
   }
 
   Widget _resolve(WidgetRef ref) {
-    if (imagePath == null) return Container(color: fallback);
+    if (imagePath == null) return ItemPlaceholder(color: fallback);
     final store = ref.watch(imageStoreProvider);
     return FutureBuilder<String>(
       future: store.absolutePath(imagePath!),

@@ -2,6 +2,7 @@
 // FR-009a(#47) — 사진이 없으면 3:4 빈 영역 대신 짧은 헤더를, 사진이 있으면
 // 화면 높이의 일정 비율 이내로 제한해 주요 액션이 첫 화면에 들어오게 한다.
 
+import '../../../core/widgets/item_placeholder.dart';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -171,7 +172,7 @@ class _Image extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (imagePath == null) {
-      return Container(color: fallback);
+      return ItemPlaceholder(color: fallback);
     }
     final store = ref.watch(imageStoreProvider);
     return FutureBuilder<String>(

@@ -7,7 +7,9 @@ import 'dart:async';
 import 'package:closetimo/app/theme/app_theme.dart';
 import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/utils/clock.dart';
+import 'package:closetimo/core/widgets/primary_button.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
@@ -61,6 +63,8 @@ class _InMemoryItemRepository implements ItemRepository {
         brand: draft.brand.trim().isEmpty ? null : draft.brand.trim(),
         category: draft.category,
         careMethod: draft.careMethod,
+        careMode: draft.careMode,
+        purposes: draft.purposes,
         washCycle: draft.washCycle,
         createdAt: DateTime.now(),
       )..id = id,
@@ -77,8 +81,7 @@ class _InMemoryItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query = '',
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   }) => watchAll();
 
@@ -100,11 +103,11 @@ class _InMemoryItemRepository implements ItemRepository {
           : patch.brand!.trim()
       ..category = patch.category
       ..careMethod = patch.careMethod
+      ..careMode = patch.careMode
+      ..purposes = patch.purposes
       ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
-      ..purchasedAt = patch.purchasedAt
-      ..status = item.wearSinceWash >= item.washCycle
-          ? ItemStatus.dirty
-          : ItemStatus.clean;
+      ..purchasedAt = patch.purchasedAt;
+    item.status = item.derivedStatus;
   }
 
   @override
@@ -199,6 +202,69 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('#41·#45: 기본값은 미분류·미지정이고 횟수 관리를 끄면 주기 없이 저장된다', (tester) async {
+    final repo = _InMemoryItemRepository();
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '가죽 가방');
+    await tester.pumpAndSettle();
+
+    // #42 — 관리 정보는 접힌 "추가 정보 (선택)" 안에 있다.
+    final optional = find.text('추가 정보 (선택)');
+    await tester.ensureVisible(optional);
+    await tester.tap(optional);
+    await tester.pumpAndSettle();
+
+    // 기본은 횟수 기반: 스테퍼와 '세탁 필요' 안내가 보인다.
+    expect(find.bySemanticsLabel('착용 횟수 늘리기'), findsOneWidget);
+    expect(find.text("설정한 횟수만큼 착용하면 '세탁 필요'로 표시돼요."), findsOneWidget);
+
+    final scrollable = find.byType(Scrollable).first;
+    final toggle = find.text('착용 횟수로 관리');
+    await tester.scrollUntilVisible(toggle, 300, scrollable: scrollable);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('착용 횟수 늘리기'), findsNothing);
+    expect(find.text('횟수와 관계없이 필요할 때 세탁 바구니에 직접 담아요.'), findsOneWidget);
+
+    // 관리 방법 미지정 + 케어 라벨 안내.
+    final careHint = find.textContaining('케어 라벨');
+    await tester.scrollUntilVisible(careHint, 300, scrollable: scrollable);
+    expect(careHint, findsOneWidget);
+    expect(
+      tester.getSemantics(
+        find
+            .ancestor(of: find.text('미지정'), matching: find.byType(Semantics))
+            .first,
+      ),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: true),
+    );
+    // legacy 운동복은 종류로 고를 수 없고 용도 '운동'으로 고른다.
+    expect(find.text('운동복'), findsNothing);
+    final sport = find.text('운동');
+    await tester.scrollUntilVisible(sport, 300, scrollable: scrollable);
+    await tester.tap(sport);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('등록하기'));
+    await tester.pumpAndSettle();
+
+    final saved = repo.items.single;
+    expect(saved.category, Category.uncategorized);
+    expect(saved.careMethod, CareMethod.unspecified);
+    expect(saved.careMode, CareMode.manual);
+    expect(saved.washCycle, 5);
+    expect(saved.purposes, [ItemPurpose.sport]);
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('US1: 명칭이 비어 있으면 등록되지 않는다', (tester) async {
     final repo = _InMemoryItemRepository();
     await tester.pumpWidget(_harness(repo));
@@ -249,6 +315,43 @@ void main() {
 
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('#24: 수정 모드는 변경 전 저장이 비활성이고 변경하면 활성이 된다', (tester) async {
+    final repo = _InMemoryItemRepository();
+    repo.items.add(
+      Item(
+        name: '기존 코트',
+        category: Category.outer,
+        washCycle: 5,
+        createdAt: DateTime(2026, 1, 1),
+      )..id = 1,
+    );
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('openEdit'));
+    await tester.pumpAndSettle();
+
+    VoidCallback? topSave() => tester
+        .widget<TextButton>(
+          find.ancestor(of: find.text('저장'), matching: find.byType(TextButton)),
+        )
+        .onPressed;
+    VoidCallback? bottomSave() =>
+        tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed;
+
+    expect(topSave(), isNull);
+    expect(bottomSave(), isNull);
+
+    await tester.enterText(find.byType(TextField).first, '수정된 코트');
+    await tester.pumpAndSettle();
+    expect(topSave(), isNotNull);
+    expect(bottomSave(), isNotNull);
+
+    // 원래 값으로 되돌리면 다시 비활성
+    await tester.enterText(find.byType(TextField).first, '기존 코트');
+    await tester.pumpAndSettle();
+    expect(topSave(), isNull);
   });
 
   testWidgets('002 US1: 수정 모드에서 명칭을 비우면 수정 완료가 비활성', (tester) async {
@@ -386,6 +489,8 @@ void main() {
     await tester.tap(find.text('openEdit'));
     await tester.pumpAndSettle();
 
+    await tester.enterText(find.byType(TextField).first, '수정된 코트');
+    await tester.pumpAndSettle();
     await tester.tap(find.text('수정 완료'));
     expect(await toastCenterY(tester, '옷 정보를 수정했어요'), lessThan(300));
 
@@ -429,7 +534,7 @@ void main() {
       await openAdd(tester);
 
       expect(find.text('추가 정보 (선택)'), findsOneWidget);
-      expect(find.text('선택 · 고르지 않으면 기타'), findsOneWidget);
+      expect(find.text('선택'), findsOneWidget);
       expect(find.text('이름 또는 사진 중 하나만 있어도 돼요'), findsOneWidget);
       // 접힘 상태에서는 브랜드·구매일 필드를 그리지 않는다.
       expect(find.text('구매일 선택'), findsNothing);
@@ -443,7 +548,7 @@ void main() {
       expect(find.text('구매일 선택'), findsOneWidget);
     });
 
-    testWidgets('이름만 입력하고 등록하면 기본값(기타·주기 5)으로 저장된다', (tester) async {
+    testWidgets('이름만 입력하고 등록하면 기본값(미분류·주기 5)으로 저장된다', (tester) async {
       final repo = await openAdd(tester);
       await tester.enterText(find.byType(TextField).first, '흰 셔츠');
       await tester.pumpAndSettle();
@@ -452,7 +557,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.items, hasLength(1));
-      expect(repo.items.single.category, Category.etc);
+      expect(repo.items.single.category, Category.uncategorized);
       expect(repo.items.single.washCycle, 5);
       expect(find.text('신규 옷 등록'), findsNothing); // pop
       await drainToast(tester);

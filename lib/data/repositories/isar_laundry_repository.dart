@@ -18,6 +18,8 @@ class IsarLaundryRepository implements LaundryRepository {
     return _isar.items
         .where()
         .inLaundryEqualTo(true)
+        .and()
+        .archivedAtIsNull()
         .sortByCreatedAtDesc()
         .watch(fireImmediately: true);
   }
@@ -27,19 +29,23 @@ class IsarLaundryRepository implements LaundryRepository {
     _isar.write((isar) {
       final item = isar.items.get(itemId);
       if (item == null) return;
+      // 보관한 옷은 바구니에 담지 않는다(#44). 담겨 있던 값을 빼는 것은 허용.
+      if (item.isArchived && !item.inLaundry) return;
       item.inLaundry = !item.inLaundry;
       isar.items.put(item);
     });
   }
 
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {
-    if (itemIds.isEmpty) return;
+  Future<int> completeWashFor(List<int> itemIds) async {
+    if (itemIds.isEmpty) return 0;
     final now = _clock.now();
-    _isar.write((isar) {
-      for (final id in itemIds) {
+    return _isar.write((isar) {
+      var processed = 0;
+      for (final id in itemIds.toSet()) {
         final item = isar.items.get(id);
-        if (item == null) continue;
+        // 바구니에 없는 옷은 세탁 완료 대상이 아니다.
+        if (item == null || !item.inLaundry) continue;
         item
           ..status = ItemStatus.clean
           ..wearSinceWash = 0
@@ -52,7 +58,9 @@ class IsarLaundryRepository implements LaundryRepository {
           occurredAt: now,
         )..id = isar.wearEvents.autoIncrement();
         isar.wearEvents.put(event);
+        processed++;
       }
+      return processed;
     });
   }
 }

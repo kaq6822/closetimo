@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NewItemDraft {
 
- String get name; String get brand; Category get category; int get washCycle; CareMethod get careMethod; DateTime? get purchasedAt; File? get tempPhoto;
+ String get name; String get brand; Category get category; List<ItemPurpose> get purposes; int get washCycle; CareMode get careMode; CareMethod get careMethod; DateTime? get purchasedAt; File? get tempPhoto;
 /// Create a copy of NewItemDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $NewItemDraftCopyWith<NewItemDraft> get copyWith => _$NewItemDraftCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewItemDraft&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.tempPhoto, tempPhoto) || other.tempPhoto == tempPhoto));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewItemDraft&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other.purposes, purposes)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMode, careMode) || other.careMode == careMode)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.tempPhoto, tempPhoto) || other.tempPhoto == tempPhoto));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,brand,category,washCycle,careMethod,purchasedAt,tempPhoto);
+int get hashCode => Object.hash(runtimeType,name,brand,category,const DeepCollectionEquality().hash(purposes),washCycle,careMode,careMethod,purchasedAt,tempPhoto);
 
 @override
 String toString() {
-  return 'NewItemDraft(name: $name, brand: $brand, category: $category, washCycle: $washCycle, careMethod: $careMethod, purchasedAt: $purchasedAt, tempPhoto: $tempPhoto)';
+  return 'NewItemDraft(name: $name, brand: $brand, category: $category, purposes: $purposes, washCycle: $washCycle, careMode: $careMode, careMethod: $careMethod, purchasedAt: $purchasedAt, tempPhoto: $tempPhoto)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $NewItemDraftCopyWith<$Res>  {
   factory $NewItemDraftCopyWith(NewItemDraft value, $Res Function(NewItemDraft) _then) = _$NewItemDraftCopyWithImpl;
 @useResult
 $Res call({
- String name, String brand, Category category, int washCycle, CareMethod careMethod, DateTime? purchasedAt, File? tempPhoto
+ String name, String brand, Category category, List<ItemPurpose> purposes, int washCycle, CareMode careMode, CareMethod careMethod, DateTime? purchasedAt, File? tempPhoto
 });
 
 
@@ -62,13 +62,15 @@ class _$NewItemDraftCopyWithImpl<$Res>
 
 /// Create a copy of NewItemDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? brand = null,Object? category = null,Object? washCycle = null,Object? careMethod = null,Object? purchasedAt = freezed,Object? tempPhoto = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? brand = null,Object? category = null,Object? purposes = null,Object? washCycle = null,Object? careMode = null,Object? careMethod = null,Object? purchasedAt = freezed,Object? tempPhoto = freezed,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,brand: null == brand ? _self.brand : brand // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as Category,washCycle: null == washCycle ? _self.washCycle : washCycle // ignore: cast_nullable_to_non_nullable
-as int,careMethod: null == careMethod ? _self.careMethod : careMethod // ignore: cast_nullable_to_non_nullable
+as Category,purposes: null == purposes ? _self.purposes : purposes // ignore: cast_nullable_to_non_nullable
+as List<ItemPurpose>,washCycle: null == washCycle ? _self.washCycle : washCycle // ignore: cast_nullable_to_non_nullable
+as int,careMode: null == careMode ? _self.careMode : careMode // ignore: cast_nullable_to_non_nullable
+as CareMode,careMethod: null == careMethod ? _self.careMethod : careMethod // ignore: cast_nullable_to_non_nullable
 as CareMethod,purchasedAt: freezed == purchasedAt ? _self.purchasedAt : purchasedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,tempPhoto: freezed == tempPhoto ? _self.tempPhoto : tempPhoto // ignore: cast_nullable_to_non_nullable
 as File?,
@@ -156,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String brand,  Category category,  int washCycle,  CareMethod careMethod,  DateTime? purchasedAt,  File? tempPhoto)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String brand,  Category category,  List<ItemPurpose> purposes,  int washCycle,  CareMode careMode,  CareMethod careMethod,  DateTime? purchasedAt,  File? tempPhoto)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewItemDraft() when $default != null:
-return $default(_that.name,_that.brand,_that.category,_that.washCycle,_that.careMethod,_that.purchasedAt,_that.tempPhoto);case _:
+return $default(_that.name,_that.brand,_that.category,_that.purposes,_that.washCycle,_that.careMode,_that.careMethod,_that.purchasedAt,_that.tempPhoto);case _:
   return orElse();
 
 }
@@ -177,10 +179,10 @@ return $default(_that.name,_that.brand,_that.category,_that.washCycle,_that.care
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String brand,  Category category,  int washCycle,  CareMethod careMethod,  DateTime? purchasedAt,  File? tempPhoto)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String brand,  Category category,  List<ItemPurpose> purposes,  int washCycle,  CareMode careMode,  CareMethod careMethod,  DateTime? purchasedAt,  File? tempPhoto)  $default,) {final _that = this;
 switch (_that) {
 case _NewItemDraft():
-return $default(_that.name,_that.brand,_that.category,_that.washCycle,_that.careMethod,_that.purchasedAt,_that.tempPhoto);case _:
+return $default(_that.name,_that.brand,_that.category,_that.purposes,_that.washCycle,_that.careMode,_that.careMethod,_that.purchasedAt,_that.tempPhoto);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +199,10 @@ return $default(_that.name,_that.brand,_that.category,_that.washCycle,_that.care
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String brand,  Category category,  int washCycle,  CareMethod careMethod,  DateTime? purchasedAt,  File? tempPhoto)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String brand,  Category category,  List<ItemPurpose> purposes,  int washCycle,  CareMode careMode,  CareMethod careMethod,  DateTime? purchasedAt,  File? tempPhoto)?  $default,) {final _that = this;
 switch (_that) {
 case _NewItemDraft() when $default != null:
-return $default(_that.name,_that.brand,_that.category,_that.washCycle,_that.careMethod,_that.purchasedAt,_that.tempPhoto);case _:
+return $default(_that.name,_that.brand,_that.category,_that.purposes,_that.washCycle,_that.careMode,_that.careMethod,_that.purchasedAt,_that.tempPhoto);case _:
   return null;
 
 }
@@ -212,13 +214,21 @@ return $default(_that.name,_that.brand,_that.category,_that.washCycle,_that.care
 
 
 class _NewItemDraft extends NewItemDraft {
-  const _NewItemDraft({this.name = '', this.brand = '', this.category = Category.etc, this.washCycle = 5, this.careMethod = CareMethod.machine, this.purchasedAt, this.tempPhoto}): super._();
+  const _NewItemDraft({this.name = '', this.brand = '', this.category = Category.uncategorized, final  List<ItemPurpose> purposes = const <ItemPurpose>[], this.washCycle = 5, this.careMode = CareMode.wearCycle, this.careMethod = CareMethod.unspecified, this.purchasedAt, this.tempPhoto}): _purposes = purposes,super._();
   
 
 @override@JsonKey() final  String name;
 @override@JsonKey() final  String brand;
 @override@JsonKey() final  Category category;
+ final  List<ItemPurpose> _purposes;
+@override@JsonKey() List<ItemPurpose> get purposes {
+  if (_purposes is EqualUnmodifiableListView) return _purposes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_purposes);
+}
+
 @override@JsonKey() final  int washCycle;
+@override@JsonKey() final  CareMode careMode;
 @override@JsonKey() final  CareMethod careMethod;
 @override final  DateTime? purchasedAt;
 @override final  File? tempPhoto;
@@ -233,16 +243,16 @@ _$NewItemDraftCopyWith<_NewItemDraft> get copyWith => __$NewItemDraftCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewItemDraft&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.tempPhoto, tempPhoto) || other.tempPhoto == tempPhoto));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewItemDraft&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other._purposes, _purposes)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMode, careMode) || other.careMode == careMode)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.tempPhoto, tempPhoto) || other.tempPhoto == tempPhoto));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,brand,category,washCycle,careMethod,purchasedAt,tempPhoto);
+int get hashCode => Object.hash(runtimeType,name,brand,category,const DeepCollectionEquality().hash(_purposes),washCycle,careMode,careMethod,purchasedAt,tempPhoto);
 
 @override
 String toString() {
-  return 'NewItemDraft(name: $name, brand: $brand, category: $category, washCycle: $washCycle, careMethod: $careMethod, purchasedAt: $purchasedAt, tempPhoto: $tempPhoto)';
+  return 'NewItemDraft(name: $name, brand: $brand, category: $category, purposes: $purposes, washCycle: $washCycle, careMode: $careMode, careMethod: $careMethod, purchasedAt: $purchasedAt, tempPhoto: $tempPhoto)';
 }
 
 
@@ -253,7 +263,7 @@ abstract mixin class _$NewItemDraftCopyWith<$Res> implements $NewItemDraftCopyWi
   factory _$NewItemDraftCopyWith(_NewItemDraft value, $Res Function(_NewItemDraft) _then) = __$NewItemDraftCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String brand, Category category, int washCycle, CareMethod careMethod, DateTime? purchasedAt, File? tempPhoto
+ String name, String brand, Category category, List<ItemPurpose> purposes, int washCycle, CareMode careMode, CareMethod careMethod, DateTime? purchasedAt, File? tempPhoto
 });
 
 
@@ -270,13 +280,15 @@ class __$NewItemDraftCopyWithImpl<$Res>
 
 /// Create a copy of NewItemDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? brand = null,Object? category = null,Object? washCycle = null,Object? careMethod = null,Object? purchasedAt = freezed,Object? tempPhoto = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? brand = null,Object? category = null,Object? purposes = null,Object? washCycle = null,Object? careMode = null,Object? careMethod = null,Object? purchasedAt = freezed,Object? tempPhoto = freezed,}) {
   return _then(_NewItemDraft(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,brand: null == brand ? _self.brand : brand // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as Category,washCycle: null == washCycle ? _self.washCycle : washCycle // ignore: cast_nullable_to_non_nullable
-as int,careMethod: null == careMethod ? _self.careMethod : careMethod // ignore: cast_nullable_to_non_nullable
+as Category,purposes: null == purposes ? _self._purposes : purposes // ignore: cast_nullable_to_non_nullable
+as List<ItemPurpose>,washCycle: null == washCycle ? _self.washCycle : washCycle // ignore: cast_nullable_to_non_nullable
+as int,careMode: null == careMode ? _self.careMode : careMode // ignore: cast_nullable_to_non_nullable
+as CareMode,careMethod: null == careMethod ? _self.careMethod : careMethod // ignore: cast_nullable_to_non_nullable
 as CareMethod,purchasedAt: freezed == purchasedAt ? _self.purchasedAt : purchasedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,tempPhoto: freezed == tempPhoto ? _self.tempPhoto : tempPhoto // ignore: cast_nullable_to_non_nullable
 as File?,

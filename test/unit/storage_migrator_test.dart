@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/data/migrations/storage_migrator.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/storage_metadata.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/data/models/wear_event.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_plus/isar_plus.dart';
 
 import '../support/isar_plus_test_support.dart';
+import '../support/storage_v1_item_fixture.dart';
 
 class _FixedClock implements Clock {
   const _FixedClock(this.value);
@@ -264,5 +266,225 @@ void main() {
     expect(retried.source, MigrationSource.legacyV3);
     expect(newStore.items.get(404), isNotNull);
     expect(newStore.wearEvents.get(1)!.itemId, 404);
+  });
+
+  test('legacy 운동복은 상의·하의로 추정하지 않고 미분류+용도 운동으로 이전한다(#41)', () async {
+    final snapshot = LegacySnapshot(
+      items: [
+        LegacyItemData(
+          id: 7,
+          name: '러닝 티셔츠',
+          categoryIndex: 7, // v3 시절 Category.activewear
+          careMethodIndex: CareMethod.machine.index,
+          statusIndex: ItemStatus.dirty.index,
+          washCycle: 2,
+          wearSinceWash: 2,
+          totalWears: 6,
+          inLaundry: false,
+          fallbackColor: 0,
+          createdAt: migratedAt.value,
+        ),
+      ],
+      events: const [],
+    );
+    final result =
+        await StorageMigrator(
+          readLegacySnapshot: (_) async => snapshot,
+        ).migrateIfNeeded(
+          newStore: newStore,
+          directory: directory.path,
+          clock: migratedAt,
+        );
+
+    expect(result.source, MigrationSource.legacyV3);
+    final item = newStore.items.get(7)!;
+    expect(item.category, Category.uncategorized);
+    expect(item.purposes, [ItemPurpose.sport]);
+    expect(item.careMode, CareMode.wearCycle);
+    expect(item.careMethod, CareMethod.machine);
+    expect(item.status, ItemStatus.dirty);
+    expect(item.wearSinceWash, 2);
+    expect(
+      newStore.storageMetadatas
+          .get(StorageMetadata.singletonId)!
+          .storageVersion,
+      StorageMetadata.currentStorageVersion,
+    );
+  });
+
+  group('저장소 v1 → v2 업그레이드(#41·#45)', () {
+    // 이전 앱(v1 스키마)이 디스크에 쓴 저장소를 재현한 뒤 현재 스키마로 다시 연다.
+    Isar openV1(String name) => Isar.open(
+      schemas: [
+        ItemV1Schema,
+        WearEventSchema,
+        UserPreferencesSchema,
+        StorageMetadataSchema,
+      ],
+      directory: directory.path,
+      name: name,
+      inspector: false,
+    );
+
+    Isar openCurrent(String name) => Isar.open(
+      schemas: [
+        ItemSchema,
+        WearEventSchema,
+        UserPreferencesSchema,
+        StorageMetadataSchema,
+      ],
+      directory: directory.path,
+      name: name,
+      inspector: false,
+    );
+
+    test('구 데이터를 읽어 운동복만 옮기고 나머지 값·카운터·상태를 보존한다', () async {
+      const name = 'closetimo_v1_fixture';
+      final createdAt = DateTime.utc(2026, 3, 1);
+      final v1 = openV1(name);
+      v1.write((isar) {
+        isar.itemsV1.putAll([
+          ItemV1(
+            name: '요가 레깅스',
+            category: Category.activewear,
+            careMethod: CareMethod.handWash,
+            status: ItemStatus.dirty,
+            washCycle: 2,
+            wearSinceWash: 3,
+            totalWears: 9,
+            inLaundry: true,
+            createdAt: createdAt,
+          )..id = 1,
+          ItemV1(
+            name: '울 코트',
+            category: Category.outer,
+            careMethod: CareMethod.dryClean,
+            washCycle: 10,
+            wearSinceWash: 4,
+            totalWears: 4,
+            createdAt: createdAt,
+          )..id = 2,
+          ItemV1(
+            name: '스니커즈',
+            category: Category.shoes,
+            washCycle: 5,
+            createdAt: createdAt,
+          )..id = 3,
+        ]);
+        isar.storageMetadatas.put(
+          StorageMetadata(
+            storageVersion: 1,
+            migratedAt: createdAt,
+            legacyItemCount: 0,
+            legacyEventCount: 0,
+            source: StorageSource.fresh,
+          ),
+        );
+      });
+      v1.close();
+
+      final store = openCurrent(name);
+      addTearDown(() {
+        if (store.isOpen) store.close(deleteFromDisk: true);
+      });
+
+      // 업그레이드 전에도 새 필드 없이 안전하게 읽힌다(기본값).
+      final before = store.items.get(2)!;
+      expect(before.careMode, CareMode.wearCycle);
+      expect(before.purposes, isEmpty);
+      expect(before.careMethod, CareMethod.dryClean);
+
+      const migrator = StorageMigrator();
+      final first = await migrator.migrateIfNeeded(
+        newStore: store,
+        directory: directory.path,
+        clock: migratedAt,
+      );
+      final second = await migrator.migrateIfNeeded(
+        newStore: store,
+        directory: directory.path,
+        clock: migratedAt,
+      );
+
+      expect(first.source, MigrationSource.upgraded);
+      expect(first.itemCount, 3);
+      expect(second.source, MigrationSource.alreadyMigrated);
+      expect(
+        store.storageMetadatas.get(StorageMetadata.singletonId)!.storageVersion,
+        2,
+      );
+
+      final yoga = store.items.get(1)!;
+      expect(yoga.name, '요가 레깅스');
+      expect(yoga.category, Category.uncategorized);
+      expect(yoga.purposes, [ItemPurpose.sport]);
+      expect(yoga.careMethod, CareMethod.handWash);
+      expect(yoga.careMode, CareMode.wearCycle);
+      expect(yoga.status, ItemStatus.dirty);
+      expect(yoga.wearSinceWash, 3);
+      expect(yoga.totalWears, 9);
+      expect(yoga.inLaundry, isTrue);
+
+      final coat = store.items.get(2)!;
+      expect(coat.category, Category.outer);
+      expect(coat.purposes, isEmpty);
+      expect(coat.wearSinceWash, 4);
+
+      final shoes = store.items.get(3)!;
+      expect(shoes.category, Category.shoes);
+      expect(shoes.careMethod, CareMethod.machine);
+    });
+
+    test('보관 필드(#44)가 없는 구 데이터는 활성 옷으로 읽히고 버전을 올리지 않는다', () async {
+      const name = 'closetimo_v1_archive_fixture';
+      final createdAt = DateTime.utc(2026, 3, 1);
+      final v1 = openV1(name);
+      v1.write((isar) {
+        isar.itemsV1.putAll([
+          ItemV1(
+            name: '린넨 셔츠',
+            category: Category.top,
+            washCycle: 3,
+            wearSinceWash: 1,
+            totalWears: 6,
+            inLaundry: true,
+            createdAt: createdAt,
+          )..id = 1,
+        ]);
+        isar.storageMetadatas.put(
+          StorageMetadata(
+            storageVersion: StorageMetadata.currentStorageVersion,
+            migratedAt: createdAt,
+            legacyItemCount: 0,
+            legacyEventCount: 0,
+            source: StorageSource.fresh,
+          ),
+        );
+      });
+      v1.close();
+
+      final store = openCurrent(name);
+      addTearDown(() {
+        if (store.isOpen) store.close(deleteFromDisk: true);
+      });
+
+      final shirt = store.items.get(1)!;
+      expect(shirt.archivedAt, isNull);
+      expect(shirt.archiveReason, ArchiveReason.unspecified);
+      expect(shirt.isArchived, isFalse);
+      expect(shirt.inLaundry, isTrue);
+      expect(shirt.totalWears, 6);
+      // 기본 필터(활성만)에 그대로 포함된다.
+      expect(const ItemFilter().matches(shirt), isTrue);
+
+      // 추가식 필드라 업그레이드 단계 없이 그대로 유지된다.
+      final result = await const StorageMigrator().migrateIfNeeded(
+        newStore: store,
+        directory: directory.path,
+        clock: migratedAt,
+      );
+      expect(result.source, MigrationSource.alreadyMigrated);
+      expect(store.items.get(1)!.archivedAt, isNull);
+    });
   });
 }

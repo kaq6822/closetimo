@@ -35,7 +35,7 @@
 ### StorageMetadata
 
 - `id`: singleton ID `0`
-- `storageVersion`: 현재 값 `1`
+- `storageVersion`: 003 이전 시점 값 `1`. 이후 형식 변경으로 현재 값은 `2`(001 data-model.md §5 v1 → v2 참조)
 - `migratedAt`: 이전 완료 시각
 - `legacyItemCount`
 - `legacyEventCount`

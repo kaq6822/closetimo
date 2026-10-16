@@ -1,4 +1,4 @@
-// US1 T036 — 세탁 방법 3분할(DRY CLEAN / MACHINE / HAND WASH) 라디오 그리드.
+// US1 T036 — 관리 방법 라디오 그리드. #45 — '미지정'을 추가해 2x2로 배치한다.
 
 import 'package:flutter/material.dart';
 
@@ -20,24 +20,39 @@ class CareMethodPicker extends StatelessWidget {
     CareMethod.dryClean => Icons.circle_outlined,
     CareMethod.machine => Icons.local_laundry_service_outlined,
     CareMethod.handWash => Icons.pan_tool_outlined,
+    CareMethod.unspecified => Icons.help_outline_rounded,
   };
 
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    return Row(
+    Widget tile(CareMethod m) => Expanded(
+      child: _CareTile(
+        icon: _iconOf(m),
+        label: m.label,
+        active: value == m,
+        bg: surfaces.containerLow,
+        activeBg: surfaces.tertiarySoft,
+        onTap: () => onChanged(m),
+      ),
+    );
+    // 표시 순서: 미지정을 먼저 두어 "모르면 비워 둬도 된다"를 드러낸다.
+    const order = [
+      CareMethod.unspecified,
+      CareMethod.machine,
+      CareMethod.handWash,
+      CareMethod.dryClean,
+    ];
+    return Column(
       children: [
-        for (var i = 0; i < CareMethod.values.length; i++) ...[
-          if (i > 0) const SizedBox(width: ClosetimoSpacing.space10),
-          Expanded(
-            child: _CareTile(
-              icon: _iconOf(CareMethod.values[i]),
-              label: CareMethod.values[i].code,
-              active: value == CareMethod.values[i],
-              bg: surfaces.containerLow,
-              activeBg: surfaces.tertiarySoft,
-              onTap: () => onChanged(CareMethod.values[i]),
-            ),
+        for (var row = 0; row < order.length; row += 2) ...[
+          if (row > 0) const SizedBox(height: ClosetimoSpacing.space10),
+          Row(
+            children: [
+              tile(order[row]),
+              const SizedBox(width: ClosetimoSpacing.space10),
+              tile(order[row + 1]),
+            ],
           ),
         ],
       ],
@@ -65,32 +80,45 @@ class _CareTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = active ? ClosetimoColors.tertiary : ClosetimoColors.ink;
-    return Material(
-      color: active ? activeBg : bg,
-      borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-      child: InkWell(
-        onTap: onTap,
+    // 선택 상태를 색 외에 시맨틱으로도 노출한다.
+    return Semantics(
+      container: true,
+      button: true,
+      selected: active,
+      child: Material(
+        color: active ? activeBg : bg,
         borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: ClosetimoSpacing.space8,
-            vertical: ClosetimoSpacing.md,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(height: ClosetimoSpacing.space10),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: ClosetimoSpacing.space8,
+              vertical: ClosetimoSpacing.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(height: ClosetimoSpacing.space10),
+                // #19 — 큰 글꼴(2.0)에서 "드라이클리/닝"처럼 단어 중간에서
+                // 줄바꿈하지 않도록 한 줄을 유지하고, 넘치면 글자를 줄인다.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

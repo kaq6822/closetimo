@@ -36,13 +36,14 @@ final ItemSchema = IsarGeneratedSchema(
           "accessory": 6,
           "activewear": 7,
           "etc": 8,
+          "uncategorized": 9,
         },
       ),
       IsarPropertySchema(
         name: 'careMethod',
         type: IsarType.byte,
 
-        enumMap: {"dryClean": 0, "machine": 1, "handWash": 2},
+        enumMap: {"dryClean": 0, "machine": 1, "handWash": 2, "unspecified": 3},
       ),
       IsarPropertySchema(
         name: 'status',
@@ -60,6 +61,25 @@ final ItemSchema = IsarGeneratedSchema(
       IsarPropertySchema(name: 'imagePath', type: IsarType.string),
       IsarPropertySchema(name: 'fallbackColor', type: IsarType.long),
       IsarPropertySchema(name: 'createdAt', type: IsarType.dateTime),
+      IsarPropertySchema(
+        name: 'careMode',
+        type: IsarType.byte,
+
+        enumMap: {"wearCycle": 0, "manual": 1},
+      ),
+      IsarPropertySchema(
+        name: 'purposes',
+        type: IsarType.byteList,
+
+        enumMap: {"sport": 0},
+      ),
+      IsarPropertySchema(name: 'archivedAt', type: IsarType.dateTime),
+      IsarPropertySchema(
+        name: 'archiveReason',
+        type: IsarType.byte,
+
+        enumMap: {"unspecified": 0, "seasonal": 1, "noLongerOwned": 2},
+      ),
     ],
     indexes: [
       IsarIndexSchema(
@@ -149,6 +169,21 @@ int serializeItem(IsarWriter writer, Item object) {
     15,
     object.createdAt.toUtc().microsecondsSinceEpoch,
   );
+  IsarCore.writeByte(writer, 16, object.careMode.index);
+  {
+    final list = object.purposes;
+    final listWriter = IsarCore.beginList(writer, 17, list.length);
+    for (var i = 0; i < list.length; i++) {
+      IsarCore.writeByte(listWriter, i, list[i].index);
+    }
+    IsarCore.endList(writer, listWriter);
+  }
+  IsarCore.writeLong(
+    writer,
+    18,
+    object.archivedAt?.toUtc().microsecondsSinceEpoch ?? -9223372036854775808,
+  );
+  IsarCore.writeByte(writer, 19, object.archiveReason.index);
   return object.id;
 }
 
@@ -169,10 +204,11 @@ Item deserializeItem(IsarReader reader) {
   final CareMethod _careMethod;
   {
     if (IsarCore.readNull(reader, 4)) {
-      _careMethod = CareMethod.machine;
+      _careMethod = CareMethod.unspecified;
     } else {
       _careMethod =
-          _itemCareMethod[IsarCore.readByte(reader, 4)] ?? CareMethod.machine;
+          _itemCareMethod[IsarCore.readByte(reader, 4)] ??
+          CareMethod.unspecified;
     }
   }
   final ItemStatus _status;
@@ -267,6 +303,66 @@ Item deserializeItem(IsarReader reader) {
       ).toLocal();
     }
   }
+  final CareMode _careMode;
+  {
+    if (IsarCore.readNull(reader, 16)) {
+      _careMode = CareMode.wearCycle;
+    } else {
+      _careMode =
+          _itemCareMode[IsarCore.readByte(reader, 16)] ?? CareMode.wearCycle;
+    }
+  }
+  final List<ItemPurpose> _purposes;
+  {
+    final length = IsarCore.readList(reader, 17, IsarCore.readerPtrPtr);
+    {
+      final reader = IsarCore.readerPtr;
+      if (reader.isNull) {
+        _purposes = const [];
+      } else {
+        final list = List<ItemPurpose>.filled(
+          length,
+          ItemPurpose.sport,
+          growable: true,
+        );
+        for (var i = 0; i < length; i++) {
+          {
+            if (IsarCore.readNull(reader, i)) {
+              list[i] = ItemPurpose.sport;
+            } else {
+              list[i] =
+                  _itemPurposes[IsarCore.readByte(reader, i)] ??
+                  ItemPurpose.sport;
+            }
+          }
+        }
+        IsarCore.freeReader(reader);
+        _purposes = list;
+      }
+    }
+  }
+  final DateTime? _archivedAt;
+  {
+    final value = IsarCore.readLong(reader, 18);
+    if (value == -9223372036854775808) {
+      _archivedAt = null;
+    } else {
+      _archivedAt = DateTime.fromMicrosecondsSinceEpoch(
+        value,
+        isUtc: true,
+      ).toLocal();
+    }
+  }
+  final ArchiveReason _archiveReason;
+  {
+    if (IsarCore.readNull(reader, 19)) {
+      _archiveReason = ArchiveReason.unspecified;
+    } else {
+      _archiveReason =
+          _itemArchiveReason[IsarCore.readByte(reader, 19)] ??
+          ArchiveReason.unspecified;
+    }
+  }
   final object = Item(
     name: _name,
     brand: _brand,
@@ -283,6 +379,10 @@ Item deserializeItem(IsarReader reader) {
     imagePath: _imagePath,
     fallbackColor: _fallbackColor,
     createdAt: _createdAt,
+    careMode: _careMode,
+    purposes: _purposes,
+    archivedAt: _archivedAt,
+    archiveReason: _archiveReason,
   );
   object.id = IsarCore.readId(reader);
   return object;
@@ -308,10 +408,10 @@ dynamic deserializeItemProp(IsarReader reader, int property) {
     case 4:
       {
         if (IsarCore.readNull(reader, 4)) {
-          return CareMethod.machine;
+          return CareMethod.unspecified;
         } else {
           return _itemCareMethod[IsarCore.readByte(reader, 4)] ??
-              CareMethod.machine;
+              CareMethod.unspecified;
         }
       }
     case 5:
@@ -403,6 +503,65 @@ dynamic deserializeItemProp(IsarReader reader, int property) {
           ).toLocal();
         }
       }
+    case 16:
+      {
+        if (IsarCore.readNull(reader, 16)) {
+          return CareMode.wearCycle;
+        } else {
+          return _itemCareMode[IsarCore.readByte(reader, 16)] ??
+              CareMode.wearCycle;
+        }
+      }
+    case 17:
+      {
+        final length = IsarCore.readList(reader, 17, IsarCore.readerPtrPtr);
+        {
+          final reader = IsarCore.readerPtr;
+          if (reader.isNull) {
+            return const [];
+          } else {
+            final list = List<ItemPurpose>.filled(
+              length,
+              ItemPurpose.sport,
+              growable: true,
+            );
+            for (var i = 0; i < length; i++) {
+              {
+                if (IsarCore.readNull(reader, i)) {
+                  list[i] = ItemPurpose.sport;
+                } else {
+                  list[i] =
+                      _itemPurposes[IsarCore.readByte(reader, i)] ??
+                      ItemPurpose.sport;
+                }
+              }
+            }
+            IsarCore.freeReader(reader);
+            return list;
+          }
+        }
+      }
+    case 18:
+      {
+        final value = IsarCore.readLong(reader, 18);
+        if (value == -9223372036854775808) {
+          return null;
+        } else {
+          return DateTime.fromMicrosecondsSinceEpoch(
+            value,
+            isUtc: true,
+          ).toLocal();
+        }
+      }
+    case 19:
+      {
+        if (IsarCore.readNull(reader, 19)) {
+          return ArchiveReason.unspecified;
+        } else {
+          return _itemArchiveReason[IsarCore.readByte(reader, 19)] ??
+              ArchiveReason.unspecified;
+        }
+      }
     default:
       throw ArgumentError('Unknown property: $property');
   }
@@ -426,6 +585,9 @@ sealed class _ItemUpdate {
     String? imagePath,
     int? fallbackColor,
     DateTime? createdAt,
+    CareMode? careMode,
+    DateTime? archivedAt,
+    ArchiveReason? archiveReason,
   });
 }
 
@@ -452,6 +614,9 @@ class _ItemUpdateImpl implements _ItemUpdate {
     Object? imagePath = ignore,
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
+    Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     return collection.updateProperties(
           [id],
@@ -471,6 +636,9 @@ class _ItemUpdateImpl implements _ItemUpdate {
             if (imagePath != ignore) 13: imagePath as String?,
             if (fallbackColor != ignore) 14: fallbackColor as int?,
             if (createdAt != ignore) 15: createdAt as DateTime?,
+            if (careMode != ignore) 16: careMode as CareMode?,
+            if (archivedAt != ignore) 18: archivedAt as DateTime?,
+            if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
           },
         ) >
         0;
@@ -495,6 +663,9 @@ sealed class _ItemUpdateAll {
     String? imagePath,
     int? fallbackColor,
     DateTime? createdAt,
+    CareMode? careMode,
+    DateTime? archivedAt,
+    ArchiveReason? archiveReason,
   });
 }
 
@@ -521,6 +692,9 @@ class _ItemUpdateAllImpl implements _ItemUpdateAll {
     Object? imagePath = ignore,
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
+    Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     return collection.updateProperties(id, {
       if (name != ignore) 1: name as String?,
@@ -538,6 +712,9 @@ class _ItemUpdateAllImpl implements _ItemUpdateAll {
       if (imagePath != ignore) 13: imagePath as String?,
       if (fallbackColor != ignore) 14: fallbackColor as int?,
       if (createdAt != ignore) 15: createdAt as DateTime?,
+      if (careMode != ignore) 16: careMode as CareMode?,
+      if (archivedAt != ignore) 18: archivedAt as DateTime?,
+      if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
     });
   }
 }
@@ -565,6 +742,9 @@ sealed class _ItemQueryUpdate {
     String? imagePath,
     int? fallbackColor,
     DateTime? createdAt,
+    CareMode? careMode,
+    DateTime? archivedAt,
+    ArchiveReason? archiveReason,
   });
 }
 
@@ -591,6 +771,9 @@ class _ItemQueryUpdateImpl implements _ItemQueryUpdate {
     Object? imagePath = ignore,
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
+    Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     return query.updateProperties(limit: limit, {
       if (name != ignore) 1: name as String?,
@@ -608,6 +791,9 @@ class _ItemQueryUpdateImpl implements _ItemQueryUpdate {
       if (imagePath != ignore) 13: imagePath as String?,
       if (fallbackColor != ignore) 14: fallbackColor as int?,
       if (createdAt != ignore) 15: createdAt as DateTime?,
+      if (careMode != ignore) 16: careMode as CareMode?,
+      if (archivedAt != ignore) 18: archivedAt as DateTime?,
+      if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
     });
   }
 }
@@ -641,6 +827,9 @@ class _ItemQueryBuilderUpdateImpl implements _ItemQueryUpdate {
     Object? imagePath = ignore,
     Object? fallbackColor = ignore,
     Object? createdAt = ignore,
+    Object? careMode = ignore,
+    Object? archivedAt = ignore,
+    Object? archiveReason = ignore,
   }) {
     final q = query.build();
     try {
@@ -660,6 +849,9 @@ class _ItemQueryBuilderUpdateImpl implements _ItemQueryUpdate {
         if (imagePath != ignore) 13: imagePath as String?,
         if (fallbackColor != ignore) 14: fallbackColor as int?,
         if (createdAt != ignore) 15: createdAt as DateTime?,
+        if (careMode != ignore) 16: careMode as CareMode?,
+        if (archivedAt != ignore) 18: archivedAt as DateTime?,
+        if (archiveReason != ignore) 19: archiveReason as ArchiveReason?,
       });
     } finally {
       q.close();
@@ -684,13 +876,22 @@ const _itemCategory = {
   6: Category.accessory,
   7: Category.activewear,
   8: Category.etc,
+  9: Category.uncategorized,
 };
 const _itemCareMethod = {
   0: CareMethod.dryClean,
   1: CareMethod.machine,
   2: CareMethod.handWash,
+  3: CareMethod.unspecified,
 };
 const _itemStatus = {0: ItemStatus.clean, 1: ItemStatus.dirty};
+const _itemCareMode = {0: CareMode.wearCycle, 1: CareMode.manual};
+const _itemPurposes = {0: ItemPurpose.sport};
+const _itemArchiveReason = {
+  0: ArchiveReason.unspecified,
+  1: ArchiveReason.seasonal,
+  2: ArchiveReason.noLongerOwned,
+};
 
 extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
   QueryBuilder<Item, Item, QAfterFilterCondition> idEqualTo(int value) {
@@ -1945,6 +2146,269 @@ extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
       );
     });
   }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> careModeEqualTo(
+    CareMode value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 16, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> careModeGreaterThan(
+    CareMode value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 16, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> careModeGreaterThanOrEqualTo(
+    CareMode value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 16, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> careModeLessThan(
+    CareMode value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 16, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> careModeLessThanOrEqualTo(
+    CareMode value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 16, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> careModeBetween(
+    CareMode lower,
+    CareMode upper,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 16, lower: lower.index, upper: upper.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> purposesElementEqualTo(
+    ItemPurpose value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 17, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> purposesElementGreaterThan(
+    ItemPurpose value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 17, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  purposesElementGreaterThanOrEqualTo(ItemPurpose value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 17, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> purposesElementLessThan(
+    ItemPurpose value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 17, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  purposesElementLessThanOrEqualTo(ItemPurpose value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 17, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> purposesElementBetween(
+    ItemPurpose lower,
+    ItemPurpose upper,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 17, lower: lower.index, upper: upper.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> purposesIsEmpty() {
+    return not().purposesIsNotEmpty();
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> purposesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const GreaterOrEqualCondition(property: 17, value: null),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 18));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtIsNotNull() {
+    return QueryBuilder.apply(not(), (query) {
+      return query.addFilterCondition(const IsNullCondition(property: 18));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtEqualTo(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtGreaterThan(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  archivedAtGreaterThanOrEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtLessThan(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtLessThanOrEqualTo(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 18, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archivedAtBetween(
+    DateTime? lower,
+    DateTime? upper,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 18, lower: lower, upper: upper),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonEqualTo(
+    ArchiveReason value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonGreaterThan(
+    ArchiveReason value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  archiveReasonGreaterThanOrEqualTo(ArchiveReason value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonLessThan(
+    ArchiveReason value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  archiveReasonLessThanOrEqualTo(ArchiveReason value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(property: 19, value: value.index),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> archiveReasonBetween(
+    ArchiveReason lower,
+    ArchiveReason upper,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(property: 19, lower: lower.index, upper: upper.index),
+      );
+    });
+  }
 }
 
 extension ItemQueryObject on QueryBuilder<Item, Item, QFilterCondition> {}
@@ -2153,6 +2617,42 @@ extension ItemQuerySortBy on QueryBuilder<Item, Item, QSortBy> {
       return query.addSortBy(15, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByCareMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(16);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByCareModeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(16, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchivedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchivedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchiveReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByArchiveReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19, sort: Sort.desc);
+    });
+  }
 }
 
 extension ItemQuerySortThenBy on QueryBuilder<Item, Item, QSortThenBy> {
@@ -2359,6 +2859,42 @@ extension ItemQuerySortThenBy on QueryBuilder<Item, Item, QSortThenBy> {
       return query.addSortBy(15, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByCareMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(16);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByCareModeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(16, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchivedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchivedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(18, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchiveReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByArchiveReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(19, sort: Sort.desc);
+    });
+  }
 }
 
 extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
@@ -2455,6 +2991,30 @@ extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
   QueryBuilder<Item, Item, QAfterDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(15);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterDistinct> distinctByCareMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(16);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterDistinct> distinctByPurposes() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(17);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterDistinct> distinctByArchivedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(18);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterDistinct> distinctByArchiveReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(19);
     });
   }
 }
@@ -2555,6 +3115,30 @@ extension ItemQueryProperty1 on QueryBuilder<Item, Item, QProperty> {
       return query.addProperty(15);
     });
   }
+
+  QueryBuilder<Item, CareMode, QAfterProperty> careModeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(16);
+    });
+  }
+
+  QueryBuilder<Item, List<ItemPurpose>, QAfterProperty> purposesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(17);
+    });
+  }
+
+  QueryBuilder<Item, DateTime?, QAfterProperty> archivedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(18);
+    });
+  }
+
+  QueryBuilder<Item, ArchiveReason, QAfterProperty> archiveReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(19);
+    });
+  }
 }
 
 extension ItemQueryProperty2<R> on QueryBuilder<Item, R, QAfterProperty> {
@@ -2651,6 +3235,32 @@ extension ItemQueryProperty2<R> on QueryBuilder<Item, R, QAfterProperty> {
   QueryBuilder<Item, (R, DateTime), QAfterProperty> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(15);
+    });
+  }
+
+  QueryBuilder<Item, (R, CareMode), QAfterProperty> careModeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(16);
+    });
+  }
+
+  QueryBuilder<Item, (R, List<ItemPurpose>), QAfterProperty>
+  purposesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(17);
+    });
+  }
+
+  QueryBuilder<Item, (R, DateTime?), QAfterProperty> archivedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(18);
+    });
+  }
+
+  QueryBuilder<Item, (R, ArchiveReason), QAfterProperty>
+  archiveReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(19);
     });
   }
 }
@@ -2750,6 +3360,32 @@ extension ItemQueryProperty3<R1, R2>
   QueryBuilder<Item, (R1, R2, DateTime), QOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(15);
+    });
+  }
+
+  QueryBuilder<Item, (R1, R2, CareMode), QOperations> careModeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(16);
+    });
+  }
+
+  QueryBuilder<Item, (R1, R2, List<ItemPurpose>), QOperations>
+  purposesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(17);
+    });
+  }
+
+  QueryBuilder<Item, (R1, R2, DateTime?), QOperations> archivedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(18);
+    });
+  }
+
+  QueryBuilder<Item, (R1, R2, ArchiveReason), QOperations>
+  archiveReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(19);
     });
   }
 }

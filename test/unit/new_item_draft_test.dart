@@ -31,8 +31,8 @@ void main() {
   });
 
   group('#42 빠른 등록 규칙', () {
-    test('기본 카테고리는 기타(미분류)다', () {
-      expect(const NewItemDraft().category, Category.etc);
+    test('기본 종류는 미분류다(#41 기본값 위에서 동작)', () {
+      expect(const NewItemDraft().category, Category.uncategorized);
     });
 
     test('명칭도 사진도 없으면 빠른 저장 불가', () {

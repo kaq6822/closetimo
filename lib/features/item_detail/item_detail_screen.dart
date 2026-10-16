@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/bottom_nav.dart';
 import '../../core/widgets/chip_filter.dart';
 import '../../core/widgets/primary_button.dart';
@@ -16,6 +18,7 @@ import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
 import '../../data/models/wear_event.dart';
 import '../../data/providers/app_providers.dart';
+import 'widgets/archive_item_dialog.dart';
 import 'widgets/delete_event_dialog.dart';
 import 'widgets/delete_item_dialog.dart';
 import 'widgets/edit_note_sheet.dart';
@@ -122,6 +125,30 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     await _refresh();
   }
 
+  // #44 — 기록을 남긴 채 활성 옷장에서 뺀다. 상세에 머물러 바로 되돌릴 수 있게 한다.
+  Future<void> _archive() async {
+    final reason = await ArchiveItemDialog.show(context);
+    if (reason == null) return;
+    await ref
+        .read(archiveRepositoryProvider)
+        .archive(widget.id, reason: reason);
+    await _refresh();
+    if (!context.mounted) return;
+    showClosetimoToast(
+      context,
+      '보관함으로 옮겼어요. 기록은 그대로 남아요',
+      placement: ToastPlacement.top,
+    );
+  }
+
+  // #44 — 보관을 해제해 기록을 유지한 채 활성 옷장으로 되돌린다.
+  Future<void> _restore() async {
+    await ref.read(archiveRepositoryProvider).restore(widget.id);
+    await _refresh();
+    if (!context.mounted) return;
+    showClosetimoToast(context, '옷장으로 다시 꺼냈어요', placement: ToastPlacement.top);
+  }
+
   // 002 FR-008~012 — 확인 후 옷을 삭제하고 옷장으로 복귀한다.
   Future<void> _delete() async {
     final ok = await DeleteItemDialog.confirm(context);
@@ -161,15 +188,28 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               rightSlot: PopupMenuButton<String>(
                 icon: const Icon(Icons.more_horiz_rounded),
                 onSelected: (value) {
-                  if (value == 'edit') {
-                    _edit();
-                  } else if (value == 'delete') {
-                    _delete();
+                  switch (value) {
+                    case 'edit':
+                      _edit();
+                    case 'archive':
+                      _archive();
+                    case 'restore':
+                      _restore();
+                    case 'delete':
+                      _delete();
                   }
                 },
-                itemBuilder: (ctx) => const [
-                  PopupMenuItem(value: 'edit', child: Text('수정하기')),
-                  PopupMenuItem(value: 'delete', child: Text('삭제하기')),
+                // #44 — 보관(기록 유지)과 삭제(기록까지 제거)를 나란히 두어 구분한다.
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(value: 'edit', child: Text('수정하기')),
+                  if (item.isArchived)
+                    const PopupMenuItem(
+                      value: 'restore',
+                      child: Text('옷장으로 꺼내기'),
+                    )
+                  else
+                    const PopupMenuItem(value: 'archive', child: Text('보관하기')),
+                  const PopupMenuItem(value: 'delete', child: Text('삭제하기')),
                 ],
               ),
             ),
@@ -224,17 +264,30 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     // FR-009a(#47) — 주요 기록 액션을 통계 카드보다 먼저 둬
                     // 첫 화면 안에서 닿게 한다. 통계는 액션 아래로 내린다.
                     const SizedBox(height: ClosetimoSpacing.xl),
-                    PrimaryButton(
-                      label: '착용 기록하기',
-                      leading: const Icon(Icons.add_rounded),
-                      onPressed: _recordWear,
-                    ),
-                    const SizedBox(height: ClosetimoSpacing.space12),
-                    SoftButton(
-                      label: item.inLaundry ? '바구니에서 제외' : '세탁 바구니',
-                      leading: const Icon(Icons.local_laundry_service_rounded),
-                      onPressed: _toggleLaundry,
-                    ),
+                    // #44 — 보관한 옷은 착용 기록·바구니 담기 대신 복원만 제공한다.
+                    if (item.isArchived) ...[
+                      _ArchivedNotice(item: item),
+                      const SizedBox(height: ClosetimoSpacing.space12),
+                      PrimaryButton(
+                        label: '옷장으로 꺼내기',
+                        leading: const Icon(Icons.unarchive_outlined),
+                        onPressed: _restore,
+                      ),
+                    ] else ...[
+                      PrimaryButton(
+                        label: '착용 기록하기',
+                        leading: const Icon(Icons.add_rounded),
+                        onPressed: _recordWear,
+                      ),
+                      const SizedBox(height: ClosetimoSpacing.space12),
+                      SoftButton(
+                        label: item.inLaundry ? '바구니에서 제외' : '세탁 바구니',
+                        leading: const Icon(
+                          Icons.local_laundry_service_rounded,
+                        ),
+                        onPressed: _toggleLaundry,
+                      ),
+                    ],
                     const SizedBox(height: ClosetimoSpacing.space26),
                     StatsGrid(item: item),
                     const SizedBox(height: ClosetimoSpacing.xxl),
@@ -259,6 +312,56 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// #44 — 보관 중인 옷 안내. 사유·보관일과 함께 "기록은 남아 있다"는 점을 알린다.
+class _ArchivedNotice extends StatelessWidget {
+  const _ArchivedNotice({required this.item});
+
+  final Item item;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
+    final reason = item.archiveReason == ArchiveReason.unspecified
+        ? null
+        : item.archiveReason.label;
+    final headline = [
+      '보관 중',
+      ?reason,
+      '${formatFullDate(item.archivedAt!)} 보관',
+    ].join(' · ');
+    return Container(
+      padding: const EdgeInsets.all(ClosetimoSpacing.md),
+      decoration: BoxDecoration(
+        color: surfaces.containerLow,
+        borderRadius: BorderRadius.circular(ClosetimoRadius.lgPlus),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            headline,
+            style: const TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: ClosetimoColors.ink,
+            ),
+          ),
+          const SizedBox(height: ClosetimoSpacing.space4),
+          const Text(
+            '옷장·홈 통계·세탁 바구니에서 빠져 있어요. 착용·세탁 기록은 그대로 남아 있어요.',
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 12,
+              color: ClosetimoColors.muted,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -25,7 +25,7 @@ class _FakeLaundryRepo implements LaundryRepository {
   @override
   Future<void> toggle(int itemId) async {}
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {}
+  Future<int> completeWashFor(List<int> itemIds) async => itemIds.length;
 }
 
 Item _item(int id, {String? imagePath}) => Item(

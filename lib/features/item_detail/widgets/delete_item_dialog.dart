@@ -13,7 +13,12 @@ class DeleteItemDialog {
       builder: (ctx) => AlertDialog(
         title: const Text('이 옷을 삭제할까요?'),
         // 좁은 화면에서 단어 중간 줄바꿈('없어\n요')을 피하도록 수동 개행.
-        content: const Text('착용·세탁 기록도 함께 사라지고\n되돌릴 수 없어요.'),
+        // #44 — 보관(기록 유지)과 구분되도록 기록까지 지워짐을 명시한다.
+        content: const Text(
+          '사진과 착용·세탁 기록까지 모두 지워지고\n'
+          '되돌릴 수 없어요.\n'
+          '기록을 남기려면 \'보관하기\'를 이용하세요.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
