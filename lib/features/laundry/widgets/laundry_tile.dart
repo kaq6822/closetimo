@@ -11,6 +11,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../core/persistence/image_store.dart';
+import '../../../core/widgets/min_touch_target.dart';
 import '../../../core/widgets/progress_bar.dart';
 import '../../../data/models/item.dart';
 
@@ -38,7 +39,14 @@ class LaundryTile extends ConsumerWidget {
         ? 0.0
         : (item.wearSinceWash / item.washCycle).clamp(0.0, 1.0);
     return Container(
-      padding: const EdgeInsets.all(ClosetimoSpacing.space14),
+      // #49 — 우측 체크의 48×48 터치 영역 여백만큼 오른쪽 패딩을 줄여 체크 원의
+      // 시각 위치를 유지한다.
+      padding: const EdgeInsets.fromLTRB(
+        ClosetimoSpacing.space14,
+        ClosetimoSpacing.space14,
+        ClosetimoSpacing.space4,
+        ClosetimoSpacing.space14,
+      ),
       decoration: BoxDecoration(
         color: selected ? surfaces.bgMintSoft : surfaces.containerLowest,
         borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
@@ -124,7 +132,7 @@ class LaundryTile extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: ClosetimoSpacing.space10),
+          const SizedBox(width: ClosetimoSpacing.space2),
           _CheckCircle(
             label: '${item.name} 선택',
             selected: selected,
@@ -184,29 +192,41 @@ class _CheckCircle extends StatelessWidget {
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
     // #17 — 원형 체크는 시각 상태만 있어 TalkBack이 이름·체크 여부를 읽지 못했다.
-    return Semantics(
-      container: true,
-      label: label,
-      checked: selected,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: ClosetimoSpacing.space28,
-          height: ClosetimoSpacing.space28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: selected
-                ? ClosetimoColors.primary
-                : surfaces.containerHighest,
+    // #49 — 시각 원(28)은 유지하고 터치 영역을 48×48로 넓힌다. 비선택 상태도
+    // 체크 컨트롤로 보이도록 빈 원 윤곽선을 그린다.
+    return MinTouchTarget(
+      onTap: onTap,
+      child: Semantics(
+        container: true,
+        label: label,
+        checked: selected,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            key: const ValueKey('laundryCheckVisual'),
+            width: ClosetimoSpacing.space28,
+            height: ClosetimoSpacing.space28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected
+                  ? ClosetimoColors.primary
+                  : surfaces.containerLowest,
+              border: selected
+                  ? null
+                  : Border.all(
+                      color: ClosetimoColors.muted,
+                      width: ClosetimoSize.controlOutline,
+                    ),
+            ),
+            child: selected
+                ? const Icon(
+                    Icons.check_rounded,
+                    size: 16,
+                    color: ClosetimoColors.onPrimary,
+                  )
+                : null,
           ),
-          child: selected
-              ? const Icon(
-                  Icons.check_rounded,
-                  size: 16,
-                  color: ClosetimoColors.onPrimary,
-                )
-              : null,
         ),
       ),
     );

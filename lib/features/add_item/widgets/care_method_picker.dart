@@ -81,13 +81,24 @@ class _CareTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = active ? ClosetimoColors.tertiary : ClosetimoColors.ink;
     // 선택 상태를 색 외에 시맨틱으로도 노출한다.
+    // #49(UI-15) — 단일 선택 그룹임을 알리고(inMutuallyExclusiveGroup), 선택 타일에는
+    // 색 외 단서로 테두리를 그린다.
     return Semantics(
       container: true,
       button: true,
       selected: active,
+      inMutuallyExclusiveGroup: true,
       child: Material(
         color: active ? activeBg : bg,
-        borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+          side: active
+              ? const BorderSide(
+                  color: ClosetimoColors.tertiary,
+                  width: ClosetimoSize.controlOutline,
+                )
+              : BorderSide.none,
+        ),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(ClosetimoRadius.lg),

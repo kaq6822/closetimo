@@ -24,3 +24,6 @@ app/
 - 토큰 정의는 `.specify/memory/design.md`("The Digital Atelier")를 근거로 한다. 임의 값 추가 금지.
 - 토큰 변경 후 `dart run tool/check_design_tokens.dart`로 하드코딩 위반이 없는지 확인한다.
 - 이 레이어는 `features/`를 import할 수 있다(라우트 → 화면 연결). 반대 방향은 라우트 이름 상수로만 참조한다.
+- **터치 영역 토큰(#49)**: 탭 가능한 컨트롤의 최소 터치 크기는 `ClosetimoSize.minTouchTarget`(48dp)이다.
+  체크 윤곽선·선택 테두리 두께는 `ClosetimoSize.controlOutline`. 컨트롤 치수에 새 숫자가 필요하면
+  `ClosetimoSize`에 토큰을 추가한다.
