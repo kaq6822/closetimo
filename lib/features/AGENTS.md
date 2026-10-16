@@ -55,3 +55,7 @@ features/
 - 새 액션 추가 예: `SelectionAction(label: '착용 기록', icon: …, onPressed: () => …(selection.ids))`
   를 `wardrobe_screen.dart`의 `actions`에 넣고, 완료 후 `exit()` + 토스트. 여러 옷 쓰기는
   repository에 일괄 메서드를 계약(contracts/repositories.md) 먼저 추가해 원자적으로 처리한다.
+- 구현 예(#39): `selection/wear_record_action.dart`의 `wearRecordSelectionAction(context, ref, ids)` —
+  액션 흐름을 별도 파일에 두고 `actions`에는 한 줄만 추가한다. 착용 기록 시트(`WearRecordSheet`,
+  날짜·메모)는 옷 상세와 공유하므로 `lib/core/widgets/`에 있다. 직후 실행 취소는
+  `showClosetimoToast(actionLabel:, onAction:)`.

@@ -1,5 +1,6 @@
 // US2 T045 — 옷장 탭. 검색·필터·정렬 + 2 컬럼 그리드.
 // #43 — '입을 수 있음' 필터, 타일 빠른 동작, 다중 선택 바(FR-005a·008a·008b).
+// #39 — 선택 바 '착용 기록'(FR-008c)은 selection/wear_record_action.dart.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import '../../data/repositories/item_repository.dart';
 import 'filter_summary.dart';
 import 'selection/item_selection.dart';
 import 'selection/selection_action_bar.dart';
+import 'selection/wear_record_action.dart';
 import 'widgets/garment_tile.dart';
 import 'widgets/wardrobe_filter_bar.dart';
 
@@ -293,6 +295,7 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                   icon: Icons.local_laundry_service_outlined,
                   onPressed: () => _addSelectedToLaundry(selection.ids),
                 ),
+                wearRecordSelectionAction(context, ref, selection.ids),
               ],
             ),
         ],

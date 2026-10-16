@@ -5,7 +5,7 @@
 
 import 'package:flutter/material.dart';
 
-import 'note_sheet_scaffold.dart';
+import '../../../core/widgets/note_sheet_scaffold.dart';
 
 class EditNoteResult {
   const EditNoteResult(this.note);

@@ -41,4 +41,11 @@ void main() {
     expect(formatMonthDayOrDash(null), '—');
     expect(formatMonthDayOrDash(DateTime(2026, 10, 14)), '10/14');
   });
+
+  test('formatWearDay — 오늘/어제/M/d (#39)', () {
+    final at = DateTime(2026, 10, 16, 9);
+    expect(formatWearDay(DateTime(2026, 10, 16), now: at), '오늘');
+    expect(formatWearDay(DateTime(2026, 10, 15, 23), now: at), '어제');
+    expect(formatWearDay(DateTime(2026, 10, 12), now: at), '10/12');
+  });
 }

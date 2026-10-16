@@ -3,6 +3,8 @@
 // US3 T054(c·d): wear 이벤트 항목은 long-press 시 액션 시트로 "메모 편집"/
 // "기록 삭제" 메뉴를 노출해 onEdit/onDelete 콜백을 호출한다(FR-010a·FR-010b).
 // wash 이벤트는 본 릴리스에서 사후 변경을 지원하지 않으므로 long-press가 비활성.
+// #39 — "날짜 수정"(FR-010c) 메뉴를 더하고, 길게 누르기를 모르는 사용자·스크린리더를
+// 위해 wear 항목 오른쪽에 "기록 관리" 버튼으로도 같은 메뉴를 연다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,15 +19,18 @@ class HistoryTimeline extends ConsumerWidget {
   const HistoryTimeline({
     required this.itemId,
     this.onEdit,
+    this.onEditDate,
     this.onDelete,
     super.key,
   });
 
   final int itemId;
   final void Function(WearEvent event)? onEdit;
+  final void Function(WearEvent event)? onEditDate;
   final void Function(WearEvent event)? onDelete;
 
-  bool get _hasActions => onEdit != null || onDelete != null;
+  bool get _hasActions =>
+      onEdit != null || onEditDate != null || onDelete != null;
 
   Future<void> _showActions(BuildContext context, WearEvent e) async {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
@@ -69,6 +74,25 @@ class HistoryTimeline extends ConsumerWidget {
                 onTap: () {
                   Navigator.of(ctx).pop();
                   onEdit?.call(e);
+                },
+              ),
+            if (onEditDate != null)
+              ListTile(
+                leading: const Icon(
+                  Icons.event_outlined,
+                  color: ClosetimoColors.ink,
+                ),
+                title: const Text(
+                  '날짜 수정',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 15,
+                    color: ClosetimoColors.ink,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  onEditDate?.call(e);
                 },
               ),
             if (onDelete != null)
@@ -168,41 +192,63 @@ class HistoryTimeline extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            Column(
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  formatMonthDay(e.occurredAt),
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 11,
-                                    letterSpacing: 2,
-                                    color: ClosetimoColors.muted,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        formatMonthDay(e.occurredAt),
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 11,
+                                          letterSpacing: 2,
+                                          color: ClosetimoColors.muted,
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        height: ClosetimoSpacing.space2,
+                                      ),
+                                      Text(
+                                        e.kind == EventKind.wash
+                                            ? '세탁 완료'
+                                            : '착용 기록',
+                                        style: const TextStyle(
+                                          fontFamily: 'Manrope',
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w500,
+                                          color: ClosetimoColors.ink,
+                                        ),
+                                      ),
+                                      if (e.note != null &&
+                                          e.note!.isNotEmpty) ...[
+                                        const SizedBox(
+                                          height: ClosetimoSpacing.space2,
+                                        ),
+                                        Text(
+                                          e.note!,
+                                          style: const TextStyle(
+                                            fontFamily: 'Manrope',
+                                            fontSize: 13,
+                                            color: ClosetimoColors.muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: ClosetimoSpacing.space2),
-                                Text(
-                                  e.kind == EventKind.wash ? '세탁 완료' : '착용 기록',
-                                  style: const TextStyle(
-                                    fontFamily: 'Manrope',
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: ClosetimoColors.ink,
-                                  ),
-                                ),
-                                if (e.note != null && e.note!.isNotEmpty) ...[
-                                  const SizedBox(
-                                    height: ClosetimoSpacing.space2,
-                                  ),
-                                  Text(
-                                    e.note!,
-                                    style: const TextStyle(
-                                      fontFamily: 'Manrope',
-                                      fontSize: 13,
+                                if (e.kind == EventKind.wear && _hasActions)
+                                  IconButton(
+                                    tooltip: '기록 관리',
+                                    onPressed: () => _showActions(context, e),
+                                    icon: const Icon(
+                                      Icons.more_horiz_rounded,
                                       color: ClosetimoColors.muted,
                                     ),
                                   ),
-                                ],
                               ],
                             ),
                           ],
