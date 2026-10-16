@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../app/router.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
@@ -81,6 +84,17 @@ class SettingsScreen extends ConsumerWidget {
                           label: '오래 입지 않은 옷',
                           toggleValue: prefs.notifUnworn,
                           onToggle: repo.setNotifUnworn,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: ClosetimoSpacing.space28),
+                    // #44 — 보관한 옷 확인·복원 진입점.
+                    _Section(
+                      title: '옷 관리',
+                      rows: [
+                        PreferenceRow(
+                          label: '보관함',
+                          onTap: () => context.pushNamed(Routes.archive),
                         ),
                       ],
                     ),

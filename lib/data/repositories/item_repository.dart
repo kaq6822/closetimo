@@ -27,6 +27,8 @@ class WardrobeStats {
 
 abstract interface class ItemRepository {
   // ── 읽기 ──
+  /// 보관 여부와 무관한 전체 옷(최신 등록 우선). 화면에는 보관 축을 적용하는
+  /// [watchFiltered]를 쓴다(#44).
   Stream<List<Item>> watchAll();
 
   /// FR-005~007, #37·#41. [filter] 조건([ItemFilter.matches])을 만족하는 옷을
@@ -36,8 +38,10 @@ abstract interface class ItemRepository {
     required WardrobeSort sort,
   });
 
+  /// FR-020. 보관한 옷은 제외한다(#44).
   Stream<List<Item>> watchRecentlyWorn({int limit});
 
+  /// FR-018·019. 보관한 옷은 제외한 활성 옷만 집계한다(#44).
   Stream<WardrobeStats> watchStats();
 
   Future<Item?> get(int id);

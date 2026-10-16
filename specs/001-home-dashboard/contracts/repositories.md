@@ -15,16 +15,16 @@
 ```dart
 abstract interface class ItemRepository {
   // ── 읽기(Watch는 Riverpod stream으로 변환) ──
-  Stream<List<Item>> watchAll();                                // FR-005 기반
+  Stream<List<Item>> watchAll();                                // 보관 포함 전체(raw). 화면은 watchFiltered 사용
   Stream<List<Item>> watchFiltered({
-    ItemFilter filter = const ItemFilter(),                     // 종류·용도·검색어 FR-005·006, #37·#41
+    ItemFilter filter = const ItemFilter(),                     // 종류·용도·검색어·보관 FR-005·006, #37·#41·#44
     required WardrobeSort sort,                                 // FR-007
   });
-  Stream<List<Item>> watchRecentlyWorn({int limit = 2});        // FR-020
+  Stream<List<Item>> watchRecentlyWorn({int limit = 2});        // FR-020 (보관 제외, #44)
 
   Future<Item?> get(int id);                                    // 옷 상세 진입
 
-  Stream<WardrobeStats> watchStats();                           // FR-018, FR-019
+  Stream<WardrobeStats> watchStats();                           // FR-018, FR-019 (보관 제외, #44)
 
   // ── 쓰기 ──
   Future<int> create(NewItemDraft draft);                       // FR-001 → FR-004
@@ -43,6 +43,7 @@ class ItemFilter {                        // lib/data/models/item_filter.dart (�
   final Set<Category> categories;        // 비면 전체. 축 안 OR
   final Set<ItemPurpose> purposes;       // 비면 전체. 축 안 OR, 축 간 AND
   final String query;                    // 이름·브랜드, 대소문자 무시
+  final ArchiveScope archive;            // #44. active(기본) | archived | all
   factory ItemFilter.category(Category c);        // 개별 종류(옷장 칩)
   factory ItemFilter.homeBucket(HomeBucket b);    // 홈 카드와 같은 범위
   bool matches(Item item);
@@ -57,7 +58,8 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 - `create`: draft의 `category`(기본 미분류)·`careMethod`(기본 미지정)·`careMode`·`purposes`를 저장한다. `purposes`는 중복 제거 후 enum 순서로 정규화.
 - `update`: `ItemPatch`의 편집 필드 전체(`careMode`·`purposes` 포함, 둘 다 required)를 교체하고 `status = item.derivedStatus`로 재평가한다(#45).
 - `watchFiltered`: `filter.matches(item)`을 만족하는 옷만 내보낸다. 검색 매칭은 `name.toLowerCase().contains(q) || (brand ?? '').toLowerCase().contains(q)` (FR-006).
-- `watchStats().perBucket[b]`와 `watchFiltered(filter: ItemFilter.homeBucket(b))`의 결과 수는 항상 같다(#37).
+- `watchStats().perBucket[b]`와 `watchFiltered(filter: ItemFilter.homeBucket(b))`의 결과 수는 항상 같다(#37). 둘 다 보관한 옷을 제외한다(#44).
+- `watchStats`·`watchRecentlyWorn`은 보관한 옷(`archivedAt != null`)을 제외한다(#44, data-model.md §1.2a).
 
 ---
 
@@ -75,12 +77,36 @@ abstract interface class LaundryRepository {
 
 ### 사이드이펙트
 
-- `toggle`: `Item.inLaundry`를 반전. 상태 전이 없음(FR-012 명시).
+- `watchBasket`: `inLaundry == true`이고 보관하지 않은(`archivedAt == null`) 옷(#44).
+- `toggle`: `Item.inLaundry`를 반전. 상태 전이 없음(FR-012 명시). 보관한 옷을 담으려는 호출은 무시한다(#44).
 - `completeWashFor`:
   0. `inLaundry == true`가 아닌(또는 존재하지 않는) `itemId`는 건너뛰고, 실제 처리한 수를 반환한다(토스트 표시용).
   1. 각 `itemId`의 Item을 `status=clean, wearSinceWash=0, lastWashedAt=now, inLaundry=false`로 갱신(FR-016).
   2. 각 Item에 대해 `WearEvent(kind: wash, occurredAt: now)` 1건 추가(FR-013 타임라인 보강).
   3. 모두 단일 `isar.write`로 묶어 원자성 보장.
+
+---
+
+## 2a. `ArchiveRepository` (#44)
+
+옷 보관·복원. `LaundryRepository`가 `Item.inLaundry`를 다루듯 `Item.archivedAt`·`archiveReason`을 다룬다.
+`ItemRepository`와 분리해 기존 구현·테스트 대역에 영향을 주지 않는다.
+
+```dart
+abstract interface class ArchiveRepository {
+  Stream<List<Item>> watchArchived();                                       // 보관함, archivedAt 내림차순
+  Future<void> archive(int itemId, {ArchiveReason reason = ArchiveReason.unspecified});
+  Future<void> restore(int itemId);
+}
+```
+
+### 사이드이펙트
+
+- `archive`: 단일 `isar.write`로 `archivedAt = now`(이미 보관 중이면 유지), `archiveReason = reason`, `inLaundry = false`.
+  WearEvent·카운터·`status`·사진은 그대로 둔다. 미존재 `itemId`는 no-op.
+- `restore`: `archivedAt = null`, `archiveReason = unspecified`. 기록·카운터·상태 보존, 바구니 자동 재담기 없음. 미존재·활성 옷은 no-op.
+- 연관 규칙: `LaundryRepository.watchBasket`은 보관한 옷을 내보내지 않고, `toggle`은 보관한 옷을 바구니에 **담는** 호출을 무시한다.
+- 삭제(`ItemRepository.delete`)와의 차이: 삭제는 기록까지 제거하고 되돌릴 수 없으며, 보관은 기록을 유지하고 복원할 수 있다.
 
 ---
 

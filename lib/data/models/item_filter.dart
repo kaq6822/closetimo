@@ -9,11 +9,14 @@ import 'item.dart';
 /// - 축의 집합이 비어 있으면 해당 축은 제한하지 않는다(전체).
 /// - 홈 카드 이동은 [ItemFilter.homeBucket]을 사용하므로 카드 집계와 목록
 ///   범위가 항상 같다([HomeBucket.categories]).
+/// - 보관 축([archive], #44)의 기본값은 [ArchiveScope.active]라 별도 지정이
+///   없으면 보관한 옷은 옷장·검색에서 빠진다.
 class ItemFilter {
   const ItemFilter({
     this.categories = const {},
     this.purposes = const {},
     this.query = '',
+    this.archive = ArchiveScope.active,
   });
 
   /// 개별 종류 1개만 보는 필터(옷장 종류 칩).
@@ -33,8 +36,14 @@ class ItemFilter {
   /// 이름·브랜드 검색어(FR-006, 대소문자 무시).
   final String query;
 
+  /// 보관 축(#44). 기본은 활성 옷만.
+  final ArchiveScope archive;
+
   /// 검색어를 제외한 조건(종류·용도)이 하나라도 걸려 있는지.
-  bool get hasScope => categories.isNotEmpty || purposes.isNotEmpty;
+  bool get hasScope =>
+      categories.isNotEmpty ||
+      purposes.isNotEmpty ||
+      archive != ArchiveScope.active;
 
   /// 조건이 하나라도 걸려 있는지(검색어 포함).
   bool get isActive => hasScope || query.trim().isNotEmpty;
@@ -54,6 +63,7 @@ class ItemFilter {
   }
 
   bool matches(Item item) {
+    if (!archive.includes(item)) return false;
     if (categories.isNotEmpty && !categories.contains(item.category)) {
       return false;
     }
@@ -73,26 +83,48 @@ class ItemFilter {
     Set<Category>? categories,
     Set<ItemPurpose>? purposes,
     String? query,
+    ArchiveScope? archive,
   }) => ItemFilter(
     categories: categories ?? this.categories,
     purposes: purposes ?? this.purposes,
     query: query ?? this.query,
+    archive: archive ?? this.archive,
   );
 
   @override
   bool operator ==(Object other) =>
       other is ItemFilter &&
       other.query == query &&
+      other.archive == archive &&
       _sameSet(other.categories, categories) &&
       _sameSet(other.purposes, purposes);
 
   @override
   int get hashCode => Object.hash(
     query,
+    archive,
     Object.hashAllUnordered(categories),
     Object.hashAllUnordered(purposes),
   );
 
   static bool _sameSet<T>(Set<T> a, Set<T> b) =>
       a.length == b.length && a.containsAll(b);
+}
+
+/// 보관 상태 축(#44). 영속화하지 않는다.
+enum ArchiveScope {
+  /// 활성(보관하지 않은) 옷만. [ItemFilter]의 기본값.
+  active,
+
+  /// 보관한 옷만(보관함 화면).
+  archived,
+
+  /// 보관 여부와 무관하게 전체.
+  all;
+
+  bool includes(Item item) => switch (this) {
+    ArchiveScope.active => !item.isArchived,
+    ArchiveScope.archived => item.isArchived,
+    ArchiveScope.all => true,
+  };
 }

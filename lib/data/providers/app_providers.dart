@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/persistence/image_store.dart';
 import '../../core/utils/clock.dart';
 import '../models/user_preferences.dart';
+import '../repositories/archive_repository.dart';
 import '../repositories/event_repository.dart';
+import '../repositories/isar_archive_repository.dart';
 import '../repositories/isar_event_repository.dart';
 import '../repositories/isar_item_repository.dart';
 import '../repositories/isar_laundry_repository.dart';
@@ -33,6 +35,12 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
 final laundryRepositoryProvider = Provider<LaundryRepository>((ref) {
   final isar = ref.watch(isarProvider).requireValue;
   return IsarLaundryRepository(isar: isar, clock: ref.watch(clockProvider));
+});
+
+/// 옷 보관·복원(#44).
+final archiveRepositoryProvider = Provider<ArchiveRepository>((ref) {
+  final isar = ref.watch(isarProvider).requireValue;
+  return IsarArchiveRepository(isar: isar, clock: ref.watch(clockProvider));
 });
 
 final preferencesRepositoryProvider = Provider<PreferencesRepository>((ref) {
