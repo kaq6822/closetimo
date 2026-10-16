@@ -212,7 +212,7 @@ return $default(_that.name,_that.brand,_that.category,_that.washCycle,_that.care
 
 
 class _NewItemDraft extends NewItemDraft {
-  const _NewItemDraft({this.name = '', this.brand = '', this.category = Category.outer, this.washCycle = 5, this.careMethod = CareMethod.machine, this.purchasedAt, this.tempPhoto}): super._();
+  const _NewItemDraft({this.name = '', this.brand = '', this.category = Category.etc, this.washCycle = 5, this.careMethod = CareMethod.machine, this.purchasedAt, this.tempPhoto}): super._();
   
 
 @override@JsonKey() final  String name;

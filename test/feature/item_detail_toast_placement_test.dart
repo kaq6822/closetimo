@@ -108,7 +108,13 @@ Widget _harness(Item item, List<WearEvent> events) {
 
 /// 상세 화면을 A23 뷰포트(384×856dp, 상태바 24dp·내비바 48dp)로 띄운다.
 /// [historyCount]만큼 착용 기록을 두면 버튼을 화면 위쪽까지 스크롤할 수 있다.
-Future<Item> _pumpDetail(WidgetTester tester, {int historyCount = 0}) async {
+/// [withPhoto]가 true면 사진 있는 옷으로 띄워 hero가 버튼을 화면 아래쪽으로
+/// 밀어낸다(#47 이후 사진 없는 옷은 버튼이 상단 가까이에 온다).
+Future<Item> _pumpDetail(
+  WidgetTester tester, {
+  int historyCount = 0,
+  bool withPhoto = false,
+}) async {
   tester.view.physicalSize = const Size(1080, 2408);
   tester.view.devicePixelRatio = 2.8125;
   tester.view.padding = const FakeViewPadding(top: 67.5, bottom: 135);
@@ -118,6 +124,7 @@ Future<Item> _pumpDetail(WidgetTester tester, {int historyCount = 0}) async {
     name: '울 코트',
     category: Category.outer,
     washCycle: 5,
+    imagePath: withPhoto ? 'items/1.jpg' : null,
     createdAt: DateTime(2026, 1, 1),
   )..id = 1;
   final events = [
@@ -168,7 +175,7 @@ final _laundryButton = find.widgetWithText(SoftButton, '세탁 바구니');
 
 void main() {
   testWidgets('#22: 버튼이 화면 하단 띠(QA 관찰 위치)에 있을 때 토스트가 가리지 않는다', (tester) async {
-    await _pumpDetail(tester);
+    await _pumpDetail(tester, historyCount: 12, withPhoto: true);
     // QA(F-12)에서 겹친 위치: 버튼 중심이 화면 하단(내비바 위)에서 약 120dp.
     const safeBottom = 856.0 - 48;
     final dy = tester.getCenter(_laundryButton).dy - (safeBottom - 120);

@@ -150,6 +150,10 @@ void main() {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(_host(const AddItemScreen()));
     await tester.pumpAndSettle();
+    // #42 — 브랜드는 "추가 정보 (선택)" 접이식 영역 안에 있다.
+    await tester.ensureVisible(find.text('추가 정보 (선택)'));
+    await tester.tap(find.text('추가 정보 (선택)'));
+    await tester.pumpAndSettle();
 
     for (final label in ['의류 명칭', '브랜드']) {
       expect(

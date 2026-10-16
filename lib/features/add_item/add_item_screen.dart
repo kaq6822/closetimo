@@ -48,6 +48,21 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 
   bool get _isEdit => widget.editId != null;
 
+  /// 등록 모드 dirty 판정 기준. 연속 등록 후에는 직전 카테고리만 유지한 빈 폼이다.
+  NewItemDraft _blankDraft = const NewItemDraft();
+
+  /// "추가 정보 (선택)" 펼침 여부. 등록 모드는 접힘, 수정 모드는 펼침으로 시작한다.
+  late bool _optionalExpanded = _isEdit;
+
+  /// 연속 등록 시 텍스트 필드를 새 controller로 다시 만들기 위한 세대 번호.
+  int _formGeneration = 0;
+
+  final ScrollController _scroll = ScrollController();
+
+  /// FR-001b — 저장 진행 중에는 모든 저장 버튼을 막는다.
+  bool get _canSave =>
+      !_saving && (_isEdit ? _draft.canSave : _draft.canQuickSave);
+
   /// 로딩 완료 여부(수정 모드 진입 시 옷을 fetch하는 동안 false).
   bool _loading = false;
 
@@ -58,6 +73,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       _loading = true;
       _loadForEdit();
     }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
   }
 
   Future<void> _loadForEdit() async {
@@ -85,7 +106,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 
   /// 폼에 변경 사항이 있는지. 등록 모드는 빈 폼과 비교, 수정 모드는 원본과 비교.
   bool get _isDirty {
-    if (!_isEdit) return _draft != const NewItemDraft();
+    if (!_isEdit) return _draft != _blankDraft;
     return _draft != _initialDraft || _photoCleared;
   }
 
@@ -153,8 +174,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   // (analyzer false positive — `context.mounted`/`mounted` 가드가 모든 사용에
   // 직접 선행하지만 분석기가 ConsumerState의 State.context를 비동기 갭 너머의
   // unrelated 참조로 잘못 분류한다.)
-  Future<void> _save() async {
-    if (!_draft.canSave || _saving) return;
+  /// [next]가 true면(등록 모드 전용) 저장 후 화면을 유지하고 폼을 비운다(FR-001a).
+  Future<void> _save({bool next = false}) async {
+    if (!_canSave) return;
     setState(() => _saving = true);
     String message;
     var success = false;
@@ -192,8 +214,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         }
         message = '옷 정보를 수정했어요';
       } else {
-        await repo.create(_draft);
-        message = '새 옷이 옷장에 등록됐어요';
+        await repo.create(_draft.forCreate());
+        message = next ? '저장했어요. 다음 옷을 등록해 주세요' : '새 옷이 옷장에 등록됐어요';
       }
       success = true;
     } catch (e, stackTrace) {
@@ -201,6 +223,21 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       message = _isEdit ? '수정에 실패했어요' : '등록에 실패했어요';
     }
     if (!context.mounted) return;
+    if (success && next) {
+      // FR-001a — 같은 입력이 다시 저장되지 않도록 성공 직후 폼을 비운다.
+      // 직전 카테고리는 같은 종류를 연달아 등록하기 쉽게 유지한다.
+      final blank = NewItemDraft(category: _draft.category);
+      setState(() {
+        _blankDraft = blank;
+        _draft = blank;
+        _formGeneration++;
+        _saving = false;
+      });
+      if (_scroll.hasClients) _scroll.jumpTo(0);
+      // 하단 CTA 바를 가리지 않도록 상단에 띄운다.
+      showClosetimoToast(context, message, placement: ToastPlacement.top);
+      return;
+    }
     // #22 N-02 — 수정은 하단 탭이 없는 상세로 돌아가(실패 시엔 수정 화면에 머묾)
     // 하단 토스트가 "착용 기록하기" 등을 덮으므로 상단에 띄운다. 신규 등록은
     // 옷장 등 탭 화면으로 돌아가므로 하단 탭 위(기본)를 유지한다.
@@ -247,17 +284,22 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                       context.pop();
                     },
                     rightSlot: TextButton(
-                      onPressed: _draft.canSave && !_saving ? _save : null,
+                      onPressed: _canSave ? _save : null,
                       child: const Text('저장'),
                     ),
                   ),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(
+                      controller: _scroll,
+                      padding: EdgeInsets.fromLTRB(
                         ClosetimoSpacing.lg,
                         ClosetimoSpacing.md,
                         ClosetimoSpacing.lg,
-                        ClosetimoSpacing.space120,
+                        // 등록 모드는 하단 바에 연속 등록 버튼이 더해진다.
+                        _isEdit
+                            ? ClosetimoSpacing.space120
+                            : ClosetimoSpacing.space120 +
+                                  ClosetimoSpacing.space52,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -272,8 +314,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             onRemove: _isEdit ? _removePhoto : null,
                           ),
                           const SizedBox(height: ClosetimoSpacing.space26),
-                          const _FieldLabel(label: '의류 명칭'),
+                          _FieldLabel(
+                            label: '의류 명칭',
+                            note: _isEdit ? '필수' : '이름 또는 사진 중 하나만 있어도 돼요',
+                          ),
                           _FieldInput(
+                            key: ValueKey('name-$_formGeneration'),
                             label: '의류 명칭',
                             initial: _draft.name,
                             hint: 'e.g. 오버사이즈 캐시미어 코트',
@@ -282,37 +328,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(label: '브랜드'),
-                          _FieldInput(
-                            label: '브랜드',
-                            initial: _draft.brand,
-                            hint: 'e.g. ZARA',
-                            onChanged: (v) => setState(
-                              () => _draft = _draft.copyWith(brand: v),
-                            ),
+                          const _FieldLabel(
+                            label: '카테고리',
+                            note: '선택 · 고르지 않으면 기타',
                           ),
-                          const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(label: '세탁 주기 설정'),
-                          WashCycleStepper(
-                            value: _draft.washCycle,
-                            onChanged: (v) => setState(
-                              () => _draft = _draft.copyWith(washCycle: v),
-                            ),
-                          ),
-                          const SizedBox(height: ClosetimoSpacing.sm),
-                          const Padding(
-                            padding: EdgeInsets.only(left: ClosetimoSpacing.xs),
-                            child: Text(
-                              '설정한 횟수만큼 착용하면 세탁 알림을 보냅니다.',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11,
-                                color: ClosetimoColors.muted,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(label: '카테고리', required: true),
                           CategoryPicker(
                             value: _draft.category,
                             onChanged: (c) => setState(
@@ -320,19 +339,61 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(label: '세탁 방법'),
-                          CareMethodPicker(
-                            value: _draft.careMethod,
-                            onChanged: (m) => setState(
-                              () => _draft = _draft.copyWith(careMethod: m),
+                          _OptionalSectionHeader(
+                            expanded: _optionalExpanded,
+                            onTap: () => setState(
+                              () => _optionalExpanded = !_optionalExpanded,
                             ),
                           ),
-                          const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(label: '구매일'),
-                          _DateField(
-                            value: _draft.purchasedAt,
-                            onTap: _pickPurchaseDate,
-                          ),
+                          if (_optionalExpanded) ...[
+                            const SizedBox(height: ClosetimoSpacing.md),
+                            const _FieldLabel(label: '브랜드'),
+                            _FieldInput(
+                              key: ValueKey('brand-$_formGeneration'),
+                              label: '브랜드',
+                              initial: _draft.brand,
+                              hint: 'e.g. ZARA',
+                              onChanged: (v) => setState(
+                                () => _draft = _draft.copyWith(brand: v),
+                              ),
+                            ),
+                            const SizedBox(height: ClosetimoSpacing.lg),
+                            const _FieldLabel(label: '세탁 주기 설정'),
+                            WashCycleStepper(
+                              value: _draft.washCycle,
+                              onChanged: (v) => setState(
+                                () => _draft = _draft.copyWith(washCycle: v),
+                              ),
+                            ),
+                            const SizedBox(height: ClosetimoSpacing.sm),
+                            const Padding(
+                              padding: EdgeInsets.only(
+                                left: ClosetimoSpacing.xs,
+                              ),
+                              child: Text(
+                                '설정한 횟수만큼 착용하면 세탁 알림을 보냅니다.',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  color: ClosetimoColors.muted,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: ClosetimoSpacing.lg),
+                            const _FieldLabel(label: '세탁 방법'),
+                            CareMethodPicker(
+                              value: _draft.careMethod,
+                              onChanged: (m) => setState(
+                                () => _draft = _draft.copyWith(careMethod: m),
+                              ),
+                            ),
+                            const SizedBox(height: ClosetimoSpacing.lg),
+                            const _FieldLabel(label: '구매일'),
+                            _DateField(
+                              value: _draft.purchasedAt,
+                              onTap: _pickPurchaseDate,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -362,10 +423,24 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                       decoration: BoxDecoration(
                         color: surfaces.containerLowest.withValues(alpha: 0.72),
                       ),
-                      child: PrimaryButton(
-                        label: _isEdit ? '수정 완료' : '등록하기',
-                        trailing: const Icon(Icons.check_rounded),
-                        onPressed: _draft.canSave && !_saving ? _save : null,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          PrimaryButton(
+                            label: _isEdit ? '수정 완료' : '등록하기',
+                            trailing: const Icon(Icons.check_rounded),
+                            onPressed: _canSave ? _save : null,
+                          ),
+                          // FR-001a — 여러 벌을 이어서 등록하는 보조 액션.
+                          if (!_isEdit)
+                            TextButton(
+                              onPressed: _canSave
+                                  ? () => _save(next: true)
+                                  : null,
+                              child: const Text('저장하고 다음 옷 등록'),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -380,10 +455,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 }
 
 class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.label, this.required = false});
+  const _FieldLabel({required this.label, this.note});
 
   final String label;
-  final bool required;
+
+  /// 라벨 오른쪽의 필수/선택 안내 문구(#42 — 선택 정보임을 분명히 한다).
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
@@ -400,19 +477,90 @@ class _FieldLabel extends StatelessWidget {
               color: ClosetimoColors.muted,
             ),
           ),
-          if (required) ...[
-            const Spacer(),
-            const Text(
-              'REQUIRED',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 9,
-                letterSpacing: 2,
-                color: ClosetimoColors.muted,
+          if (note != null) ...[
+            const SizedBox(width: ClosetimoSpacing.sm),
+            Expanded(
+              child: Text(
+                note!,
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  color: ClosetimoColors.muted,
+                ),
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// "추가 정보 (선택)" 접이식 헤더(#42). 브랜드·세탁 주기·세탁 방법·구매일을
+/// 접어 두어 처음 등록할 때 모두 채워야 한다는 부담을 줄인다.
+class _OptionalSectionHeader extends StatelessWidget {
+  const _OptionalSectionHeader({required this.expanded, required this.onTap});
+
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
+    return Semantics(
+      button: true,
+      expanded: expanded,
+      child: Material(
+        color: surfaces.containerLow,
+        borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: ClosetimoSpacing.space18,
+              vertical: ClosetimoSpacing.space14,
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '추가 정보 (선택)',
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: ClosetimoColors.ink,
+                        ),
+                      ),
+                      SizedBox(height: ClosetimoSpacing.space2),
+                      Text(
+                        '브랜드 · 세탁 주기 · 세탁 방법 · 구매일',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11,
+                          color: ClosetimoColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  expanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  color: ClosetimoColors.muted,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -471,6 +619,7 @@ class _DateField extends StatelessWidget {
 class _FieldInput extends StatefulWidget {
   const _FieldInput({
     required this.label,
+    super.key,
     required this.initial,
     required this.hint,
     required this.onChanged,

@@ -13,7 +13,8 @@ abstract class NewItemDraft with _$NewItemDraft {
   const factory NewItemDraft({
     @Default('') String name,
     @Default('') String brand,
-    @Default(Category.outer) Category category,
+    // 2026-10-16 #42 — 카테고리 미선택은 `기타`(미분류)로 저장한다.
+    @Default(Category.etc) Category category,
     @Default(5) int washCycle,
     @Default(CareMethod.machine) CareMethod careMethod,
     DateTime? purchasedAt,
@@ -34,6 +35,17 @@ abstract class NewItemDraft with _$NewItemDraft {
     purchasedAt: item.purchasedAt,
   );
 
-  /// FR-002 — 명칭이 비어 있으면 저장 불가.
+  /// 사진만으로 등록할 때 채우는 기본 명칭(FR-002, 2026-10-16 #42).
+  static const untitledName = '이름 없는 옷';
+
+  /// FR-002 — 명칭이 비어 있으면 저장 불가(수정 모드 기준).
   bool get canSave => name.trim().isNotEmpty;
+
+  /// FR-002 — 등록 모드는 명칭 또는 사진 중 하나만 있으면 저장할 수 있다.
+  bool get canQuickSave => canSave || tempPhoto != null;
+
+  /// 등록 저장용 draft. 명칭이 비어 있으면 [untitledName]으로 채운다.
+  /// 저장소의 `name.isNotEmpty` 규칙은 그대로 유지된다.
+  NewItemDraft forCreate() =>
+      canSave ? this : copyWith(name: untitledName);
 }

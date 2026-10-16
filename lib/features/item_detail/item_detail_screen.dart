@@ -10,6 +10,7 @@ import '../../core/widgets/bottom_nav.dart';
 import '../../core/widgets/chip_filter.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/soft_button.dart';
+import '../../core/widgets/status_label.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
@@ -196,23 +197,32 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: ClosetimoSpacing.md),
-                    Row(
+                    // 좁은 화면에서 칩·상태 라벨이 넘치지 않도록 줄바꿈한다.
+                    Wrap(
+                      spacing: ClosetimoSpacing.sm,
+                      runSpacing: ClosetimoSpacing.sm,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         ChipFilter(
                           label: item.category.label,
                           active: false,
                           onTap: () {},
                         ),
-                        const SizedBox(width: ClosetimoSpacing.sm),
                         ChipFilter(
                           label: item.careMethod.label,
                           active: false,
                           onTap: () {},
                         ),
+                        // FR-009a — 상태를 이름 바로 아래에서 확인한다.
+                        StatusLabel(
+                          variant: item.status == ItemStatus.dirty
+                              ? StatusLabelVariant.dirty
+                              : StatusLabelVariant.clean,
+                        ),
                       ],
                     ),
-                    const SizedBox(height: ClosetimoSpacing.space26),
-                    StatsGrid(item: item),
+                    // FR-009a(#47) — 주요 기록 액션을 통계 카드보다 먼저 둬
+                    // 첫 화면 안에서 닿게 한다. 통계는 액션 아래로 내린다.
                     const SizedBox(height: ClosetimoSpacing.xl),
                     PrimaryButton(
                       label: '착용 기록하기',
@@ -225,6 +235,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       leading: const Icon(Icons.local_laundry_service_rounded),
                       onPressed: _toggleLaundry,
                     ),
+                    const SizedBox(height: ClosetimoSpacing.space26),
+                    StatsGrid(item: item),
                     const SizedBox(height: ClosetimoSpacing.xxl),
                     const Text(
                       '착용 히스토리',

@@ -123,9 +123,9 @@ clean ─────"착용 기록(FR-010)"─────► clean ───�
 
 | 규칙 | 적용 시점 | 위반 처리 |
 |---|---|---|
-| `name.trim().length > 0` | 옷 등록·수정 폼 (FR-002) | UI에서 저장 버튼 비활성 |
+| `name.trim().length > 0` | 옷 등록·수정 폼 (FR-002) | 수정: UI에서 저장 버튼 비활성. 등록: 명칭·사진이 모두 없으면 비활성, 사진만 있으면 폼이 "이름 없는 옷"으로 채워 저장(저장소 규칙은 그대로) |
 | `washCycle >= 1` | 옷 등록·수정 폼 (FR-001) | 스테퍼 최소값 가드 |
-| `category in Category` | 옷 등록·수정 폼 (FR-001) | 칩 선택 강제 |
+| `category in Category` | 옷 등록·수정 폼 (FR-001) | 칩 단일 선택. 등록 폼 기본값 `etc`(기타 = 미분류, 2026-10-16) |
 | `wearSinceWash >= 0` 및 `totalWears >= 0` | Repository 갱신 시 | assert (`deleteWearEvent`는 `max(0, x-1)`로 클램프) |
 | `note == null \|\| note.length <= 80` | 착용 기록·메모 편집 시(FR-010·FR-010a) | UI에서 80자 한도 입력 차단 + Repository에서 `ArgumentError` |
 | `note?.trim().isEmpty == true → note = null` | 시트 확정 시 정규화 (Edge Case) | 빈 문자열은 `null`로 변환 후 저장 |

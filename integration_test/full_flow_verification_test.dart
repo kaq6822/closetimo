@@ -72,6 +72,8 @@ void main() {
         await shot(tester, '02_add_blank');
 
         await tester.enterText(find.byType(TextField).at(0), '오버사이즈 캐시미어 코트');
+        // #42 — 브랜드·세탁 주기·세탁 방법·구매일은 접힌 "추가 정보 (선택)" 안에 있다.
+        await tapVisible(tester, find.text('추가 정보 (선택)'));
         await tester.enterText(find.byType(TextField).at(1), 'ZARA');
         await tester.pumpAndSettle();
 
@@ -79,7 +81,7 @@ void main() {
         await tapVisible(tester, find.byIcon(Icons.add_rounded));
         expect(find.text('6'), findsOneWidget);
 
-        // 카테고리: 기본 아우터 → 상의로 변경
+        // 카테고리: 기본 기타(미분류) → 상의로 변경
         await tapVisible(tester, find.text('상의'));
 
         // 세탁 방법: HAND WASH 선택

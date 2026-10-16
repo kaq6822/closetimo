@@ -32,6 +32,9 @@
 |---|---|---|---|
 | `/wardrobe` 또는 `/home` 상단바 `+` | 탭 | `/add-item` | 모달 push (slide-up) |
 | `/add-item` "등록하기" 성공 | 자동 | pop → 직전 화면 | Toast: "새 옷이 옷장에 등록됐어요" |
+| `/add-item` "저장하고 다음 옷 등록" 성공 | 탭 | 같은 화면 유지 | 폼 초기화(직전 카테고리 유지) + 상단 Toast: "저장했어요. 다음 옷을 등록해 주세요" (FR-001a) |
+| `/add-item` 저장 실패 | 자동 | 같은 화면 유지 | 입력 유지 + Toast: "등록에 실패했어요" (Item 미생성, FR-001b) |
+| `/home` 세탁 바구니 "세탁 화면으로" | 탭 | `/laundry` (`goNamed`) | 탭 전환(FR-021) |
 | `/wardrobe` 그리드 타일 | 탭 | `/item/:id` | hero-image transition(선택) |
 | `/home` 최근 옷 카드 | 탭 | `/item/:id` | 동일 |
 | `/home` 카테고리 카드 | 탭 | `/wardrobe?category=상의` | 탭 전환 + 필터 사전 적용(FR-019) |
