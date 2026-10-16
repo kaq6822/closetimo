@@ -1,4 +1,5 @@
 // US5 T073 — 설정 항목 행 (토글 또는 텍스트 값).
+// 텍스트 값 행은 탭 동작이 없으므로 chevron을 그리지 않는다(#16).
 
 import 'package:flutter/material.dart';
 
@@ -68,12 +69,6 @@ class PreferenceRow extends StatelessWidget {
                           fontSize: 13,
                           color: ClosetimoColors.muted,
                         ),
-                      ),
-                      const SizedBox(width: ClosetimoSpacing.space4),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: ClosetimoColors.muted,
                       ),
                     ],
                   ),

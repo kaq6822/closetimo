@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/utils/clock.dart';
+import '../../core/utils/greeting.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/repositories/item_repository.dart';
@@ -20,6 +22,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(itemRepositoryProvider).watchStats();
+    final greeting = greetingFor(ref.watch(clockProvider).now());
     return Column(
       children: [
         TopBar(
@@ -55,9 +58,9 @@ class HomeScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      '좋은 아침입니다, 큐레이터님',
-                      style: TextStyle(
+                    Text(
+                      '$greeting, 큐레이터님',
+                      style: const TextStyle(
                         fontFamily: 'Manrope',
                         fontSize: 13,
                         color: ClosetimoColors.muted,

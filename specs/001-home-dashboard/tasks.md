@@ -130,7 +130,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 
 **Goal**: 옷 타일을 탭해 상세 화면에서 통계·타임라인을 보고 "착용 기록하기"로 카운터를 올린다. 세탁 주기 도달 시 자동 `dirty` 전환(FR-009~013).
 
-**Independent Test**: 등록된 옷의 상세 진입 → "착용 기록하기" 1회 탭 → 카운터 +1 → 토스트 노출 → 직전 화면으로 자동 복귀. 세탁 주기 도달 시 옷장에서 "세탁 필요" 라벨 노출.
+**Independent Test**: 등록된 옷의 상세 진입 → "착용 기록하기" 1회 탭 → 카운터 +1 → 토스트 노출 → 상세 화면 유지(갱신된 카운터 확인). 세탁 주기 도달 시 옷장에서 "세탁 필요" 라벨 노출.
 
 ### Implementation for User Story 3
 
@@ -141,7 +141,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T051 [P] [US3] StatsGrid 위젯 — `lib/features/item_detail/widgets/stats_grid.dart`. 2x2 그리드: "세탁 후 착용 횟수 X/N", "총 착용 횟수 X", "마지막 세탁 M/d", "구매일 yyyy.MM.dd". `surface-container-low` 외곽 컨테이너 + `surface-container-lowest` 내부 카드(No-Line).
 - [X] T052 [P] [US3] HistoryTimeline 위젯 — `lib/features/item_detail/widgets/history_timeline.dart`. `events` 스트림을 받아 좌측 세로 라인 + 도트(세탁/착용 분기 아이콘) + 날짜·이벤트 명·서브 텍스트 렌더(FR-013).
 - [X] T053 [P] [US3] HeroImage 위젯 — `lib/features/item_detail/widgets/hero_image.dart`. 3:4 비율 큰 사진 + 좌하단 오프셋 브랜드 라벨(serif·primary 색상).
-- [X] T054 [US3] ItemDetailScreen — `lib/features/item_detail/item_detail_screen.dart`. TopBar(좌 백·우 휴지통 아이콘 v1 비활성) + HeroImage + h2 이름 + 카테고리/care 칩 + StatsGrid + PrimaryButton "착용 기록하기"(탭 시 `WearRecordSheet` 표시 후 "기록" 액션이 `eventRepositoryProvider.recordWear(itemId, note: ...)` 호출 → pop + toast, FR-010) + SoftButton "세탁 바구니"(`laundryRepositoryProvider.toggle` 호출 + toast) + HistoryTimeline. HistoryTimeline의 wear 항목은 long-press로 "메모 편집"(`EditNoteSheet`) / "기록 삭제"(`DeleteEventDialog`) 메뉴를 노출한다(FR-013·FR-010a·FR-010b). 기존 직접 `recordWear` 호출은 시트 confirm 흐름으로 대체된다.
+- [X] T054 [US3] ItemDetailScreen — `lib/features/item_detail/item_detail_screen.dart`. TopBar(좌 백·우 휴지통 아이콘 v1 비활성) + HeroImage + h2 이름 + 카테고리/care 칩 + StatsGrid + PrimaryButton "착용 기록하기"(탭 시 `WearRecordSheet` 표시 후 "기록" 액션이 `eventRepositoryProvider.recordWear(itemId, note: ...)` 호출 → 상세 화면 유지 + toast, FR-010·#15) + SoftButton "세탁 바구니"(`laundryRepositoryProvider.toggle` 호출 + toast) + HistoryTimeline. HistoryTimeline의 wear 항목은 long-press로 "메모 편집"(`EditNoteSheet`) / "기록 삭제"(`DeleteEventDialog`) 메뉴를 노출한다(FR-013·FR-010a·FR-010b). 기존 직접 `recordWear` 호출은 시트 confirm 흐름으로 대체된다.
 - [X] T054a [P] [US3] WearRecordSheet 위젯 — `lib/features/item_detail/widgets/wear_record_sheet.dart` (+ 공통 `note_sheet_scaffold.dart`). `showModalBottomSheet` 기반 가벼운 시트: 한 줄 메모 텍스트필드(단일행, `maxLength: 80`, `counterText` 노출, 빈 입력 허용) + "기록" PrimaryButton + "취소" TextButton. 확정 시 입력값을 trim하여 빈 문자열은 `null`로 정규화 후 콜백에 전달(FR-010, contracts/repositories.md §3 UI 흐름).
 - [X] T054b [P] [US3] EditNoteSheet 위젯 — `lib/features/item_detail/widgets/edit_note_sheet.dart`. WearRecordSheet과 동일한 80자 단일행 제약 + 초기값 prefill. "저장" 액션이 `EventRepository.updateEventNote(eventId, note)` 호출(FR-010a). wash 이벤트 항목에서는 호출되지 않는다(메뉴 자체를 노출하지 않음).
 - [X] T054c [P] [US3] DeleteEventDialog 위젯 — `lib/features/item_detail/widgets/delete_event_dialog.dart`. AlertDialog로 "이 착용 기록을 삭제할까요? 카운터·상태가 함께 조정돼요." + "삭제"/"취소". "삭제" 확정 시 `EventRepository.deleteWearEvent(eventId)` 호출(FR-010b). 호출 후 `Toast("착용 기록을 삭제했어요")`.
@@ -222,6 +222,7 @@ description: "옷장이모 MVP — 옷장 관리 + 세탁 워크플로의 구현
 - [X] T090 [P] 검색 후 상세에서 돌아오면 키보드가 다시 올라옴(QA F-04, #14) — `lib/features/wardrobe/widgets/wardrobe_filter_bar.dart` 검색 TextField에 `onTapOutside` 포커스 해제 추가. 포커스를 둔 채 타일·+로 push하면 pop 시 Navigator가 포커스를 복원하던 문제. 회귀: `test/feature/wardrobe_search_focus_test.dart`(상세·등록 복귀 후 포커스·키보드 없음).
 - [X] T091 [P] 접근성 라벨 누락(QA F-07, #17) — 상단바 뒤로·+(`top_bar.dart` "뒤로 가기"/"옷 등록"), 등록 폼 입력("의류 명칭"/"브랜드"), 세탁 주기 ±("착용 횟수 줄이기/늘리기", 비활성 상태 포함), 세탁 바구니 체크("<옷 이름> 선택" + checked), 설정 스위치 행(`MergeSemantics`), 토스트(`liveRegion`), 카테고리 칩 selected 상태, 세탁 바구니 타일 "<옷 이름> 상세 보기"(썸네일+정보 영역 탭으로 상세 진입), 설정 알림 행 전체 탭 토글, 첨부 사진 영역 "의류 사진 변경", 세탁 타일 낭독 순서(이름 먼저). 회귀: `test/feature/accessibility_labels_test.dart`. QA 하네스(`tool/qa/android_qa.sh`)는 위치 기반 `_unlabeled` 대신 라벨로 요소를 찾는다.
 - [X] T092 [P] 옷 상세 토스트가 방금 누른 버튼을 가림(QA F-12, #22) — `lib/core/widgets/toast.dart`에 `ToastPlacement`(bottom 기본/top) 추가. 옷 상세에 머무는 토스트(착용 기록·세탁 바구니·메모 수정·기록 삭제)는 상단바 아래(top)에 띄우고, 화면을 벗어나는 토스트(삭제 후 옷장 복귀·옷 없음)는 하단 탭 위(bottom)를 유지. 옷 정보 수정 저장 토스트도 상세로 돌아가므로 top(신규 등록은 bottom). 회귀: `test/feature/item_detail_toast_placement_test.dart`(A23 뷰포트에서 버튼·상단바 비겹침).
+- [X] T095 [P] Polish 묶음(QA #15·#16·#18·#20·#23·#24·#26) — 착용 기록 후 상세 유지 문서화(#15), 설정 알림 "발송 준비 중" 안내와 백업·개인정보 "준비 중" 행(chevron 제거, #16), 홈 인사말 시간대별(`lib/core/utils/greeting.dart` + `Clock`, #18), 세로 고정(`setPreferredOrientations` + manifest + Info.plist, #20), 사진 없는 옷 `ItemPlaceholder`(옷걸이 아이콘, 미사용 `upload-placeholder.png` 제거, #23), 수정 화면 저장은 dirty일 때만 활성(#24), Kotlin Gradle Plugin 2.3.20(#26). 회귀: `test/unit/{greeting,orientation_config}_test.dart`, `test/feature/{polish_ui,add_item_flow}_test.dart`.
 
 **Checkpoint**: 자동화 회귀와 보완한 전체 흐름은 통과했다. T080의 전용 실기기 profile 판정·SC-006 첫 사용자 평가·OS 비행기 모드 검증은 미완료이며, 모든 SC가 검증되었다고 판정하지 않는다.
 

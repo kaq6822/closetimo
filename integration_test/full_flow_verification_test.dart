@@ -82,8 +82,8 @@ void main() {
         // 카테고리: 기본 아우터 → 상의로 변경
         await tapVisible(tester, find.text('상의'));
 
-        // 세탁 방법: HAND WASH 선택
-        await tapVisible(tester, find.text('HAND WASH'));
+        // 세탁 방법: 핸드워시 선택
+        await tapVisible(tester, find.text('핸드워시'));
 
         // 구매일: 날짜 피커 열고 오늘 날짜로 확인
         await tapVisible(tester, find.text('구매일 선택'));

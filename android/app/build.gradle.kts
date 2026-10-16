@@ -20,6 +20,12 @@ fun keystoreProperty(name: String): String =
     keystoreProperties.getProperty(name)?.takeIf { it.isNotBlank() }
         ?: throw GradleException("android/key.properties is missing '$name'")
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
+}
+
 android {
     namespace = "com.closetimo.app"
     compileSdk = flutter.compileSdkVersion
@@ -28,10 +34,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {

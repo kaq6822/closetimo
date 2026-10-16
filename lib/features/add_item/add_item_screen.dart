@@ -89,6 +89,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     return _draft != _initialDraft || _photoCleared;
   }
 
+  /// 저장 가능 여부. 수정 모드는 변경이 있을 때만 활성(#24, 등록 화면과 일관).
+  bool get _canSubmit => _draft.canSave && _isDirty && !_saving;
+
   void _pickPhoto(File file) {
     setState(() {
       _draft = _draft.copyWith(tempPhoto: file);
@@ -247,7 +250,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                       context.pop();
                     },
                     rightSlot: TextButton(
-                      onPressed: _draft.canSave && !_saving ? _save : null,
+                      onPressed: _canSubmit ? _save : null,
                       child: const Text('저장'),
                     ),
                   ),
@@ -276,7 +279,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           _FieldInput(
                             label: '의류 명칭',
                             initial: _draft.name,
-                            hint: 'e.g. 오버사이즈 캐시미어 코트',
+                            hint: '예) 오버사이즈 캐시미어 코트',
                             onChanged: (v) => setState(
                               () => _draft = _draft.copyWith(name: v),
                             ),
@@ -286,7 +289,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           _FieldInput(
                             label: '브랜드',
                             initial: _draft.brand,
-                            hint: 'e.g. ZARA',
+                            hint: '예) ZARA',
                             onChanged: (v) => setState(
                               () => _draft = _draft.copyWith(brand: v),
                             ),
@@ -365,7 +368,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                       child: PrimaryButton(
                         label: _isEdit ? '수정 완료' : '등록하기',
                         trailing: const Icon(Icons.check_rounded),
-                        onPressed: _draft.canSave && !_saving ? _save : null,
+                        onPressed: _canSubmit ? _save : null,
                       ),
                     ),
                   ),
