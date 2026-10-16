@@ -12,6 +12,7 @@ import '../../app/theme/tokens.dart';
 import '../../core/persistence/image_store.dart';
 import '../../core/utils/clock.dart';
 import '../../core/utils/date_formatter.dart';
+import '../../core/widgets/action_guard.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
@@ -36,12 +37,15 @@ class AddItemScreen extends ConsumerStatefulWidget {
   ConsumerState<AddItemScreen> createState() => _AddItemScreenState();
 }
 
-class _AddItemScreenState extends ConsumerState<AddItemScreen> {
+/// 진행 표시를 그릴 저장 버튼 구분(#48).
+enum _SaveAction { save, saveAndNext }
+
+class _AddItemScreenState extends ConsumerState<AddItemScreen>
+    with ActionGuardMixin {
   NewItemDraft _draft = const NewItemDraft();
 
   /// 수정 모드의 dirty 판정 기준. 진입 시 원본 값으로 채워진다.
   NewItemDraft _initialDraft = const NewItemDraft();
-  bool _saving = false;
 
   /// 수정 모드에서 로드된 기존 사진의 sandbox 절대 경로(표시용).
   String? _existingImagePath;
@@ -113,7 +117,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   /// 등록 모드는 명칭 또는 사진만 있으면 된다(#42 FR-002). 저장 진행 중에는
   /// 모든 저장 버튼을 막아 중복 생성을 차단한다(FR-001b).
   bool get _canSubmit =>
-      !_saving && _isDirty && (_isEdit ? _draft.canSave : _draft.canQuickSave);
+      !actionBusy &&
+      _isDirty &&
+      (_isEdit ? _draft.canSave : _draft.canQuickSave);
 
   void _pickPhoto(File file) {
     setState(() {
@@ -183,58 +189,64 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   // 직접 선행하지만 분석기가 ConsumerState의 State.context를 비동기 갭 너머의
   // unrelated 참조로 잘못 분류한다.)
   /// [next]가 true면(등록 모드 전용) 저장 후 화면을 유지하고 폼을 비운다(FR-001a).
+  /// #48 FR-030 — 저장 중에는 다른 저장을 막고(공용 액션 가드), 실패하면 입력을
+  /// 유지한 채 오류 토스트를 띄운다.
   Future<void> _save({bool next = false}) async {
     if (!_canSubmit) return;
-    setState(() => _saving = true);
-    String message;
-    var success = false;
-    try {
-      final repo = ref.read(itemRepositoryProvider);
-      if (_isEdit) {
-        final photoChanged = _draft.tempPhoto != null || _photoCleared;
-        await repo.update(
-          widget.editId!,
-          ItemPatch(
-            name: _draft.name,
-            brand: _draft.brand,
-            category: _draft.category,
-            careMethod: _draft.careMethod,
-            washCycle: _draft.washCycle,
-            careMode: _draft.careMode,
-            purposes: _draft.purposes,
-            purchasedAt: _draft.purchasedAt,
-            newPhoto: _draft.tempPhoto,
-            removePhoto: _photoCleared,
-            tags: _draft.tags,
-          ),
-        );
-        // 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가 이전
-        // 이미지를 계속 반환한다. 상세·옷장이 새 사진을 즉시 반영하도록
-        // 이미지 캐시를 비운다(FR-006, 파일 경로 기반 캐시 무효화 함정 회피).
-        //
-        // 경로 기반 타깃 evict(FileImage(File(abs)))는 쓰지 않는다: 표시 표면
-        // (hero_image·garment_tile·recently_worn·laundry_tile)이 모두
-        // Image.file(cacheWidth: N)을 쓰므로 캐시 키가 bare FileImage가 아니라
-        // ResizeImage(_SizeAwareCacheKey)다. bare FileImage로 evict하면 어떤
-        // 리사이즈 엔트리와도 == 이 성립하지 않아 stale 이미지가 남는다. 한 파일이
-        // 최대 4가지 width로 캐싱되므로 키 무관 전역 clear가 이 경우 올바른 도구다.
-        if (photoChanged) {
-          PaintingBinding.instance.imageCache
-            ..clear()
-            ..clearLiveImages();
-        }
-        message = '옷 정보를 수정했어요';
-      } else {
-        await repo.create(_draft.forCreate());
-        message = next ? '저장했어요. 다음 옷을 등록해 주세요' : '새 옷이 옷장에 등록됐어요';
+    await runGuarded(
+      () => _persist(next: next),
+      tag: next ? _SaveAction.saveAndNext : _SaveAction.save,
+      failureMessage: _isEdit
+          ? '수정에 실패했어요. 다시 시도해 주세요.'
+          : '등록에 실패했어요. 다시 시도해 주세요.',
+      // #22 N-02 — 실패 시 수정 화면에 머물고 하단 CTA를 가리지 않도록 상단.
+      placement: _isEdit ? ToastPlacement.top : ToastPlacement.bottom,
+    );
+  }
+
+  Future<void> _persist({required bool next}) async {
+    final repo = ref.read(itemRepositoryProvider);
+    final String message;
+    if (_isEdit) {
+      final photoChanged = _draft.tempPhoto != null || _photoCleared;
+      await repo.update(
+        widget.editId!,
+        ItemPatch(
+          name: _draft.name,
+          brand: _draft.brand,
+          category: _draft.category,
+          careMethod: _draft.careMethod,
+          washCycle: _draft.washCycle,
+          careMode: _draft.careMode,
+          purposes: _draft.purposes,
+          purchasedAt: _draft.purchasedAt,
+          newPhoto: _draft.tempPhoto,
+          removePhoto: _photoCleared,
+          tags: _draft.tags,
+        ),
+      );
+      // 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가 이전
+      // 이미지를 계속 반환한다. 상세·옷장이 새 사진을 즉시 반영하도록
+      // 이미지 캐시를 비운다(FR-006, 파일 경로 기반 캐시 무효화 함정 회피).
+      //
+      // 경로 기반 타깃 evict(FileImage(File(abs)))는 쓰지 않는다: 표시 표면
+      // (hero_image·garment_tile·recently_worn·laundry_tile)이 모두
+      // Image.file(cacheWidth: N)을 쓰므로 캐시 키가 bare FileImage가 아니라
+      // ResizeImage(_SizeAwareCacheKey)다. bare FileImage로 evict하면 어떤
+      // 리사이즈 엔트리와도 == 이 성립하지 않아 stale 이미지가 남는다. 한 파일이
+      // 최대 4가지 width로 캐싱되므로 키 무관 전역 clear가 이 경우 올바른 도구다.
+      if (photoChanged) {
+        PaintingBinding.instance.imageCache
+          ..clear()
+          ..clearLiveImages();
       }
-      success = true;
-    } catch (e, stackTrace) {
-      debugPrint('Failed to save item (edit=$_isEdit): $e\n$stackTrace');
-      message = _isEdit ? '수정에 실패했어요' : '등록에 실패했어요';
+      message = '옷 정보를 수정했어요';
+    } else {
+      await repo.create(_draft.forCreate());
+      message = next ? '저장했어요. 다음 옷을 등록해 주세요' : '새 옷이 옷장에 등록됐어요';
     }
     if (!context.mounted) return;
-    if (success && next) {
+    if (next) {
       // FR-001a — 같은 입력이 다시 저장되지 않도록 성공 직후 폼을 비운다.
       // 직전 카테고리는 같은 종류를 연달아 등록하기 쉽게 유지한다.
       final blank = NewItemDraft(category: _draft.category);
@@ -242,23 +254,21 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         _blankDraft = blank;
         _draft = blank;
         _formGeneration++;
-        _saving = false;
       });
       if (_scroll.hasClients) _scroll.jumpTo(0);
       // 하단 CTA 바를 가리지 않도록 상단에 띄운다.
       showClosetimoToast(context, message, placement: ToastPlacement.top);
       return;
     }
-    // #22 N-02 — 수정은 하단 탭이 없는 상세로 돌아가(실패 시엔 수정 화면에 머묾)
-    // 하단 토스트가 "착용 기록하기" 등을 덮으므로 상단에 띄운다. 신규 등록은
-    // 옷장 등 탭 화면으로 돌아가므로 하단 탭 위(기본)를 유지한다.
+    // #22 N-02 — 수정은 하단 탭이 없는 상세로 돌아가 하단 토스트가
+    // "착용 기록하기" 등을 덮으므로 상단에 띄운다. 신규 등록은 옷장 등 탭 화면으로
+    // 돌아가므로 하단 탭 위(기본)를 유지한다.
     showClosetimoToast(
       context,
       message,
       placement: _isEdit ? ToastPlacement.top : ToastPlacement.bottom,
     );
-    if (success) context.pop();
-    if (mounted) setState(() => _saving = false);
+    context.pop();
   }
 
   @override
@@ -473,8 +483,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           PrimaryButton(
-                            label: _isEdit ? '수정 완료' : '등록하기',
+                            label: isActionBusy(_SaveAction.save)
+                                ? '저장 중…'
+                                : (_isEdit ? '수정 완료' : '등록하기'),
                             trailing: const Icon(Icons.check_rounded),
+                            busy: isActionBusy(_SaveAction.save),
                             onPressed: _canSubmit ? _save : null,
                           ),
                           // FR-001a — 여러 벌을 이어서 등록하는 보조 액션.
@@ -483,7 +496,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                               onPressed: _canSubmit
                                   ? () => _save(next: true)
                                   : null,
-                              child: const Text('저장하고 다음 옷 등록'),
+                              child: Text(
+                                isActionBusy(_SaveAction.saveAndNext)
+                                    ? '저장 중…'
+                                    : '저장하고 다음 옷 등록',
+                              ),
                             ),
                         ],
                       ),

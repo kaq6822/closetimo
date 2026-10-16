@@ -9,6 +9,7 @@ import '../../app/router.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/utils/clock.dart';
+import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/providers/app_providers.dart';
 import 'backup/backup_flow.dart';
@@ -26,7 +27,16 @@ class SettingsScreen extends ConsumerWidget {
 
     return prefsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text('설정을 불러오지 못했어요\n$e')),
+      // #48 FR-029 — 실패 원인 대신 복구 경로(다시 시도)를 보인다.
+      error: (e, _) {
+        debugPrint('Failed to load preferences: $e');
+        return Center(
+          child: AsyncErrorView(
+            message: '설정을 불러오지 못했어요',
+            onRetry: () => ref.invalidate(preferencesStreamProvider),
+          ),
+        );
+      },
       data: (prefs) {
         final months = _monthsBetween(
           prefs.firstLaunchedAt ?? clock.now(),

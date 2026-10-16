@@ -1,5 +1,6 @@
 // #44 — 보관함. 보관한 옷을 확인하고 기록을 유지한 채 옷장으로 꺼낸다.
 // 진입: 설정 > 옷 관리 > 보관함 (contracts/routes.md `/archive`).
+// #48 FR-029·030 — 읽기 실패·재시도, 꺼내기 중복 입력 차단·실패 안내.
 
 import 'dart:io';
 
@@ -12,6 +13,8 @@ import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/persistence/image_store.dart';
 import '../../core/utils/date_formatter.dart';
+import '../../core/widgets/action_guard.dart';
+import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/item_placeholder.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
@@ -25,34 +28,29 @@ class ArchiveScreen extends ConsumerStatefulWidget {
   ConsumerState<ArchiveScreen> createState() => _ArchiveScreenState();
 }
 
-class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
-  late final Stream<List<Item>> _archived = ref
-      .read(archiveRepositoryProvider)
-      .watchArchived();
-
-  Future<void> _restore(Item item) async {
+class _ArchiveScreenState extends ConsumerState<ArchiveScreen>
+    with ActionGuardMixin {
+  Future<void> _restore(Item item) => runGuarded(() async {
     await ref.read(archiveRepositoryProvider).restore(item.id);
     if (!mounted) return;
     showClosetimoToast(context, '${item.name}을(를) 옷장으로 꺼냈어요');
-  }
+  }, failureMessage: '옷장으로 꺼내지 못했어요. 다시 시도해 주세요.');
 
   @override
   Widget build(BuildContext context) {
+    final repo = ref.watch(archiveRepositoryProvider);
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             TopBar(subtitle: '보관함', onBack: () => context.pop()),
+            if (actionBusy) const LinearProgressIndicator(),
             Expanded(
-              child: StreamBuilder<List<Item>>(
-                stream: _archived,
-                builder: (context, snap) {
-                  if (!snap.hasData) {
-                    return const Center(
-                      child: CircularProgressIndicator.adaptive(),
-                    );
-                  }
-                  final items = snap.data!;
+              child: StreamStateBuilder<List<Item>>(
+                stream: repo.watchArchived,
+                streamKey: repo,
+                errorMessage: '보관함을 불러오지 못했어요',
+                builder: (context, items) {
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(
                       ClosetimoSpacing.lg,
@@ -92,7 +90,7 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
                           _ArchivedTile(
                             key: ValueKey('archived-${item.id}'),
                             item: item,
-                            onRestore: () => _restore(item),
+                            onRestore: actionBusy ? null : () => _restore(item),
                           ),
                           const SizedBox(height: ClosetimoSpacing.space12),
                         ],
@@ -112,7 +110,9 @@ class _ArchivedTile extends ConsumerWidget {
   const _ArchivedTile({required this.item, required this.onRestore, super.key});
 
   final Item item;
-  final VoidCallback onRestore;
+
+  /// 다른 꺼내기가 진행 중이면 null(비활성).
+  final VoidCallback? onRestore;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

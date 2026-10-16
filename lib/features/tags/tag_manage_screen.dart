@@ -1,6 +1,7 @@
 // #46 — 태그 관리. 태그 이름 변경(같은 이름이 있으면 병합)과 삭제.
 // 진입: 설정 > 옷 관리 > 태그 관리 (contracts/routes.md `/tags`).
 // 태그를 지우거나 합쳐도 옷과 착용·세탁 기록은 그대로 남는다.
+// #48 FR-029·030 — 읽기 실패·재시도, 변경 중 중복 입력 차단·실패 안내.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,14 +9,22 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/widgets/action_guard.dart';
+import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item_tags.dart';
 import '../../data/providers/app_providers.dart';
 
-class TagManageScreen extends ConsumerWidget {
+class TagManageScreen extends ConsumerStatefulWidget {
   const TagManageScreen({super.key});
 
+  @override
+  ConsumerState<TagManageScreen> createState() => _TagManageScreenState();
+}
+
+class _TagManageScreenState extends ConsumerState<TagManageScreen>
+    with ActionGuardMixin {
   Future<void> _rename(
     BuildContext context,
     WidgetRef ref,
@@ -62,8 +71,11 @@ class TagManageScreen extends ConsumerWidget {
       if (ok != true || !context.mounted) return;
     }
     final to = existing?.name ?? target;
-    await ref.read(tagRepositoryProvider).renameTag(usage.name, to);
-    if (!context.mounted) return;
+    final ok = await runGuarded(
+      () => ref.read(tagRepositoryProvider).renameTag(usage.name, to),
+      failureMessage: '태그를 바꾸지 못했어요. 다시 시도해 주세요.',
+    );
+    if (!ok || !context.mounted) return;
     showClosetimoToast(
       context,
       existing != null ? "'$to' 태그로 합쳤어요" : "'$to'(으)로 이름을 바꿨어요",
@@ -93,24 +105,34 @@ class TagManageScreen extends ConsumerWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
-    await ref.read(tagRepositoryProvider).deleteTag(usage.name);
-    if (!context.mounted) return;
+    final done = await runGuarded(
+      () => ref.read(tagRepositoryProvider).deleteTag(usage.name),
+      failureMessage: '태그를 지우지 못했어요. 다시 시도해 주세요.',
+    );
+    if (!done || !context.mounted) return;
     showClosetimoToast(context, "'${usage.name}' 태그를 지웠어요");
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final usages = ref.watch(tagUsageProvider);
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             TopBar(subtitle: '태그 관리', onBack: () => context.pop()),
+            if (actionBusy) const LinearProgressIndicator(),
             Expanded(
               child: usages.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator.adaptive()),
-                error: (e, _) => const Center(child: Text('태그를 불러오지 못했어요')),
+                error: (e, _) {
+                  debugPrint('Failed to load tag usages: $e');
+                  return AsyncErrorView(
+                    message: '태그를 불러오지 못했어요',
+                    onRetry: () => ref.invalidate(tagUsageProvider),
+                  );
+                },
                 data: (all) => ListView(
                   padding: const EdgeInsets.fromLTRB(
                     ClosetimoSpacing.lg,
@@ -152,8 +174,12 @@ class TagManageScreen extends ConsumerWidget {
                         _TagRow(
                           key: ValueKey('tag-${u.name}'),
                           usage: u,
-                          onRename: () => _rename(context, ref, u, all),
-                          onDelete: () => _delete(context, ref, u),
+                          onRename: actionBusy
+                              ? null
+                              : () => _rename(context, ref, u, all),
+                          onDelete: actionBusy
+                              ? null
+                              : () => _delete(context, ref, u),
                         ),
                         const SizedBox(height: ClosetimoSpacing.sm),
                       ],
@@ -177,8 +203,10 @@ class _TagRow extends StatelessWidget {
   });
 
   final TagUsage usage;
-  final VoidCallback onRename;
-  final VoidCallback onDelete;
+
+  /// 다른 변경이 진행 중이면 null(비활성).
+  final VoidCallback? onRename;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {

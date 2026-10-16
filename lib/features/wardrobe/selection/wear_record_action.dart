@@ -55,7 +55,7 @@ Future<void> recordWearForSelection(
   } catch (e) {
     debugPrint('Failed to record wear for ${ids.length} items: $e');
     if (!context.mounted) return;
-    showClosetimoToast(context, '착용을 기록하지 못했어요. 선택은 그대로 두었어요.');
+    showClosetimoToast(context, '착용을 기록하지 못했어요. 선택은 그대로 두었어요.', isError: true);
     return;
   }
   if (!context.mounted) return;

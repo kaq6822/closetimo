@@ -1,5 +1,6 @@
 // #40 — 설정 화면의 백업·복원 흐름(진행 표시 → 확인 안내 → 결과 안내).
 // specs/004-backup-restore/spec.md US1·US2, FR-006·FR-008.
+// #48 FR-030 — 진행 중(파일 선택기·공유 시트 포함) 백업·복원을 다시 시작하지 않는다.
 
 import 'dart:async';
 
@@ -13,8 +14,31 @@ import '../../../data/backup/backup_format.dart';
 import '../../../data/providers/app_providers.dart';
 import 'backup_file_gateway.dart';
 
+/// 백업 또는 복원 흐름이 진행 중인가. 진행 표시 다이얼로그가 뜨기 전(파일 선택기)
+/// 연속 탭으로 흐름이 겹치지 않게 한다. 앱(ProviderScope) 단위 상태다.
+final _flowRunningProvider = StateProvider<bool>((ref) => false);
+
+/// [flow]가 끝날 때까지 다른 백업·복원 시작을 무시한다.
+Future<void> _exclusive(WidgetRef ref, Future<void> Function() flow) async {
+  final running = ref.read(_flowRunningProvider.notifier);
+  if (running.state) return;
+  running.state = true;
+  try {
+    await flow();
+  } finally {
+    running.state = false;
+  }
+}
+
 /// 백업 파일을 만들고 OS 공유 시트로 내보낸다.
-Future<void> runBackup(BuildContext context, WidgetRef ref) async {
+Future<void> runBackup(BuildContext context, WidgetRef ref) =>
+    _exclusive(ref, () => _backup(context, ref));
+
+/// 백업 파일을 골라 검증하고, 확인을 받은 뒤 현재 옷장을 전체 교체한다.
+Future<void> runRestore(BuildContext context, WidgetRef ref) =>
+    _exclusive(ref, () => _restore(context, ref));
+
+Future<void> _backup(BuildContext context, WidgetRef ref) async {
   final repo = ref.read(backupRepositoryProvider);
   final gateway = ref.read(backupFileGatewayProvider);
 
@@ -51,8 +75,7 @@ Future<void> runBackup(BuildContext context, WidgetRef ref) async {
   );
 }
 
-/// 백업 파일을 골라 검증하고, 확인을 받은 뒤 현재 옷장을 전체 교체한다.
-Future<void> runRestore(BuildContext context, WidgetRef ref) async {
+Future<void> _restore(BuildContext context, WidgetRef ref) async {
   final repo = ref.read(backupRepositoryProvider);
   final gateway = ref.read(backupFileGatewayProvider);
 

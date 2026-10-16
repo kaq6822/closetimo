@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/async_state_view.dart';
 import '../../../data/models/wear_event.dart';
 import '../../../data/providers/app_providers.dart';
 
@@ -123,12 +124,14 @@ class HistoryTimeline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stream = ref.watch(eventRepositoryProvider).watchForItem(itemId);
+    final repo = ref.watch(eventRepositoryProvider);
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    return StreamBuilder<List<WearEvent>>(
-      stream: stream,
-      builder: (ctx, snap) {
-        final events = snap.data ?? const [];
+    // #48 FR-029 — 로딩·읽기 실패를 "기록 없음"과 구분한다.
+    return StreamStateBuilder<List<WearEvent>>(
+      stream: () => repo.watchForItem(itemId),
+      streamKey: (repo, itemId),
+      errorMessage: '착용 히스토리를 불러오지 못했어요',
+      builder: (ctx, events) {
         if (events.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: ClosetimoSpacing.space24),

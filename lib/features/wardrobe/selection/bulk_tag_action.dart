@@ -65,7 +65,9 @@ Future<void> _run(
     }
   } catch (e, st) {
     debugPrint('Failed to apply bulk tag edit: $e\n$st');
-    if (context.mounted) showClosetimoToast(context, '태그를 바꾸지 못했어요');
+    if (context.mounted) {
+      showClosetimoToast(context, '태그를 바꾸지 못했어요. 다시 시도해 주세요.', isError: true);
+    }
     return;
   }
   if (!context.mounted) return;

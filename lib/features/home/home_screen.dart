@@ -1,4 +1,5 @@
 // US5 T071 — 홈 대시보드.
+// #48 FR-029 — 통계 로딩·읽기 실패를 0점과 구분한다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/utils/clock.dart';
 import '../../core/utils/greeting.dart';
+import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/repositories/item_repository.dart';
@@ -21,7 +23,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stats = ref.watch(itemRepositoryProvider).watchStats();
+    final repo = ref.watch(itemRepositoryProvider);
     final greeting = greetingFor(ref.watch(clockProvider).now());
     return Column(
       children: [
@@ -31,23 +33,11 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         Expanded(
-          child: StreamBuilder<WardrobeStats>(
-            stream: stats,
-            initialData: const WardrobeStats(
-              total: 0,
-              clean: 0,
-              dirty: 0,
-              perBucket: {},
-            ),
-            builder: (ctx, snap) {
-              final s =
-                  snap.data ??
-                  const WardrobeStats(
-                    total: 0,
-                    clean: 0,
-                    dirty: 0,
-                    perBucket: {},
-                  );
+          child: StreamStateBuilder<WardrobeStats>(
+            stream: repo.watchStats,
+            streamKey: repo,
+            errorMessage: '옷장 정보를 불러오지 못했어요',
+            builder: (ctx, s) {
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
                   ClosetimoSpacing.lg,

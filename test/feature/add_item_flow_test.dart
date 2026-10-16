@@ -636,8 +636,11 @@ void main() {
 
       await tester.tap(find.text('등록하기'));
       await tester.pump();
-      // 저장 진행 중: 모든 저장 버튼이 비활성이라 추가 탭이 무시된다.
-      await tester.tap(find.text('등록하기'), warnIfMissed: false);
+      // 저장 진행 중: 누른 버튼은 '저장 중…'으로 바뀌고(#48 FR-030), 모든 저장
+      // 버튼이 비활성이라 추가 탭이 무시된다.
+      expect(find.text('저장 중…'), findsOneWidget);
+      expect(find.text('등록하기'), findsNothing);
+      await tester.tap(find.text('저장 중…'), warnIfMissed: false);
       await tester.tap(find.text('저장하고 다음 옷 등록'), warnIfMissed: false);
       await tester.tap(find.text('저장'), warnIfMissed: false);
       await tester.pump();
@@ -659,7 +662,7 @@ void main() {
       await tester.tap(find.text('저장하고 다음 옷 등록'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('등록에 실패했어요'), findsOneWidget);
+      expect(find.text('등록에 실패했어요. 다시 시도해 주세요.'), findsOneWidget);
       expect(repo.items, isEmpty);
       final name = tester.widget<TextField>(find.byType(TextField).first);
       expect(name.controller?.text, '흰 셔츠');

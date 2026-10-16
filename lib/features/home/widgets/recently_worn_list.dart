@@ -1,4 +1,5 @@
 // US5 T069 — 홈 "최근 입은 옷" 섹션.
+// #48 FR-029 — 읽기 실패는 섹션을 숨기지 않고 실패 안내로 보인다.
 
 import '../../../core/widgets/item_placeholder.dart';
 import 'dart:io';
@@ -13,6 +14,7 @@ import '../../../app/theme/tokens.dart';
 import '../../../core/persistence/image_store.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/async_state_view.dart';
 import '../../../data/models/item.dart';
 import '../../../data/providers/app_providers.dart';
 
@@ -21,14 +23,15 @@ class RecentlyWornList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stream = ref
-        .watch(itemRepositoryProvider)
-        .watchRecentlyWorn(limit: 2);
+    final repo = ref.watch(itemRepositoryProvider);
     final clock = ref.watch(clockProvider);
-    return StreamBuilder<List<Item>>(
-      stream: stream,
-      builder: (ctx, snap) {
-        final items = snap.data ?? const [];
+    return StreamStateBuilder<List<Item>>(
+      stream: () => repo.watchRecentlyWorn(limit: 2),
+      streamKey: repo,
+      errorMessage: '최근 입은 옷을 불러오지 못했어요',
+      // 최초 로딩은 통계와 함께 끝나므로 섹션 자리를 비워 둔다.
+      loading: const SizedBox.shrink(),
+      builder: (ctx, items) {
         if (items.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

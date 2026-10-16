@@ -3,6 +3,7 @@
 // 스크린리더가 낭독하도록 live region으로 노출한다(#17).
 // #39 — "실행 취소" 같은 액션 버튼을 하나 붙일 수 있다. 액션이 있으면 약 4초간
 // 보이고, 버튼 영역만 탭을 받는다.
+// #48 — 실패 결과는 [isError]로 오류 아이콘을 써서 성공(체크)과 구분한다(FR-030).
 
 import 'package:flutter/material.dart';
 
@@ -36,6 +37,7 @@ void showClosetimoToast(
   ToastPlacement placement = ToastPlacement.bottom,
   String? actionLabel,
   VoidCallback? onAction,
+  bool isError = false,
 }) {
   assert(
     (actionLabel == null) == (onAction == null),
@@ -48,6 +50,7 @@ void showClosetimoToast(
     builder: (ctx) => _ToastBubble(
       message: message,
       placement: placement,
+      isError: isError,
       actionLabel: actionLabel,
       onAction: onAction,
       onDismissed: () {
@@ -63,6 +66,7 @@ class _ToastBubble extends StatefulWidget {
     required this.message,
     required this.placement,
     required this.onDismissed,
+    this.isError = false,
     this.actionLabel,
     this.onAction,
   });
@@ -70,6 +74,7 @@ class _ToastBubble extends StatefulWidget {
   final String message;
   final ToastPlacement placement;
   final VoidCallback onDismissed;
+  final bool isError;
   final String? actionLabel;
   final VoidCallback? onAction;
 
@@ -138,10 +143,14 @@ class _ToastBubbleState extends State<_ToastBubble>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.check_circle_rounded,
+            Icon(
+              widget.isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_rounded,
               size: 16,
-              color: ClosetimoColors.primary,
+              color: widget.isError
+                  ? ClosetimoColors.error
+                  : ClosetimoColors.primary,
             ),
             const SizedBox(width: ClosetimoSpacing.space8),
             Flexible(

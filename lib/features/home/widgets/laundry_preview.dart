@@ -1,5 +1,6 @@
 // US5 T070 — 홈 세탁 바구니 미리보기 + 전문가 팁.
 // FR-021(#47) — 실제 썸네일, 전체 대기 수, 세탁 화면 이동, 빈 바구니 안내를 제공한다.
+// #48 FR-029 — 로딩·읽기 실패를 빈 바구니와 구분한다.
 
 import 'dart:convert';
 import 'dart:io';
@@ -14,6 +15,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../core/persistence/image_store.dart';
+import '../../../core/widgets/async_state_view.dart';
 import '../../../core/widgets/progress_bar.dart';
 import '../../../data/models/item.dart';
 import '../../../data/providers/app_providers.dart';
@@ -38,14 +40,15 @@ class LaundryPreview extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final basket = ref.watch(laundryRepositoryProvider).watchBasket();
+    final repo = ref.watch(laundryRepositoryProvider);
     final tips = ref.watch(_laundryTipsProvider).valueOrNull ?? const [];
     final seed = ref.watch(_laundryTipIndexProvider);
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    return StreamBuilder<List<Item>>(
-      stream: basket,
-      builder: (ctx, snap) {
-        final all = snap.data ?? const <Item>[];
+    return StreamStateBuilder<List<Item>>(
+      stream: repo.watchBasket,
+      streamKey: repo,
+      errorMessage: '세탁 바구니를 불러오지 못했어요',
+      builder: (ctx, all) {
         final items = all.take(previewLimit).toList();
         final rest = all.length - items.length;
         return Container(

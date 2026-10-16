@@ -12,6 +12,7 @@ import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../core/persistence/image_store.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/action_guard.dart';
 import '../../../core/widgets/item_placeholder.dart';
 import '../../../core/widgets/status_label.dart';
 import '../../../core/widgets/toast.dart';
@@ -221,22 +222,26 @@ class _QuickActionMenu extends ConsumerWidget {
 
   final Item item;
 
-  Future<void> _run(
-    BuildContext context,
-    WidgetRef ref,
-    _QuickAction action,
-  ) async {
+  // #48 FR-030 — 실패하면 오류 토스트. 메뉴는 실행 중 다시 열 수 없어 재진입 가드는 두지 않는다.
+  Future<void> _run(BuildContext context, WidgetRef ref, _QuickAction action) {
     switch (action) {
       case _QuickAction.recordWear:
-        // 메모 없이 기록한다. 메모는 상세 타임라인에서 사후 편집(FR-010a).
-        await ref.read(eventRepositoryProvider).recordWear(item.id);
-        if (!context.mounted) return;
-        showClosetimoToast(context, '오늘의 착용이 기록되었어요');
+        return runWithFailureToast(context, () async {
+          // 메모 없이 기록한다. 메모는 상세 타임라인에서 사후 편집(FR-010a).
+          await ref.read(eventRepositoryProvider).recordWear(item.id);
+          if (!context.mounted) return;
+          showClosetimoToast(context, '오늘의 착용이 기록되었어요');
+        }, failureMessage: '착용을 기록하지 못했어요. 다시 시도해 주세요.');
       case _QuickAction.toggleLaundry:
         final wasIn = item.inLaundry;
-        await ref.read(laundryRepositoryProvider).toggle(item.id);
-        if (!context.mounted) return;
-        showClosetimoToast(context, wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요');
+        return runWithFailureToast(context, () async {
+          await ref.read(laundryRepositoryProvider).toggle(item.id);
+          if (!context.mounted) return;
+          showClosetimoToast(
+            context,
+            wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요',
+          );
+        }, failureMessage: '세탁 바구니를 바꾸지 못했어요. 다시 시도해 주세요.');
     }
   }
 
