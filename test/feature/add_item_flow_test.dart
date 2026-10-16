@@ -5,6 +5,7 @@
 import 'package:closetimo/app/theme/app_theme.dart';
 import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/utils/clock.dart';
+import 'package:closetimo/core/widgets/primary_button.dart';
 import 'package:closetimo/data/models/item.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
@@ -235,6 +236,43 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('#24: 수정 모드는 변경 전 저장이 비활성이고 변경하면 활성이 된다', (tester) async {
+    final repo = _InMemoryItemRepository();
+    repo.items.add(
+      Item(
+        name: '기존 코트',
+        category: Category.outer,
+        washCycle: 5,
+        createdAt: DateTime(2026, 1, 1),
+      )..id = 1,
+    );
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('openEdit'));
+    await tester.pumpAndSettle();
+
+    VoidCallback? topSave() => tester
+        .widget<TextButton>(
+          find.ancestor(of: find.text('저장'), matching: find.byType(TextButton)),
+        )
+        .onPressed;
+    VoidCallback? bottomSave() =>
+        tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed;
+
+    expect(topSave(), isNull);
+    expect(bottomSave(), isNull);
+
+    await tester.enterText(find.byType(TextField).first, '수정된 코트');
+    await tester.pumpAndSettle();
+    expect(topSave(), isNotNull);
+    expect(bottomSave(), isNotNull);
+
+    // 원래 값으로 되돌리면 다시 비활성
+    await tester.enterText(find.byType(TextField).first, '기존 코트');
+    await tester.pumpAndSettle();
+    expect(topSave(), isNull);
+  });
+
   testWidgets('002 US1: 수정 모드에서 명칭을 비우면 수정 완료가 비활성', (tester) async {
     final repo = _InMemoryItemRepository();
     repo.items.add(
@@ -370,6 +408,8 @@ void main() {
     await tester.tap(find.text('openEdit'));
     await tester.pumpAndSettle();
 
+    await tester.enterText(find.byType(TextField).first, '수정된 코트');
+    await tester.pumpAndSettle();
     await tester.tap(find.text('수정 완료'));
     expect(await toastCenterY(tester, '옷 정보를 수정했어요'), lessThan(300));
 

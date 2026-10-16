@@ -65,6 +65,7 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: ClosetimoSpacing.space28),
                     _Section(
                       title: '알림',
+                      caption: '알림 발송은 준비 중이에요. 설정만 먼저 저장돼요.',
                       rows: [
                         PreferenceRow(
                           label: '세탁 알림',
@@ -87,8 +88,8 @@ class SettingsScreen extends ConsumerWidget {
                     const _Section(
                       title: '기타',
                       rows: [
-                        PreferenceRow(label: '데이터 백업', textValue: ''),
-                        PreferenceRow(label: '개인정보 처리방침', textValue: ''),
+                        PreferenceRow(label: '데이터 백업', textValue: '준비 중'),
+                        PreferenceRow(label: '개인정보 처리방침', textValue: '준비 중'),
                         PreferenceRow(label: '앱 정보', textValue: 'v1.0.0'),
                       ],
                     ),
@@ -108,9 +109,10 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.rows});
+  const _Section({required this.title, required this.rows, this.caption});
 
   final String title;
+  final String? caption;
   final List<Widget> rows;
 
   @override
@@ -135,6 +137,21 @@ class _Section extends StatelessWidget {
             ),
           ),
         ),
+        if (caption != null)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: ClosetimoSpacing.space4,
+              bottom: ClosetimoSpacing.space12,
+            ),
+            child: Text(
+              caption!,
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 12,
+                color: ClosetimoColors.muted,
+              ),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.all(ClosetimoSpacing.xs),
           decoration: BoxDecoration(

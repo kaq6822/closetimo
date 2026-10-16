@@ -1,5 +1,6 @@
 // US5 T069 — 홈 "최근 입은 옷" 섹션.
 
+import '../../../core/widgets/item_placeholder.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -163,7 +164,7 @@ class _Image extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (imagePath == null) return Container(color: fallback);
+    if (imagePath == null) return ItemPlaceholder(color: fallback);
     final store = ref.watch(imageStoreProvider);
     return FutureBuilder<String>(
       future: store.absolutePath(imagePath!),
