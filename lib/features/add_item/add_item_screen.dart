@@ -15,6 +15,7 @@ import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
+import '../../data/models/item.dart';
 import '../../data/models/item_patch.dart';
 import '../../data/providers/app_providers.dart';
 import 'new_item_draft.dart';
@@ -107,7 +108,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         name: _draft.name,
         brand: _draft.brand,
         category: _draft.category,
+        purposes: _draft.purposes,
         washCycle: _draft.washCycle,
+        careMode: _draft.careMode,
         careMethod: _draft.careMethod,
         purchasedAt: _draft.purchasedAt,
       );
@@ -173,6 +176,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             category: _draft.category,
             careMethod: _draft.careMethod,
             washCycle: _draft.washCycle,
+            careMode: _draft.careMode,
+            purposes: _draft.purposes,
             purchasedAt: _draft.purchasedAt,
             newPhoto: _draft.tempPhoto,
             removePhoto: _photoCleared,
@@ -296,30 +301,48 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '세탁 주기 설정'),
-                          WashCycleStepper(
-                            value: _draft.washCycle,
-                            onChanged: (v) => setState(
-                              () => _draft = _draft.copyWith(washCycle: v),
-                            ),
-                          ),
-                          const SizedBox(height: ClosetimoSpacing.sm),
-                          const Padding(
-                            padding: EdgeInsets.only(left: ClosetimoSpacing.xs),
-                            child: Text(
-                              '설정한 횟수만큼 착용하면 세탁 알림을 보냅니다.',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11,
-                                color: ClosetimoColors.muted,
+                          // #45 — 횟수 기반 관리 적용 여부. 끄면 주기 값은 보존한다.
+                          _CareModeSwitch(
+                            value: _draft.careMode == CareMode.wearCycle,
+                            onChanged: (on) => setState(
+                              () => _draft = _draft.copyWith(
+                                careMode: on
+                                    ? CareMode.wearCycle
+                                    : CareMode.manual,
                               ),
                             ),
                           ),
+                          if (_draft.careMode == CareMode.wearCycle) ...[
+                            const SizedBox(height: ClosetimoSpacing.sm),
+                            WashCycleStepper(
+                              value: _draft.washCycle,
+                              onChanged: (v) => setState(
+                                () => _draft = _draft.copyWith(washCycle: v),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: ClosetimoSpacing.sm),
+                          _FieldHint(
+                            _draft.careMode == CareMode.wearCycle
+                                ? "설정한 횟수만큼 착용하면 '세탁 필요'로 표시돼요."
+                                : '횟수와 관계없이 필요할 때 세탁 바구니에 직접 담아요.',
+                          ),
                           const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(label: '카테고리', required: true),
+                          const _FieldLabel(label: '종류'),
                           CategoryPicker(
                             value: _draft.category,
                             onChanged: (c) => setState(
                               () => _draft = _draft.copyWith(category: c),
+                            ),
+                          ),
+                          const SizedBox(height: ClosetimoSpacing.sm),
+                          const _FieldHint('아직 정하지 않았다면 미분류로 두어도 돼요.'),
+                          const SizedBox(height: ClosetimoSpacing.lg),
+                          const _FieldLabel(label: '용도 (선택)'),
+                          PurposePicker(
+                            value: _draft.purposes,
+                            onChanged: (p) => setState(
+                              () => _draft = _draft.copyWith(purposes: p),
                             ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
@@ -329,6 +352,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             onChanged: (m) => setState(
                               () => _draft = _draft.copyWith(careMethod: m),
                             ),
+                          ),
+                          const SizedBox(height: ClosetimoSpacing.sm),
+                          const _FieldHint(
+                            '실제 세탁 조건은 옷의 케어 라벨을 따라 주세요. '
+                            '모르면 미지정으로 두어도 돼요.',
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '구매일'),
@@ -383,39 +411,82 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 }
 
 class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.label, this.required = false});
+  const _FieldLabel({required this.label});
 
   final String label;
-  final bool required;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: ClosetimoSpacing.sm),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontFamily: 'Manrope',
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: ClosetimoColors.muted,
+        ),
+      ),
+    );
+  }
+}
+
+/// 필드 아래 보조 안내 문구.
+class _FieldHint extends StatelessWidget {
+  const _FieldHint(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: ClosetimoSpacing.xs),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 11,
+          color: ClosetimoColors.muted,
+        ),
+      ),
+    );
+  }
+}
+
+/// #45 — 착용 횟수 기준 관리 적용 스위치. 행 전체를 하나의 토글로 읽힌다.
+class _CareModeSwitch extends StatelessWidget {
+  const _CareModeSwitch({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
+    return Material(
+      color: surfaces.containerLow,
+      borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+      clipBehavior: Clip.antiAlias,
+      child: MergeSemantics(
+        child: SwitchListTile.adaptive(
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: ClosetimoColors.onPrimary,
+          activeTrackColor: ClosetimoColors.primary,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: ClosetimoSpacing.md,
+          ),
+          title: const Text(
+            '착용 횟수로 관리',
+            style: TextStyle(
               fontFamily: 'Manrope',
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: ClosetimoColors.muted,
+              color: ClosetimoColors.ink,
             ),
           ),
-          if (required) ...[
-            const Spacer(),
-            const Text(
-              'REQUIRED',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 9,
-                letterSpacing: 2,
-                color: ClosetimoColors.muted,
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

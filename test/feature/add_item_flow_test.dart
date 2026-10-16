@@ -7,6 +7,7 @@ import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/core/widgets/primary_button.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
@@ -46,6 +47,8 @@ class _InMemoryItemRepository implements ItemRepository {
         brand: draft.brand.trim().isEmpty ? null : draft.brand.trim(),
         category: draft.category,
         careMethod: draft.careMethod,
+        careMode: draft.careMode,
+        purposes: draft.purposes,
         washCycle: draft.washCycle,
         createdAt: DateTime.now(),
       )..id = id,
@@ -62,8 +65,7 @@ class _InMemoryItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query = '',
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   }) => watchAll();
 
@@ -85,11 +87,11 @@ class _InMemoryItemRepository implements ItemRepository {
           : patch.brand!.trim()
       ..category = patch.category
       ..careMethod = patch.careMethod
+      ..careMode = patch.careMode
+      ..purposes = patch.purposes
       ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
-      ..purchasedAt = patch.purchasedAt
-      ..status = item.wearSinceWash >= item.washCycle
-          ? ItemStatus.dirty
-          : ItemStatus.clean;
+      ..purchasedAt = patch.purchasedAt;
+    item.status = item.derivedStatus;
   }
 
   @override
@@ -180,6 +182,63 @@ void main() {
     expect(repo.items.first.category, Category.top);
 
     // 토스트 타이머가 정리되도록 충분히 대기.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('#41·#45: 기본값은 미분류·미지정이고 횟수 관리를 끄면 주기 없이 저장된다', (tester) async {
+    final repo = _InMemoryItemRepository();
+    await tester.pumpWidget(_harness(repo));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '가죽 가방');
+    await tester.pumpAndSettle();
+
+    // 기본은 횟수 기반: 스테퍼와 '세탁 필요' 안내가 보인다.
+    expect(find.bySemanticsLabel('착용 횟수 늘리기'), findsOneWidget);
+    expect(find.text("설정한 횟수만큼 착용하면 '세탁 필요'로 표시돼요."), findsOneWidget);
+
+    final scrollable = find.byType(Scrollable).first;
+    final toggle = find.text('착용 횟수로 관리');
+    await tester.scrollUntilVisible(toggle, 300, scrollable: scrollable);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('착용 횟수 늘리기'), findsNothing);
+    expect(find.text('횟수와 관계없이 필요할 때 세탁 바구니에 직접 담아요.'), findsOneWidget);
+
+    // 관리 방법 미지정 + 케어 라벨 안내.
+    final careHint = find.textContaining('케어 라벨');
+    await tester.scrollUntilVisible(careHint, 300, scrollable: scrollable);
+    expect(careHint, findsOneWidget);
+    expect(
+      tester.getSemantics(
+        find
+            .ancestor(of: find.text('미지정'), matching: find.byType(Semantics))
+            .first,
+      ),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: true),
+    );
+    // legacy 운동복은 종류로 고를 수 없고 용도 '운동'으로 고른다.
+    expect(find.text('운동복'), findsNothing);
+    final sport = find.text('운동');
+    await tester.scrollUntilVisible(sport, 300, scrollable: scrollable);
+    await tester.tap(sport);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('등록하기'));
+    await tester.pumpAndSettle();
+
+    final saved = repo.items.single;
+    expect(saved.category, Category.uncategorized);
+    expect(saved.careMethod, CareMethod.unspecified);
+    expect(saved.careMode, CareMode.manual);
+    expect(saved.washCycle, 5);
+    expect(saved.purposes, [ItemPurpose.sport]);
+
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
   });

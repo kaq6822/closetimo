@@ -14,6 +14,7 @@ import 'dart:async';
 import 'package:closetimo/app/router.dart';
 import 'package:closetimo/app/theme/app_theme.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
@@ -40,17 +41,13 @@ class _MutableItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query = '',
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   }) {
-    final q = query.trim();
     return _controller.stream.map(
       (all) => [
         for (final i in all)
-          if ((category == null || i.category == category) &&
-              (q.isEmpty || i.name.contains(q)))
-            i,
+          if (filter.matches(i)) i,
       ],
     );
   }

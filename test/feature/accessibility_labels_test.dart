@@ -10,6 +10,7 @@ import 'package:closetimo/core/widgets/chip_filter.dart';
 import 'package:closetimo/core/widgets/toast.dart';
 import 'package:closetimo/core/widgets/top_bar.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/features/add_item/add_item_screen.dart';
 import 'package:closetimo/features/add_item/widgets/photo_picker_card.dart';
 import 'package:closetimo/features/add_item/widgets/wash_cycle_stepper.dart';
@@ -102,6 +103,7 @@ void main() {
     final item = Item(
       name: '울 코트',
       category: Category.outer,
+      careMethod: CareMethod.machine,
       washCycle: 5,
       createdAt: DateTime(2026, 1, 1),
     )..id = 1;
@@ -216,10 +218,10 @@ void main() {
       _host(
         WardrobeFilterBar(
           query: '',
-          category: null,
+          scope: const ItemFilter(),
           sort: WardrobeSort.statusCleanFirst,
           onQueryChanged: (_) {},
-          onCategoryChanged: (_) {},
+          onScopeChanged: (_) {},
           onSortChanged: (_) {},
         ),
       ),
@@ -239,6 +241,7 @@ void main() {
     final item = Item(
       name: '울 코트',
       category: Category.outer,
+      careMethod: CareMethod.machine,
       washCycle: 5,
       createdAt: DateTime(2026, 1, 1),
     )..id = 1;

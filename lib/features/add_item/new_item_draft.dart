@@ -13,9 +13,13 @@ abstract class NewItemDraft with _$NewItemDraft {
   const factory NewItemDraft({
     @Default('') String name,
     @Default('') String brand,
-    @Default(Category.outer) Category category,
+    // #41 — 종류를 고르지 않은 옷이 아우터로 집계되지 않도록 미분류가 기본값.
+    @Default(Category.uncategorized) Category category,
+    @Default(<ItemPurpose>[]) List<ItemPurpose> purposes,
     @Default(5) int washCycle,
-    @Default(CareMethod.machine) CareMethod careMethod,
+    @Default(CareMode.wearCycle) CareMode careMode,
+    // #45 — 관리 방법을 임의로 가정하지 않는다.
+    @Default(CareMethod.unspecified) CareMethod careMethod,
     DateTime? purchasedAt,
     File? tempPhoto,
   }) = _NewItemDraft;
@@ -29,7 +33,9 @@ abstract class NewItemDraft with _$NewItemDraft {
     name: item.name,
     brand: item.brand ?? '',
     category: item.category,
+    purposes: List.unmodifiable(item.purposes),
     washCycle: item.washCycle,
+    careMode: item.careMode,
     careMethod: item.careMethod,
     purchasedAt: item.purchasedAt,
   );

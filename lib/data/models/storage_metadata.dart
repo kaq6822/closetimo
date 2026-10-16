@@ -14,7 +14,11 @@ class StorageMetadata {
   });
 
   static const int singletonId = 0;
-  static const int currentStorageVersion = 1;
+
+  /// 저장소 데이터 형식 버전.
+  /// - 1: Isar Plus 최초 이전(003).
+  /// - 2: 종류·용도 분리(#41, legacy 운동복 → 미분류+용도 운동), 관리 방식(#45).
+  static const int currentStorageVersion = 2;
 
   int id = singletonId;
   int storageVersion;

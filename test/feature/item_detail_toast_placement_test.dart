@@ -8,6 +8,7 @@ import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/widgets/soft_button.dart';
 import 'package:closetimo/core/widgets/top_bar.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/models/wear_event.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
@@ -39,8 +40,7 @@ class _FakeItemRepo implements ItemRepository {
   Stream<List<Item>> watchAll() => const Stream.empty();
   @override
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query = '',
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   }) => const Stream.empty();
   @override

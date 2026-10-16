@@ -12,7 +12,9 @@
 / (ShellRoute: 하단 탭 네비게이션 보유)
 ├── /home          (HomeScreen, tab=home)            US5
 ├── /wardrobe      (WardrobeScreen, tab=wardrobe)    US2
-│     query: ?category=<Category>   ← 홈 카테고리 카드 진입 시
+│     query: ?category=<Category.name>   ← 개별 종류 1개 (예: etc = 개별 '기타')
+│            ?group=<HomeBucket.name>    ← 합산 범위 (홈 '그 외' 카드: group=others)
+│            ?purpose=<ItemPurpose.name>[,…] ← 용도 축(OR), 종류와 AND
 ├── /laundry       (LaundryScreen, tab=laundry)      US4
 └── /settings      (SettingsScreen, tab=settings)    US5
 
@@ -34,13 +36,21 @@
 | `/add-item` "등록하기" 성공 | 자동 | pop → 직전 화면 | Toast: "새 옷이 옷장에 등록됐어요" |
 | `/wardrobe` 그리드 타일 | 탭 | `/item/:id` | hero-image transition(선택) |
 | `/home` 최근 옷 카드 | 탭 | `/item/:id` | 동일 |
-| `/home` 카테고리 카드 | 탭 | `/wardrobe?category=상의` | 탭 전환 + 필터 사전 적용(FR-019) |
-| `/wardrobe` 카테고리 칩 | 탭 | `/wardrobe?category=<Category>` (전체는 쿼리 없음) | 같은 화면 유지, 쿼리를 칩 선택과 동기화 — 이후 같은 홈 카드 재탭도 필터 변경으로 감지(#13) |
+| `/home` 카테고리 카드(아우터·상의·하의) | 탭 | `/wardrobe?category=top` 등 | 탭 전환 + 필터 사전 적용(FR-019) |
+| `/home` '그 외' 카드 | 탭 | `/wardrobe?group=others` | 카드 집계와 같은 합산 범위로 이동, 옷장에 `그 외 전체` 칩 선택 표시(#37) |
+| `/wardrobe` 종류·용도 칩 | 탭 | `/wardrobe?category=<Category.name>[&purpose=…]` (전체는 쿼리 없음) | 같은 화면 유지, 쿼리를 칩 선택과 동기화 — 이후 같은 홈 카드 재탭도 필터 변경으로 감지(#13) |
 | 하단 탭 `옷장` (다른 탭에서) | 탭 | 옷장 브랜치의 마지막 위치(`/wardrobe?category=…` 포함) | 칩 필터·스크롤 유지(#13) |
 | 하단 탭 `옷장` (이미 옷장 탭) | 재탭 | `/wardrobe` (쿼리 없음) | 브랜치 초기 위치로 복귀 → 필터 전체로 초기화(#13) |
 | `/item/:id` "착용 기록하기" | 탭 | 전환 없음(상세 유지, 데이터만 갱신) | Toast(상단): "오늘의 착용이 기록되었어요" (US3 AC1, #15) |
 | `/item/:id` 백 버튼 | 탭 | pop | 변경사항 자동 저장 |
 | `/laundry` "세탁 완료 처리" | 탭 | 같은 화면 유지 | 항목 제거 + Toast: "N점의 세탁이 완료됐어요" |
+
+### 3.1 옷장 쿼리 해석 규칙 (#37·#41)
+
+- 코덱은 `lib/app/router.dart`의 `wardrobeFilterFromQuery` / `wardrobeQueryParameters`가 단일 구현이다.
+- `group`이 있으면 `category`보다 우선한다. 알 수 없는 값은 무시(전체)한다.
+- 과거 링크 호환을 위해 `category`는 한국어 라벨(`상의` 등)도 받는다.
+- 검색어는 URL에 싣지 않는다.
 
 ## 4. 가드 / 검증
 

@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../core/widgets/bottom_nav.dart';
 import '../core/widgets/top_bar.dart';
 import '../data/models/item.dart';
+import '../data/models/item_filter.dart';
 import '../features/add_item/add_item_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/item_detail/item_detail_screen.dart';
@@ -63,19 +64,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: BottomNavTab.wardrobe.path,
                 name: Routes.wardrobe,
-                builder: (ctx, st) {
-                  final raw = st.uri.queryParameters['category'];
-                  Category? cat;
-                  if (raw != null) {
-                    for (final c in Category.values) {
-                      if (c.label == raw || c.name == raw) {
-                        cat = c;
-                        break;
-                      }
-                    }
-                  }
-                  return WardrobeScreen(initialCategory: cat);
-                },
+                builder: (ctx, st) => WardrobeScreen(
+                  initialFilter: wardrobeFilterFromQuery(
+                    st.uri.queryParameters,
+                  ),
+                ),
               ),
             ],
           ),
@@ -132,6 +125,56 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// `/wardrobe` 쿼리 → 옷장 필터(contracts/routes.md §1, #37·#41).
+///
+/// - `category=<Category.name>`: 개별 종류 1개(예: `etc`는 개별 '기타'만).
+///   과거 링크 호환을 위해 한국어 라벨도 받는다.
+/// - `group=<HomeBucket.name>`: 홈 카드 합산 범위(예: `others` = '그 외').
+///   `category`와 함께 오면 `group`이 우선한다.
+/// - `purpose=<ItemPurpose.name>[,…]`: 용도 축(OR).
+/// 알 수 없는 값은 무시한다(전체).
+ItemFilter wardrobeFilterFromQuery(Map<String, String> query) {
+  var categories = <Category>{};
+  final group = query['group'];
+  final rawCategory = query['category'];
+  if (group != null) {
+    for (final b in HomeBucket.values) {
+      if (b.name == group) categories = b.categories;
+    }
+  } else if (rawCategory != null) {
+    for (final c in Category.values) {
+      if (c.name == rawCategory || c.label == rawCategory) {
+        categories = {c};
+        break;
+      }
+    }
+  }
+  final purposes = <ItemPurpose>{
+    for (final raw in (query['purpose'] ?? '').split(','))
+      for (final p in ItemPurpose.values)
+        if (p.name == raw) p,
+  };
+  return ItemFilter(categories: categories, purposes: purposes);
+}
+
+/// 옷장 필터 → `/wardrobe` 쿼리. [wardrobeFilterFromQuery]의 역방향이며
+/// 검색어는 URL에 싣지 않는다. 홈 버킷과 같은 다중 종류는 `group`으로 표현한다.
+Map<String, String> wardrobeQueryParameters(ItemFilter filter) {
+  final params = <String, String>{};
+  final group = filter.groupBucket;
+  if (group != null) {
+    params['group'] = group.name;
+  } else if (filter.categories.length == 1) {
+    params['category'] = filter.categories.single.name;
+  }
+  if (filter.purposes.isNotEmpty) {
+    final names = filter.purposes.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    params['purpose'] = names.map((p) => p.name).join(',');
+  }
+  return params;
+}
 
 /// 과거 버전이 탭 이름만 저장한 경우와 손상된 값을 안전한 경로로 정규화한다.
 String initialLocationForLastTab(String? lastTab) {

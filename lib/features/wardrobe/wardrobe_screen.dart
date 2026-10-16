@@ -8,22 +8,26 @@ import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
+import '../../data/models/item_filter.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/repositories/item_repository.dart';
 import 'widgets/garment_tile.dart';
 import 'widgets/wardrobe_filter_bar.dart';
 
 class WardrobeScreen extends ConsumerStatefulWidget {
-  const WardrobeScreen({this.initialCategory, super.key});
+  const WardrobeScreen({this.initialFilter = const ItemFilter(), super.key});
 
-  final Category? initialCategory;
+  /// 라우트 쿼리에서 온 종류·용도 조건(검색어 제외). 홈 카드 진입 시 카드의
+  /// 집계 범위와 같다(#37).
+  final ItemFilter initialFilter;
 
   @override
   ConsumerState<WardrobeScreen> createState() => _WardrobeScreenState();
 }
 
 class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
-  late Category? _category = widget.initialCategory;
+  /// 종류·용도 조건. 검색어는 [_query]로 따로 관리한다.
+  late ItemFilter _scope = widget.initialFilter;
   String _query = '';
   WardrobeSort _sort = WardrobeSort.statusCleanFirst;
 
@@ -39,9 +43,9 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
     // indexedStack 셸이 State를 보존하므로, 홈 카테고리 카드가 새 `?category=`로
     // 진입하면 여기서 필터를 맞춘다(FR-019). 칩 선택은 URL에 먼저 반영되므로
     // `_category`와 같으면 건드리지 않는다. 목록이 통째로 바뀌므로 맨 위로 올린다.
-    final next = widget.initialCategory;
-    if (next != oldWidget.initialCategory && next != _category) {
-      _category = next;
+    final next = widget.initialFilter;
+    if (next != oldWidget.initialFilter && next != _scope) {
+      _scope = next;
       // 탭 전환 중 build 단계에서 호출되므로 레이아웃이 끝난 뒤 이동한다.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _scrollController.hasClients) {
@@ -72,11 +76,11 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
 
   /// 칩 선택을 `?category=`에도 반영해, 이후 홈 카드가 같은 카테고리로
   /// 다시 진입해도 쿼리 변화로 감지되게 한다.
-  void _onCategoryChanged(Category? c) {
-    setState(() => _category = c);
+  void _onScopeChanged(ItemFilter scope) {
+    setState(() => _scope = scope);
     context.goNamed(
       Routes.wardrobe,
-      queryParameters: {if (c != null) 'category': c.name},
+      queryParameters: wardrobeQueryParameters(scope),
     );
   }
 
@@ -84,8 +88,7 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
   Widget build(BuildContext context) {
     final repo = ref.watch(itemRepositoryProvider);
     final stream = repo.watchFiltered(
-      category: _category,
-      query: _query,
+      filter: _scope.copyWith(query: _query),
       sort: _sort,
     );
     return Column(
@@ -135,10 +138,10 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                     const SizedBox(height: ClosetimoSpacing.xl),
                     WardrobeFilterBar(
                       query: _query,
-                      category: _category,
+                      scope: _scope,
                       sort: _sort,
                       onQueryChanged: (v) => setState(() => _query = v),
-                      onCategoryChanged: _onCategoryChanged,
+                      onScopeChanged: _onScopeChanged,
                       onSortChanged: (s) => setState(() => _sort = s),
                     ),
                     const SizedBox(height: ClosetimoSpacing.xl),
@@ -165,7 +168,7 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                     // 검색어·필터 없이 비어 있으면 옷장 자체가 빈 것이므로
                     // "검색 무결과"와 구분해 첫 등록을 유도한다.
                     final filtered =
-                        _query.trim().isNotEmpty || _category != null;
+                        _query.trim().isNotEmpty || _scope.hasScope;
                     return SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(

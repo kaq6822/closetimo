@@ -1,6 +1,7 @@
 // contracts/repositories.md §1 — UI/feature 코드는 본 인터페이스만 의존한다.
 
 import '../models/item.dart';
+import '../models/item_filter.dart';
 import '../models/item_patch.dart';
 import '../../features/add_item/new_item_draft.dart';
 
@@ -18,18 +19,20 @@ class WardrobeStats {
   final int clean;
   final int dirty;
 
-  /// 홈 2x2 카드(아우터·상의·하의·기타) 매핑. 그 외 카테고리는
-  /// `Category.etc` 키에 합산된다(FR-019, [CategoryLabel.homeBucket]).
-  final Map<Category, int> perBucket;
+  /// 홈 2x2 카드(아우터·상의·하의·그 외) 집계(FR-019, #37). 모든
+  /// [HomeBucket] 키를 가지며 값의 합은 [total]과 같다. 카드 탭 이동은
+  /// [ItemFilter.homeBucket]으로 같은 범위를 조회한다.
+  final Map<HomeBucket, int> perBucket;
 }
 
 abstract interface class ItemRepository {
   // ── 읽기 ──
   Stream<List<Item>> watchAll();
 
+  /// FR-005~007, #37·#41. [filter] 조건([ItemFilter.matches])을 만족하는 옷을
+  /// [sort] 순서로 내보낸다.
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query,
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   });
 

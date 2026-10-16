@@ -102,6 +102,8 @@ void main() {
           category: Category.top,
           careMethod: CareMethod.handWash,
           washCycle: 3, // wearSinceWash(4) >= 3 → dirty
+          careMode: CareMode.wearCycle,
+          purposes: const [],
           purchasedAt: DateTime(2025, 3, 14),
         ),
       );
@@ -260,6 +262,8 @@ ItemPatch _basePatch({
   Category category = Category.outer,
   CareMethod careMethod = CareMethod.machine,
   int washCycle = 5,
+  CareMode careMode = CareMode.wearCycle,
+  List<ItemPurpose> purposes = const [],
   DateTime? purchasedAt,
   File? newPhoto,
   bool removePhoto = false,
@@ -269,6 +273,8 @@ ItemPatch _basePatch({
   category: category,
   careMethod: careMethod,
   washCycle: washCycle,
+  careMode: careMode,
+  purposes: purposes,
   purchasedAt: purchasedAt,
   newPhoto: newPhoto,
   removePhoto: removePhoto,
