@@ -44,6 +44,7 @@ Isar Plus 1.3.x를 따르고, Isar 3.x는 설계 당시 표기**라는 점을 �
 │  • purposes (List, v2)      │  (용도 축, 0개 이상)
 │  • archivedAt: DateTime?    │  (보관 시각, null = 활성, #44)
 │  • archiveReason (enum)     │  (unspecified | seasonal | noLongerOwned, #44)
+│  • tags: List<String>       │  (사용자 태그, 0개 이상, #46)
 └─────────────────────────────┘
 
 ┌──────────────────────────────────┐
@@ -84,9 +85,15 @@ Isar `@collection`. 옷장의 단일 옷.
 | `purposes` | `List<ItemPurpose>` | — | 0개 이상, 중복 없음·enum 순서로 정규화 | #41 |
 | `archivedAt` | `DateTime?` | — | null = 활성. null이 아니면 보관 상태(보관 여부의 단일 진실 원천) | #44 |
 | `archiveReason` | `ArchiveReason` (enum) | — | 기본 `unspecified`. 보관하지 않았거나 사유를 고르지 않으면 `unspecified` (Isar Plus는 nullable enum 미지원) | #44 |
+| `tags` | `List<String>` | — | 0개 이상, 기본 빈 목록. `normalizeTags`로 정규화(§1.1c): 각 1~20자, 쉼표 없음, 한 옷 안에서 대소문자 무시 중복 없음, 입력 순서 유지 | #46 |
 
 > **property 순서 규칙**: Isar Plus는 필드 선언 순서로 property index를 부여한다.
-> 새 필드는 항상 클래스 **끝**에 추가해 기존 필드 위치를 바꾸지 않는다(`careMode`·`purposes`는 v2에서, `archivedAt`·`archiveReason`은 #44에서 끝에 추가).
+> 새 필드는 항상 클래스 **끝**에 추가해 기존 필드 위치를 바꾸지 않는다(`careMode`·`purposes`는 v2에서, `archivedAt`·`archiveReason`은 #44에서, `tags`는 #46에서 끝에 추가).
+
+> **전체 필드 목록(백업·복원 직렬화 기준, #40)**: 선언 순서대로
+> `id, name, brand, category, careMethod, status, washCycle, wearSinceWash, totalWears, lastWornAt,
+> lastWashedAt, purchasedAt, inLaundry, imagePath, fallbackColor, createdAt, careMode, purposes,
+> archivedAt, archiveReason, tags`. `tags`는 문자열 배열(JSON `["검정","여름"]`)이며 없으면 빈 목록으로 읽는다.
 
 ### 1.1 Enum 정의
 
@@ -126,6 +133,7 @@ enum HomeBucket { outer, top, bottom, others }
 | **기타** (개별) | 다른 종류에 속하지 않는다고 사용자가 정한 종류. 옷장 `기타` 칩은 이 값**만** 보여준다. | `Category.etc` |
 | **그 외** (합산) | 홈 4번째 카드. 아우터·상의·하의를 **제외한 모든 종류**(원피스·신발·가방·액세서리·기타·미분류, legacy 운동복)의 합. | `HomeBucket.others` |
 | **용도** | 종류와 독립된 선택 축(0개 이상). 운동은 종류가 아니라 용도다. | `Item.purposes`, `ItemPurpose` |
+| **태그** (#46) | 색상·계절·장소 등 사용자가 정하는 자유 단서(0개 이상). 이름 변경·병합·삭제 가능. 관리 상태·바구니·보관을 대신하지 않는다. | `Item.tags`, `item_tags.dart` |
 | **운동복** (legacy) | v1까지의 종류 값. 새로 선택할 수 없고 v2 마이그레이션이 `미분류 + 용도 운동`으로 옮긴다. | `Category.activewear` |
 
 화면별 포함 범위:
@@ -134,7 +142,8 @@ enum HomeBucket { outer, top, bottom, others }
 |---|---|---|
 | 등록·수정 폼 | 종류 칩(`Category.selectable`: 미분류·아우터·상의·하의·원피스·신발·가방·액세서리·기타) + 용도 칩 | 종류 1개(기본 미분류), 용도 0개 이상 |
 | 옷장 필터 | `ItemFilter` | 종류 칩 = 개별 종류 1개. 홈 '그 외'로 진입하면 합산 칩 `그 외 전체`가 선택됨. 용도 칩은 종류와 AND |
-| 옷장 검색 | `ItemFilter.query` | 이름·브랜드(FR-006). 종류·용도 조건과 AND |
+| 옷장 검색 | `ItemFilter.query` | 이름·브랜드·태그(FR-006, #46). 종류·용도 조건과 AND |
+| 옷장 태그 필터 | `ItemFilter.tags` | 필터바 끝 `태그` 칩(태그가 있을 때만, 기본 접힘) → 시트에서 여러 개 선택. 축 안 OR, 다른 축과 AND (#46) |
 | 홈 카드 | `HomeBucket` | 아우터·상의·하의·그 외. 네 카드 합 = 전체 수. 카드 탭 → `ItemFilter.homeBucket(b)`로 같은 범위 |
 
 ### 1.1b 필터 계약 `ItemFilter` (영속화하지 않음)
@@ -145,12 +154,51 @@ enum HomeBucket { outer, top, bottom, others }
 - **같은 축 안은 OR, 축 사이는 AND**. 빈 집합은 해당 축을 제한하지 않는다(전체).
 - `ItemFilter.homeBucket(b)` = `categories: b.categories`. 홈 집계(`Category.homeBucket`)와 같은
   정의를 공유하므로 카드 수와 이동 목록 수가 항상 같다.
-- 후속 속성(색상·계절 등, #46)·사용 가능 상태(#43)·보관(#44)은 이 객체에 축을 추가해 확장한다.
+- 사용자 태그(#46)·사용 가능 상태(#43)·보관(#44)은 이 객체에 축을 추가해 확장한다.
   새 필드는 생성자·클래스 **끝에** 추가하고 `copyWith`·`==`·`hashCode`에 반영한다.
 - `readyToWear: bool`(#43, 기본 false): true이면 `Item.isReadyToWear`(`item_filter.dart`의
   `ItemReadiness` 확장)인 옷만 남긴다. 정의 = `status == clean && !inLaundry`(보관 #44 도입 시
   `!isArchived` 조건을 이 getter에 포함). 기록된 상태 기준이며 실제 오염 여부를 뜻하지 않는다.
   검색어와 마찬가지로 라우트 쿼리에 싣지 않는다. `hasScope`에 포함된다.
+- `tags: Set<String>`(#46, 기본 빈 집합, 생성자·클래스 끝 필드): 고른 태그 중 **하나라도** 붙은 옷(축 안 OR).
+  다른 축과는 AND — 예: `(상의 또는 하의) 그리고 용도 운동 그리고 (여름 또는 검정)`. 라우트 쿼리 `tag=`로 싣는다.
+  `hasScope`에 포함된다. 검색어(`query`)도 태그를 부분 일치로 찾는다.
+
+### 1.1c 사용자 태그 (#46)
+
+**결정**: 색상·계절을 enum 필드로 따로 추가하지 않고, 일반화한 **사용자 태그** `Item.tags: List<String>` 하나를 둔다.
+
+근거(제품·UX 검토 §3 "자유 태그를 추가할 조건", 이슈 #46):
+1. 이슈의 완료 기준인 **이름 변경·중복 병합·삭제**는 사용자가 만든 값에만 의미가 있다. 고정 enum 색상·계절은
+   이름을 바꾸거나 합칠 대상이 아니며, 사용자마다 쓰는 색 이름·계절 구분(봄·가을 묶음, 간절기 등)이 다르다.
+2. 어떤 속성을 기본으로 노출할지는 아직 **사용성 평가 전**이다(docs/product/2026-10-17-attribute-usability-evaluation-plan.md).
+   enum은 ordinal 저장이라 한번 추가하면 값을 빼거나 재배열할 수 없으므로, 검증 전 고정 축을 늘리지 않는다.
+3. 태그 하나로 색상·계절·장소를 모두 표현할 수 있어 입력 UI가 하나로 끝나고, 평가 결과 특정 축(예: 계절)이
+   반복 사용되면 그때 태그 값을 시스템 속성으로 옮기는 마이그레이션을 정의할 수 있다.
+4. **용도**(`ItemPurpose`, 운동)는 종류와 충돌하던 legacy 운동복을 옮긴 시스템 축(#41)이므로 그대로 둔다.
+
+분리 원칙:
+- **관리·바구니·보관 상태는 태그가 아니다.** `status`·`inLaundry`·`archivedAt`·`careMethod`·`careMode`는 행동과
+  규칙에 연결된 시스템 필드이며, 태그로 바꾸거나 태그가 이 필드를 바꾸지 않는다. 같은 이름의 태그(예: "세탁")를
+  만들어도 아무 상태 변화가 없다.
+- 태그는 **선택**이다. 등록·착용·세탁 흐름은 태그 없이 그대로 동작하며 폼에서는 "추가 정보 (선택)" 안에 접혀 있다.
+
+정규화(`lib/data/models/item_tags.dart`):
+- `normalizeTag`: 앞뒤 공백 제거, 연속 공백 1개, 쉼표 → 공백, 최대 20자, 빈 값 → null.
+- `normalizeTags`: 빈 값 제거, 대소문자 무시 중복 제거(먼저 나온 표기 유지), 입력 순서 유지.
+- `parseTagInput("검정, 여름")` → `["검정", "여름"]`(쉼표로 여러 개 입력).
+
+연산(`TagRepository`, contracts/repositories.md §2b): 일괄 붙이기·떼기(다중 선택), 이름 변경(같은 이름이 있으면
+병합), 삭제. 모두 **옷·사진·착용/세탁 기록을 지우지 않고** 태그 목록만 바꾼다. 태그 목록·사용 수는 저장하지 않고
+`summarizeTags(items)`로 매번 집계한다(태그 = 1벌 이상에 붙은 값, 마지막 옷에서 떼면 목록에서 사라짐).
+
+| 표면 | 동작 |
+|---|---|
+| 등록·수정 폼 | "추가 정보 (선택)" 안 `태그` 입력. 이미 쓴 태그를 많이 쓴 순으로 최대 8개 제안, 입력하면 부분 일치로 좁힘 |
+| 옷장 필터바 | 종류·용도 칩 줄 끝 `태그` 칩(태그가 하나라도 있을 때). 시트에서 다중 선택 → `태그: 여름` / `태그 2개` |
+| 옷장 결과 | 조건이 하나라도 있으면 목록 위에 `결과 N벌`과 `조건 초기화` |
+| 옷장 다중 선택 | 선택 바 `태그` 액션 → 새 태그 입력·이미 쓴 태그 붙이기·선택한 옷에서 떼기 |
+| 설정 > 옷 관리 > 태그 관리 | 태그별 사용 수, 이름 변경(병합 확인), 삭제("옷과 착용 기록은 그대로 남아요") |
 
 ### 1.2 상태 전이
 
@@ -164,7 +212,7 @@ clean ─────"착용 기록(FR-010)"─────► clean ───�
 ```
 
 추가 규칙:
-- 옷 등록 시: `status = clean`, `wearSinceWash = 0`, `totalWears = 0`, `inLaundry = false`, `createdAt = now`. 폼 기본값은 `category = uncategorized`, `careMethod = unspecified`, `careMode = wearCycle`, `washCycle = 5`, `purposes = []`.
+- 옷 등록 시: `status = clean`, `wearSinceWash = 0`, `totalWears = 0`, `inLaundry = false`, `createdAt = now`. 폼 기본값은 `category = uncategorized`, `careMethod = unspecified`, `careMode = wearCycle`, `washCycle = 5`, `purposes = []`, `tags = []`(#46).
 - **상태 계산(FR-011, #45)**: `derivedStatus = (careMode == wearCycle && wearSinceWash >= washCycle) ? dirty : clean` (`ItemCareRules` 확장). `clean`은 "횟수 기준 관리 권장 없음"이며 실제 청결을 뜻하지 않는다.
 - 착용 기록(FR-010): `wearSinceWash++`, `totalWears++`, `lastWornAt = now`. `careMode == wearCycle`이고 `wearSinceWash >= washCycle`이면 `status = dirty`로 전환(FR-011). `careMode == manual`이면 카운터만 늘고 상태는 바뀌지 않는다. 사용자가 시트에서 입력한 메모(`note`, ≤80자, nullable)는 함께 생성되는 wear 이벤트에만 저장되고 `Item`에는 반영되지 않는다.
 - 날짜 지정 착용 기록(FR-010d, #39): `occurredAt`은 착용 날짜가 오늘이면 `now`, 과거면 그날 12:00(미래 거부). `totalWears++`, `lastWornAt = max(lastWornAt, occurredAt)`, `wearSinceWash`는 새 이벤트가 현재 세탁 주기(아래 FR-010b 정의)에 속할 때만 +1, `status = derivedStatus`. 가장 최근 세탁 이전으로 기록한 착용은 세탁 후 착용 횟수·상태에 영향을 주지 않는다. 여러 벌 일괄 기록(FR-008c)은 옷마다 같은 규칙을 단일 트랜잭션에서 적용하며 중복 id·보관·미존재 옷은 건너뛴다.
@@ -308,6 +356,12 @@ spec.md의 Key Entity "Laundry Basket"은 **별도 컬렉션이 아닌 `Item.inL
 `archivedAt = null`(활성), `archiveReason = unspecified`로 읽힌다. 회귀 테스트는 `test/unit/storage_migrator_test.dart`
 (v1 고정본을 현재 스키마로 읽기)에 있다.
 
+### 사용자 태그 추가 (#46, 저장소 버전 변경 없음)
+
+`tags`는 클래스 끝에 추가한 **추가식 필드**이고 기존 값의 의미를 바꾸지 않으므로 `currentStorageVersion`은 2를
+유지한다. 필드가 없는 구 데이터(v1·v2·#44)는 `tags = []`로 읽히며 기존 필터(`ItemFilter()`·종류·용도)에 그대로
+포함된다. 회귀 테스트는 `test/unit/storage_migrator_test.dart`(v1 고정본 읽기)에 있다.
+
 legacy Isar 3 이전 경로도 같은 규칙을 적용해 곧바로 v2로 기록한다. 회귀 테스트는
 `test/unit/storage_migrator_test.dart`(v1 스키마 고정본 `test/support/storage_v1_item_fixture.dart`로
 구 디스크 데이터를 재현)에 있다.
@@ -319,4 +373,4 @@ legacy Isar 3 이전 경로도 같은 규칙을 적용해 곧바로 v2로 기록
 
 ---
 
-**Status**: 모든 엔티티·관계·전이·시드 정책 확정. 2026-10-16 #37·#41·#45로 분류 용어·관리 방식·v2 마이그레이션 추가, #44로 보관 상태 추가.
+**Status**: 모든 엔티티·관계·전이·시드 정책 확정. 2026-10-16 #37·#41·#45로 분류 용어·관리 방식·v2 마이그레이션 추가, #44로 보관 상태 추가. 2026-10-17 #46으로 사용자 태그 추가.

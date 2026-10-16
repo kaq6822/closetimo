@@ -15,9 +15,11 @@ import '../../data/models/item_filter.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/repositories/item_repository.dart';
 import 'filter_summary.dart';
+import 'selection/bulk_tag_action.dart';
 import 'selection/item_selection.dart';
 import 'selection/selection_action_bar.dart';
 import 'selection/wear_record_action.dart';
+import 'widgets/filter_result_bar.dart';
 import 'widgets/garment_tile.dart';
 import 'widgets/wardrobe_filter_bar.dart';
 
@@ -138,6 +140,69 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
     );
   }
 
+  /// 검색어·'입을 수 있음'·종류·용도·태그 조건을 모두 지운다(#46 결과 초기화).
+  void _resetFilters() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _readyToWear = false;
+    });
+    _onScopeChanged(const ItemFilter());
+  }
+
+  /// 결과 목록 sliver. 비어 있으면 옷장이 빈 경우와 검색 무결과를 구분한다.
+  Widget _buildResults(ItemFilter filter, List<Item> items) {
+    if (items.isEmpty) {
+      // 검색어·필터 없이 비어 있으면 옷장 자체가 빈 것이므로
+      // "검색 무결과"와 구분해 첫 등록을 유도한다.
+      final filtered = filter.isActive;
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: ClosetimoSpacing.space60,
+          ),
+          child: Center(
+            child: Text(
+              filtered
+                  ? '검색 결과가 없습니다.'
+                  : '아직 등록된 옷이 없어요.\n오른쪽 위 + 버튼으로 첫 옷을 등록해 보세요.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 14,
+                color: ClosetimoColors.muted,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return SliverPadding(
+      // 마지막 타일이 하단 탭바와 겹치지 않도록 그리드 끝에 여백을 둔다.
+      // 선택 모드에서는 하단 액션 바(액션 2줄 가능)가 타일을 가리지 않도록 더 비운다.
+      padding: EdgeInsets.only(
+        left: ClosetimoSpacing.lg,
+        right: ClosetimoSpacing.lg,
+        bottom: ref.watch(wardrobeSelectionProvider).active
+            ? ClosetimoSpacing.space76 + ClosetimoSpacing.space120
+            : ClosetimoSpacing.space76,
+      ),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: ClosetimoSpacing.space14,
+          crossAxisSpacing: ClosetimoSpacing.space14,
+          childAspectRatio: 0.66,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (ctx, i) => GarmentTile(item: items[i]),
+          childCount: items.length,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = ref.watch(itemRepositoryProvider);
@@ -205,6 +270,8 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                         onReadyToWearChanged: (v) =>
                             setState(() => _readyToWear = v),
                         onSortChanged: (s) => setState(() => _sort = s),
+                        tagUsages:
+                            ref.watch(tagUsageProvider).valueOrNull ?? const [],
                       ),
                       const SizedBox(height: ClosetimoSpacing.md),
                     ],
@@ -227,52 +294,19 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                         ),
                       );
                     }
-                    if (items.isEmpty) {
-                      // 검색어·필터 없이 비어 있으면 옷장 자체가 빈 것이므로
-                      // "검색 무결과"와 구분해 첫 등록을 유도한다.
-                      final filtered = filter.isActive;
-                      return SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: ClosetimoSpacing.space60,
-                          ),
-                          child: Center(
-                            child: Text(
-                              filtered
-                                  ? '검색 결과가 없습니다.'
-                                  : '아직 등록된 옷이 없어요.\n오른쪽 위 + 버튼으로 첫 옷을 등록해 보세요.',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Manrope',
-                                fontSize: 14,
-                                color: ClosetimoColors.muted,
-                                height: 1.5,
-                              ),
-                            ),
+                    final results = _buildResults(filter, items);
+                    if (!filter.isActive) return results;
+                    // #46 — 조건이 걸려 있으면 결과 수와 초기화를 목록 위에 보인다.
+                    return SliverMainAxisGroup(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: FilterResultBar(
+                            count: items.length,
+                            onReset: _resetFilters,
                           ),
                         ),
-                      );
-                    }
-                    return SliverPadding(
-                      // 마지막 타일이 하단 탭바와 겹치지 않도록 그리드 끝에 여백을 둔다.
-                      padding: const EdgeInsets.only(
-                        left: ClosetimoSpacing.lg,
-                        right: ClosetimoSpacing.lg,
-                        bottom: ClosetimoSpacing.space76,
-                      ),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: ClosetimoSpacing.space14,
-                              crossAxisSpacing: ClosetimoSpacing.space14,
-                              childAspectRatio: 0.66,
-                            ),
-                        delegate: SliverChildBuilderDelegate(
-                          (ctx, i) => GarmentTile(item: items[i]),
-                          childCount: items.length,
-                        ),
-                      ),
+                        results,
+                      ],
                     );
                   },
                 ),
@@ -296,6 +330,15 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                   onPressed: () => _addSelectedToLaundry(selection.ids),
                 ),
                 wearRecordSelectionAction(context, ref, selection.ids),
+                // #46 — 여러 옷에 태그 일괄 붙이기·떼기.
+                bulkTagAction(
+                  context,
+                  ref,
+                  selected: [
+                    for (final i in _visibleItems)
+                      if (selection.ids.contains(i.id)) i,
+                  ],
+                ),
               ],
             ),
         ],

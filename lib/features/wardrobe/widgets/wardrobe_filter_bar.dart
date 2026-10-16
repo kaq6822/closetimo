@@ -1,6 +1,7 @@
 // US2 T044 — 옷장 검색 + 카테고리 + 정렬 필터바.
 // #21 — 첫 줄 타일이 첫 화면에 보이도록 칩을 한 줄 가로 스크롤로 압축하고
 // 검색창에 지우기(✕) 버튼을 둔다. #43 — '입을 수 있음' 칩.
+// #46 — 같은 줄 끝에 '태그' 칩 하나를 두고 태그 선택은 시트로 접어 둔다.
 
 import 'package:flutter/material.dart';
 
@@ -9,7 +10,9 @@ import '../../../app/theme/tokens.dart';
 import '../../../core/widgets/chip_filter.dart';
 import '../../../data/models/item.dart';
 import '../../../data/models/item_filter.dart';
+import '../../../data/models/item_tags.dart';
 import '../../../data/repositories/item_repository.dart';
+import 'tag_filter_sheet.dart';
 
 class WardrobeFilterBar extends StatelessWidget {
   const WardrobeFilterBar({
@@ -21,6 +24,7 @@ class WardrobeFilterBar extends StatelessWidget {
     required this.onScopeChanged,
     required this.onReadyToWearChanged,
     required this.onSortChanged,
+    this.tagUsages = const [],
     super.key,
   });
 
@@ -37,6 +41,9 @@ class WardrobeFilterBar extends StatelessWidget {
   final ValueChanged<ItemFilter> onScopeChanged;
   final ValueChanged<bool> onReadyToWearChanged;
   final ValueChanged<WardrobeSort> onSortChanged;
+
+  /// 이미 쓴 태그(#46). 비어 있고 선택된 태그도 없으면 '태그' 칩을 숨긴다.
+  final List<TagUsage> tagUsages;
 
   String _sortLabel(WardrobeSort s) => switch (s) {
     WardrobeSort.statusCleanFirst => '정렬: 상태순 (깨끗한 옷 먼저)',
@@ -61,7 +68,7 @@ class WardrobeFilterBar extends StatelessWidget {
             // 다시 올라오므로, 바깥 탭에서 포커스를 해제한다.
             onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             decoration: InputDecoration(
-              hintText: '옷 이름 또는 브랜드 검색',
+              hintText: '옷 이름·브랜드·태그 검색',
               prefixIcon: const Icon(
                 Icons.search_rounded,
                 color: ClosetimoColors.muted,
@@ -101,7 +108,7 @@ class WardrobeFilterBar extends StatelessWidget {
           clipBehavior: Clip.none,
           child: Row(
             children: [
-              for (final chip in _scopeChips()) ...[
+              for (final chip in _scopeChips(context)) ...[
                 chip,
                 const SizedBox(width: ClosetimoSpacing.sm),
               ],
@@ -184,7 +191,25 @@ class WardrobeFilterBar extends StatelessWidget {
     );
   }
 
-  List<Widget> _scopeChips() => [
+  String _tagChipLabel() => switch (scope.tags.length) {
+    0 => '태그',
+    1 => '태그: ${scope.tags.single}',
+    final n => '태그 $n개',
+  };
+
+  Future<void> _pickTags(BuildContext context) async {
+    final picked = await showTagFilterSheet(
+      context,
+      usages: [
+        for (final u in tagUsages)
+          if (u.activeItemCount > 0) u,
+      ],
+      selected: scope.tags,
+    );
+    if (picked != null) onScopeChanged(scope.copyWith(tags: picked));
+  }
+
+  List<Widget> _scopeChips(BuildContext context) => [
     ChipFilter(
       label: '전체',
       active: scope.categories.isEmpty,
@@ -212,6 +237,13 @@ class WardrobeFilterBar extends StatelessWidget {
                 : {...scope.purposes, p},
           ),
         ),
+      ),
+    // #46 — 사용자 태그 축(OR). 기본 접힘: 칩 하나로 시트를 연다.
+    if (tagUsages.isNotEmpty || scope.tags.isNotEmpty)
+      ChipFilter(
+        label: _tagChipLabel(),
+        active: scope.tags.isNotEmpty,
+        onTap: () => _pickTags(context),
       ),
   ];
 }

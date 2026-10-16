@@ -17,6 +17,10 @@ String describeItemFilter(ItemFilter filter) {
   final purposes = filter.purposes.toList()
     ..sort((a, b) => a.index.compareTo(b.index));
   parts.addAll(purposes.map((p) => '용도: ${p.label}'));
+  // #46 — 같은 축 안은 OR임을 문구로 드러낸다.
+  if (filter.tags.isNotEmpty) {
+    parts.add('태그: ${(filter.tags.toList()..sort()).join(' 또는 ')}');
+  }
   if (filter.readyToWear) parts.add('입을 수 있음');
   final q = filter.query.trim();
   if (q.isNotEmpty) parts.add('검색 "$q"');

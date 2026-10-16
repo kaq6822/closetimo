@@ -435,7 +435,7 @@ void main() {
       expect(shoes.careMethod, CareMethod.machine);
     });
 
-    test('보관 필드(#44)가 없는 구 데이터는 활성 옷으로 읽히고 버전을 올리지 않는다', () async {
+    test('보관(#44)·태그(#46) 필드가 없는 구 데이터는 활성·태그 없음으로 읽히고 버전을 올리지 않는다', () async {
       const name = 'closetimo_v1_archive_fixture';
       final createdAt = DateTime.utc(2026, 3, 1);
       final v1 = openV1(name);
@@ -471,6 +471,14 @@ void main() {
       final shirt = store.items.get(1)!;
       expect(shirt.archivedAt, isNull);
       expect(shirt.archiveReason, ArchiveReason.unspecified);
+      // #46 — 태그 필드가 없던 구 데이터는 빈 태그로 읽히고 태그 축이 빈
+      // 필터·종류 필터에 그대로 포함된다(속성 없이도 불이익 없음).
+      expect(shirt.tags, isEmpty);
+      expect(
+        const ItemFilter(categories: {Category.top}).matches(shirt),
+        isTrue,
+      );
+      expect(const ItemFilter(tags: {'여름'}).matches(shirt), isFalse);
       expect(shirt.isArchived, isFalse);
       expect(shirt.inLaundry, isTrue);
       expect(shirt.totalWears, 6);

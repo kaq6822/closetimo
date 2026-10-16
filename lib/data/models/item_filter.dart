@@ -18,6 +18,7 @@ class ItemFilter {
     this.query = '',
     this.archive = ArchiveScope.active,
     this.readyToWear = false,
+    this.tags = const {},
   });
 
   /// 개별 종류 1개만 보는 필터(옷장 종류 칩).
@@ -34,7 +35,7 @@ class ItemFilter {
   /// 용도 축. 비어 있으면 전체.
   final Set<ItemPurpose> purposes;
 
-  /// 이름·브랜드 검색어(FR-006, 대소문자 무시).
+  /// 이름·브랜드·태그 검색어(FR-006, #46, 대소문자 무시).
   final String query;
 
   /// 보관 축(#44). 기본은 활성 옷만.
@@ -44,12 +45,17 @@ class ItemFilter {
   /// 검색어처럼 라우트 쿼리에 싣지 않는 화면 State 조건이다.
   final bool readyToWear;
 
-  /// 검색어를 제외한 조건(종류·용도·보관·입을 수 있음)이 하나라도 걸려 있는지.
+  /// 사용자 태그 축(#46). 비어 있으면 전체. 같은 축 안은 OR(선택한 태그 중
+  /// 하나라도 붙은 옷), 다른 축과는 AND다. 태그는 정규화된 표기로 비교한다.
+  final Set<String> tags;
+
+  /// 검색어를 제외한 조건(종류·용도·보관·입을 수 있음·태그)이 하나라도 걸려 있는지.
   bool get hasScope =>
       categories.isNotEmpty ||
       purposes.isNotEmpty ||
       archive != ArchiveScope.active ||
-      readyToWear;
+      readyToWear ||
+      tags.isNotEmpty;
 
   /// 조건이 하나라도 걸려 있는지(검색어 포함).
   bool get isActive => hasScope || query.trim().isNotEmpty;
@@ -77,11 +83,17 @@ class ItemFilter {
     if (purposes.isNotEmpty && !item.purposes.any(purposes.contains)) {
       return false;
     }
+    if (tags.isNotEmpty && !item.tags.any(tags.contains)) return false;
     final q = query.trim().toLowerCase();
     if (q.isNotEmpty) {
       final name = item.name.toLowerCase();
       final brand = (item.brand ?? '').toLowerCase();
-      if (!name.contains(q) && !brand.contains(q)) return false;
+      // #46 — 태그도 검색어로 찾는다(이름·브랜드·태그 중 하나라도 포함).
+      if (!name.contains(q) &&
+          !brand.contains(q) &&
+          !item.tags.any((t) => t.toLowerCase().contains(q))) {
+        return false;
+      }
     }
     return true;
   }
@@ -92,12 +104,14 @@ class ItemFilter {
     String? query,
     ArchiveScope? archive,
     bool? readyToWear,
+    Set<String>? tags,
   }) => ItemFilter(
     categories: categories ?? this.categories,
     purposes: purposes ?? this.purposes,
     query: query ?? this.query,
     archive: archive ?? this.archive,
     readyToWear: readyToWear ?? this.readyToWear,
+    tags: tags ?? this.tags,
   );
 
   @override
@@ -107,7 +121,8 @@ class ItemFilter {
       other.archive == archive &&
       other.readyToWear == readyToWear &&
       _sameSet(other.categories, categories) &&
-      _sameSet(other.purposes, purposes);
+      _sameSet(other.purposes, purposes) &&
+      _sameSet(other.tags, tags);
 
   @override
   int get hashCode => Object.hash(
@@ -116,6 +131,7 @@ class ItemFilter {
     Object.hashAllUnordered(categories),
     Object.hashAllUnordered(purposes),
     readyToWear,
+    Object.hashAllUnordered(tags),
   );
 
   static bool _sameSet<T>(Set<T> a, Set<T> b) =>

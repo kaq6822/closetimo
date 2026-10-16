@@ -236,7 +236,7 @@ void main() {
     );
 
     expect(
-      tester.getSemantics(find.bySemanticsLabel(RegExp('옷 이름 또는 브랜드 검색'))),
+      tester.getSemantics(find.bySemanticsLabel(RegExp('옷 이름·브랜드·태그 검색'))),
       isSemantics(isTextField: true),
     );
     handle.dispose();

@@ -12,8 +12,9 @@ features/
 ├── item_detail/  # 옷 상세 (히어로 이미지, 착용 기록, 히스토리 타임라인)
 ├── add_item/     # 옷 등록 (사진, 카테고리, 세탁 방법, freezed draft 폼 state)
 ├── laundry/      # 세탁 바구니 (선택 provider, 세탁 완료 처리)
-├── settings/     # 설정 (프로필, 환경설정, 옷 관리 > 보관함 진입)
-└── archive/      # 보관함 (보관한 옷 확인·복원, #44)
+├── settings/     # 설정 (프로필, 환경설정, 옷 관리 > 보관함·태그 관리 진입)
+├── archive/      # 보관함 (보관한 옷 확인·복원, #44)
+└── tags/         # 태그 관리 (이름 변경·병합·삭제, #46)
 ```
 
 각 모듈 내부 구조: `<feature>_screen.dart`(진입점) + `widgets/`(전용 위젯) + 필요 시 폼/선택 state 파일.
@@ -52,6 +53,8 @@ features/
   바뀌면 `exit`, 시스템 뒤로 가기는 선택 모드에서 `exit`. 필터 요약은
   `wardrobe/filter_summary.dart`의 `describeItemFilter(ItemFilter)`.
 - 타일(`GarmentTile`)은 선택 모드에서 탭=토글, 우상단에 선택 표시, 빠른 동작 메뉴 숨김.
+- 현재 액션: `바구니에 담기`(#43), `태그`(#46, `selection/bulk_tag_action.dart`의 `bulkTagAction` —
+  액션 1개를 돌려주는 함수로 분리해 `actions` 목록에 한 줄만 추가).
 - 새 액션 추가 예: `SelectionAction(label: '착용 기록', icon: …, onPressed: () => …(selection.ids))`
   를 `wardrobe_screen.dart`의 `actions`에 넣고, 완료 후 `exit()` + 토스트. 여러 옷 쓰기는
   repository에 일괄 메서드를 계약(contracts/repositories.md) 먼저 추가해 원자적으로 처리한다.
@@ -59,3 +62,10 @@ features/
   액션 흐름을 별도 파일에 두고 `actions`에는 한 줄만 추가한다. 착용 기록 시트(`WearRecordSheet`,
   날짜·메모)는 옷 상세와 공유하므로 `lib/core/widgets/`에 있다. 직후 실행 취소는
   `showClosetimoToast(actionLabel:, onAction:)`.
+
+## 사용자 태그 (#46)
+
+- 태그 정규화·집계는 `lib/data/models/item_tags.dart`(`normalizeTags`, `parseTagInput`, `summarizeTags`)만 쓴다.
+- 태그 목록·사용 수는 `tagUsageProvider`(전체 옷 스트림 집계)로 읽고, 여러 옷 쓰기는 `tagRepositoryProvider`로 한다.
+- 기본 노출은 사용성 평가 전까지 접힘이다(폼 "추가 정보 (선택)" 안, 옷장 `태그` 칩 1개).
+  노출을 늘리려면 docs/product/2026-10-17-attribute-usability-evaluation-plan.md 결과를 근거로 spec을 먼저 갱신한다.

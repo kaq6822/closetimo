@@ -42,9 +42,10 @@ class WardrobeStats {
 class ItemFilter {                        // lib/data/models/item_filter.dart (영속화 X)
   final Set<Category> categories;        // 비면 전체. 축 안 OR
   final Set<ItemPurpose> purposes;       // 비면 전체. 축 안 OR, 축 간 AND
-  final String query;                    // 이름·브랜드, 대소문자 무시
+  final String query;                    // 이름·브랜드·태그(#46), 대소문자 무시
   final ArchiveScope archive;            // #44. active(기본) | archived | all
   final bool readyToWear;                // #43 '입을 수 있음' = status==clean && !inLaundry (축 간 AND)
+  final Set<String> tags;                // #46 사용자 태그. 비면 전체. 축 안 OR(하나라도 붙음), 축 간 AND
   factory ItemFilter.category(Category c);        // 개별 종류(옷장 칩)
   factory ItemFilter.homeBucket(HomeBucket b);    // 홈 카드와 같은 범위
   bool matches(Item item);
@@ -58,7 +59,9 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 - `create`: `draft.name.trim().isEmpty`이면 `ArgumentError`. 검증 통과 시 `imagePath`는 `ImageStore.copy(draft.tempPhoto)` 결과를 저장. 생성 시 `Item` 기본값(`status=clean`, counts=0, `createdAt=now`).
 - `create`: draft의 `category`(기본 미분류)·`careMethod`(기본 미지정)·`careMode`·`purposes`를 저장한다. `purposes`는 중복 제거 후 enum 순서로 정규화.
 - `update`: `ItemPatch`의 편집 필드 전체(`careMode`·`purposes` 포함, 둘 다 required)를 교체하고 `status = item.derivedStatus`로 재평가한다(#45).
-- `watchFiltered`: `filter.matches(item)`을 만족하는 옷만 내보낸다. 검색 매칭은 `name.toLowerCase().contains(q) || (brand ?? '').toLowerCase().contains(q)` (FR-006).
+- `create`·`update`의 태그(#46): `draft.tags`(기본 빈 목록)·`patch.tags`를 `normalizeTags`로 정규화해 저장한다.
+  `patch.tags == null`이면 기존 태그를 유지하고, 빈 목록이면 모두 제거한다.
+- `watchFiltered`: `filter.matches(item)`을 만족하는 옷만 내보낸다. 검색 매칭은 `name.toLowerCase().contains(q) || (brand ?? '').toLowerCase().contains(q) || tags.any((t) => t.toLowerCase().contains(q))` (FR-006, #46).
 - `watchStats().perBucket[b]`와 `watchFiltered(filter: ItemFilter.homeBucket(b))`의 결과 수는 항상 같다(#37). 둘 다 보관한 옷을 제외한다(#44).
 - `watchStats`·`watchRecentlyWorn`은 보관한 옷(`archivedAt != null`)을 제외한다(#44, data-model.md §1.2a).
 
@@ -108,6 +111,39 @@ abstract interface class ArchiveRepository {
 - `restore`: `archivedAt = null`, `archiveReason = unspecified`. 기록·카운터·상태 보존, 바구니 자동 재담기 없음. 미존재·활성 옷은 no-op.
 - 연관 규칙: `LaundryRepository.watchBasket`은 보관한 옷을 내보내지 않고, `toggle`은 보관한 옷을 바구니에 **담는** 호출을 무시한다.
 - 삭제(`ItemRepository.delete`)와의 차이: 삭제는 기록까지 제거하고 되돌릴 수 없으며, 보관은 기록을 유지하고 복원할 수 있다.
+
+## 2b. `TagRepository` (#46)
+
+사용자 태그(`Item.tags`)를 여러 옷에 걸쳐 바꾸는 **쓰기 전용** 인터페이스다. `ItemRepository`와 분리해
+기존 구현·테스트 대역에 영향을 주지 않는다. 읽기(태그 목록·사용 수)는 별도 쿼리 없이
+`ItemRepository.watchAll()`을 `summarizeTags`(`lib/data/models/item_tags.dart`)로 집계한다
+(`tagUsageProvider`).
+
+```dart
+abstract interface class TagRepository {
+  Future<int> addTag(Set<int> itemIds, String tag);    // 일괄 붙이기. 바뀐 옷 수
+  Future<int> removeTag(Set<int> itemIds, String tag); // 일괄 떼기. 바뀐 옷 수
+  Future<int> renameTag(String from, String to);       // 전체(보관 포함) 이름 변경 = 같은 이름이 있으면 병합
+  Future<int> deleteTag(String tag);                   // 전체(보관 포함)에서 태그만 제거
+}
+
+class TagUsage { String name; int itemCount /* 보관 포함 */; int activeItemCount /* 보관 제외 */; }
+List<TagUsage> summarizeTags(Iterable<Item> items);   // 많이 쓴 순, 같으면 이름순
+```
+
+### 정규화 (`normalizeTag` / `normalizeTags`)
+
+- 앞뒤 공백 제거, 연속 공백 1개로, 쉼표 → 공백(쉼표는 입력·라우트 쿼리 구분자), 최대 20자. 빈 값은 버린다.
+- 한 옷 안에서 대소문자만 다른 중복은 먼저 나온 표기만 남긴다. 순서는 입력 순서를 유지한다.
+
+### 사이드이펙트
+
+- 모든 메서드는 단일 `isar.write`에서 실제로 태그가 바뀐 옷만 `putAll`한다. 바뀐 옷 수를 돌려준다.
+- `addTag`: 정규화 후 빈 태그면 `ArgumentError`. 이미 같은 태그(대소문자 무시)가 있으면 그대로. 미존재 id 무시.
+- `renameTag(from, to)`: `from`을 원래 자리에서 `to`로 바꾸고, 이미 `to`가 있던 옷은 하나로 합친다(중복 병합).
+  `to`가 비면 `ArgumentError`, `from == to`면 no-op.
+- `deleteTag`·`removeTag`·`renameTag`는 **옷·사진·WearEvent를 지우지 않고** 카운터·`status`·`inLaundry`·보관 필드를
+  바꾸지 않는다. 관리 상태·바구니·보관은 태그가 아니라 시스템 필드다.
 
 ---
 

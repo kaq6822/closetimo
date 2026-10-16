@@ -18,7 +18,8 @@ mixin _$ItemPatch {
  CareMode get careMode;/// 용도 전체 교체(#41). 빈 목록이면 용도를 모두 제거한다.
  List<ItemPurpose> get purposes; DateTime? get purchasedAt;/// 새로 선택한 사진. null이 아니면 sandbox 사본을 교체한다([removePhoto]보다 우선).
  File? get newPhoto;/// true면 기존 사진을 제거하고 기본 플레이스홀더로 되돌린다.
- bool get removePhoto;
+ bool get removePhoto;/// 태그 전체 교체(#46). null이면 기존 태그를 그대로 두고, 빈 목록이면 모두 제거한다.
+ List<String>? get tags;
 /// Create a copy of ItemPatch
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +30,16 @@ $ItemPatchCopyWith<ItemPatch> get copyWith => _$ItemPatchCopyWithImpl<ItemPatch>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemPatch&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMode, careMode) || other.careMode == careMode)&&const DeepCollectionEquality().equals(other.purposes, purposes)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.newPhoto, newPhoto) || other.newPhoto == newPhoto)&&(identical(other.removePhoto, removePhoto) || other.removePhoto == removePhoto));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemPatch&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMode, careMode) || other.careMode == careMode)&&const DeepCollectionEquality().equals(other.purposes, purposes)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.newPhoto, newPhoto) || other.newPhoto == newPhoto)&&(identical(other.removePhoto, removePhoto) || other.removePhoto == removePhoto)&&const DeepCollectionEquality().equals(other.tags, tags));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,brand,category,careMethod,washCycle,careMode,const DeepCollectionEquality().hash(purposes),purchasedAt,newPhoto,removePhoto);
+int get hashCode => Object.hash(runtimeType,name,brand,category,careMethod,washCycle,careMode,const DeepCollectionEquality().hash(purposes),purchasedAt,newPhoto,removePhoto,const DeepCollectionEquality().hash(tags));
 
 @override
 String toString() {
-  return 'ItemPatch(name: $name, brand: $brand, category: $category, careMethod: $careMethod, washCycle: $washCycle, careMode: $careMode, purposes: $purposes, purchasedAt: $purchasedAt, newPhoto: $newPhoto, removePhoto: $removePhoto)';
+  return 'ItemPatch(name: $name, brand: $brand, category: $category, careMethod: $careMethod, washCycle: $washCycle, careMode: $careMode, purposes: $purposes, purchasedAt: $purchasedAt, newPhoto: $newPhoto, removePhoto: $removePhoto, tags: $tags)';
 }
 
 
@@ -49,7 +50,7 @@ abstract mixin class $ItemPatchCopyWith<$Res>  {
   factory $ItemPatchCopyWith(ItemPatch value, $Res Function(ItemPatch) _then) = _$ItemPatchCopyWithImpl;
 @useResult
 $Res call({
- String name, String? brand, Category category, CareMethod careMethod, int washCycle, CareMode careMode, List<ItemPurpose> purposes, DateTime? purchasedAt, File? newPhoto, bool removePhoto
+ String name, String? brand, Category category, CareMethod careMethod, int washCycle, CareMode careMode, List<ItemPurpose> purposes, DateTime? purchasedAt, File? newPhoto, bool removePhoto, List<String>? tags
 });
 
 
@@ -66,7 +67,7 @@ class _$ItemPatchCopyWithImpl<$Res>
 
 /// Create a copy of ItemPatch
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? brand = freezed,Object? category = null,Object? careMethod = null,Object? washCycle = null,Object? careMode = null,Object? purposes = null,Object? purchasedAt = freezed,Object? newPhoto = freezed,Object? removePhoto = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? brand = freezed,Object? category = null,Object? careMethod = null,Object? washCycle = null,Object? careMode = null,Object? purposes = null,Object? purchasedAt = freezed,Object? newPhoto = freezed,Object? removePhoto = null,Object? tags = freezed,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,brand: freezed == brand ? _self.brand : brand // ignore: cast_nullable_to_non_nullable
@@ -78,7 +79,8 @@ as CareMode,purposes: null == purposes ? _self.purposes : purposes // ignore: ca
 as List<ItemPurpose>,purchasedAt: freezed == purchasedAt ? _self.purchasedAt : purchasedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,newPhoto: freezed == newPhoto ? _self.newPhoto : newPhoto // ignore: cast_nullable_to_non_nullable
 as File?,removePhoto: null == removePhoto ? _self.removePhoto : removePhoto // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,tags: freezed == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 
@@ -163,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? brand,  Category category,  CareMethod careMethod,  int washCycle,  CareMode careMode,  List<ItemPurpose> purposes,  DateTime? purchasedAt,  File? newPhoto,  bool removePhoto)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? brand,  Category category,  CareMethod careMethod,  int washCycle,  CareMode careMode,  List<ItemPurpose> purposes,  DateTime? purchasedAt,  File? newPhoto,  bool removePhoto,  List<String>? tags)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ItemPatch() when $default != null:
-return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.washCycle,_that.careMode,_that.purposes,_that.purchasedAt,_that.newPhoto,_that.removePhoto);case _:
+return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.washCycle,_that.careMode,_that.purposes,_that.purchasedAt,_that.newPhoto,_that.removePhoto,_that.tags);case _:
   return orElse();
 
 }
@@ -184,10 +186,10 @@ return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.was
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? brand,  Category category,  CareMethod careMethod,  int washCycle,  CareMode careMode,  List<ItemPurpose> purposes,  DateTime? purchasedAt,  File? newPhoto,  bool removePhoto)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? brand,  Category category,  CareMethod careMethod,  int washCycle,  CareMode careMode,  List<ItemPurpose> purposes,  DateTime? purchasedAt,  File? newPhoto,  bool removePhoto,  List<String>? tags)  $default,) {final _that = this;
 switch (_that) {
 case _ItemPatch():
-return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.washCycle,_that.careMode,_that.purposes,_that.purchasedAt,_that.newPhoto,_that.removePhoto);case _:
+return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.washCycle,_that.careMode,_that.purposes,_that.purchasedAt,_that.newPhoto,_that.removePhoto,_that.tags);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +206,10 @@ return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.was
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? brand,  Category category,  CareMethod careMethod,  int washCycle,  CareMode careMode,  List<ItemPurpose> purposes,  DateTime? purchasedAt,  File? newPhoto,  bool removePhoto)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? brand,  Category category,  CareMethod careMethod,  int washCycle,  CareMode careMode,  List<ItemPurpose> purposes,  DateTime? purchasedAt,  File? newPhoto,  bool removePhoto,  List<String>? tags)?  $default,) {final _that = this;
 switch (_that) {
 case _ItemPatch() when $default != null:
-return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.washCycle,_that.careMode,_that.purposes,_that.purchasedAt,_that.newPhoto,_that.removePhoto);case _:
+return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.washCycle,_that.careMode,_that.purposes,_that.purchasedAt,_that.newPhoto,_that.removePhoto,_that.tags);case _:
   return null;
 
 }
@@ -219,7 +221,7 @@ return $default(_that.name,_that.brand,_that.category,_that.careMethod,_that.was
 
 
 class _ItemPatch extends ItemPatch {
-  const _ItemPatch({required this.name, this.brand, required this.category, required this.careMethod, required this.washCycle, required this.careMode, required final  List<ItemPurpose> purposes, this.purchasedAt, this.newPhoto, this.removePhoto = false}): _purposes = purposes,super._();
+  const _ItemPatch({required this.name, this.brand, required this.category, required this.careMethod, required this.washCycle, required this.careMode, required final  List<ItemPurpose> purposes, this.purchasedAt, this.newPhoto, this.removePhoto = false, final  List<String>? tags}): _purposes = purposes,_tags = tags,super._();
   
 
 @override final  String name;
@@ -243,6 +245,17 @@ class _ItemPatch extends ItemPatch {
 @override final  File? newPhoto;
 /// true면 기존 사진을 제거하고 기본 플레이스홀더로 되돌린다.
 @override@JsonKey() final  bool removePhoto;
+/// 태그 전체 교체(#46). null이면 기존 태그를 그대로 두고, 빈 목록이면 모두 제거한다.
+ final  List<String>? _tags;
+/// 태그 전체 교체(#46). null이면 기존 태그를 그대로 두고, 빈 목록이면 모두 제거한다.
+@override List<String>? get tags {
+  final value = _tags;
+  if (value == null) return null;
+  if (_tags is EqualUnmodifiableListView) return _tags;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of ItemPatch
 /// with the given fields replaced by the non-null parameter values.
@@ -254,16 +267,16 @@ _$ItemPatchCopyWith<_ItemPatch> get copyWith => __$ItemPatchCopyWithImpl<_ItemPa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemPatch&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMode, careMode) || other.careMode == careMode)&&const DeepCollectionEquality().equals(other._purposes, _purposes)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.newPhoto, newPhoto) || other.newPhoto == newPhoto)&&(identical(other.removePhoto, removePhoto) || other.removePhoto == removePhoto));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemPatch&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.category, category) || other.category == category)&&(identical(other.careMethod, careMethod) || other.careMethod == careMethod)&&(identical(other.washCycle, washCycle) || other.washCycle == washCycle)&&(identical(other.careMode, careMode) || other.careMode == careMode)&&const DeepCollectionEquality().equals(other._purposes, _purposes)&&(identical(other.purchasedAt, purchasedAt) || other.purchasedAt == purchasedAt)&&(identical(other.newPhoto, newPhoto) || other.newPhoto == newPhoto)&&(identical(other.removePhoto, removePhoto) || other.removePhoto == removePhoto)&&const DeepCollectionEquality().equals(other._tags, _tags));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,brand,category,careMethod,washCycle,careMode,const DeepCollectionEquality().hash(_purposes),purchasedAt,newPhoto,removePhoto);
+int get hashCode => Object.hash(runtimeType,name,brand,category,careMethod,washCycle,careMode,const DeepCollectionEquality().hash(_purposes),purchasedAt,newPhoto,removePhoto,const DeepCollectionEquality().hash(_tags));
 
 @override
 String toString() {
-  return 'ItemPatch(name: $name, brand: $brand, category: $category, careMethod: $careMethod, washCycle: $washCycle, careMode: $careMode, purposes: $purposes, purchasedAt: $purchasedAt, newPhoto: $newPhoto, removePhoto: $removePhoto)';
+  return 'ItemPatch(name: $name, brand: $brand, category: $category, careMethod: $careMethod, washCycle: $washCycle, careMode: $careMode, purposes: $purposes, purchasedAt: $purchasedAt, newPhoto: $newPhoto, removePhoto: $removePhoto, tags: $tags)';
 }
 
 
@@ -274,7 +287,7 @@ abstract mixin class _$ItemPatchCopyWith<$Res> implements $ItemPatchCopyWith<$Re
   factory _$ItemPatchCopyWith(_ItemPatch value, $Res Function(_ItemPatch) _then) = __$ItemPatchCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String? brand, Category category, CareMethod careMethod, int washCycle, CareMode careMode, List<ItemPurpose> purposes, DateTime? purchasedAt, File? newPhoto, bool removePhoto
+ String name, String? brand, Category category, CareMethod careMethod, int washCycle, CareMode careMode, List<ItemPurpose> purposes, DateTime? purchasedAt, File? newPhoto, bool removePhoto, List<String>? tags
 });
 
 
@@ -291,7 +304,7 @@ class __$ItemPatchCopyWithImpl<$Res>
 
 /// Create a copy of ItemPatch
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? brand = freezed,Object? category = null,Object? careMethod = null,Object? washCycle = null,Object? careMode = null,Object? purposes = null,Object? purchasedAt = freezed,Object? newPhoto = freezed,Object? removePhoto = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? brand = freezed,Object? category = null,Object? careMethod = null,Object? washCycle = null,Object? careMode = null,Object? purposes = null,Object? purchasedAt = freezed,Object? newPhoto = freezed,Object? removePhoto = null,Object? tags = freezed,}) {
   return _then(_ItemPatch(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,brand: freezed == brand ? _self.brand : brand // ignore: cast_nullable_to_non_nullable
@@ -303,7 +316,8 @@ as CareMode,purposes: null == purposes ? _self._purposes : purposes // ignore: c
 as List<ItemPurpose>,purchasedAt: freezed == purchasedAt ? _self.purchasedAt : purchasedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,newPhoto: freezed == newPhoto ? _self.newPhoto : newPhoto // ignore: cast_nullable_to_non_nullable
 as File?,removePhoto: null == removePhoto ? _self.removePhoto : removePhoto // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,tags: freezed == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 

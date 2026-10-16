@@ -30,6 +30,9 @@ abstract class ItemPatch with _$ItemPatch {
 
     /// true면 기존 사진을 제거하고 기본 플레이스홀더로 되돌린다.
     @Default(false) bool removePhoto,
+
+    /// 태그 전체 교체(#46). null이면 기존 태그를 그대로 두고, 빈 목록이면 모두 제거한다.
+    List<String>? tags,
   }) = _ItemPatch;
 
   const ItemPatch._();

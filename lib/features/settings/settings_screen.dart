@@ -88,13 +88,18 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: ClosetimoSpacing.space28),
-                    // #44 — 보관한 옷 확인·복원 진입점.
+                    // #44 — 보관한 옷 확인·복원 진입점. #46 — 태그 관리.
                     _Section(
                       title: '옷 관리',
                       rows: [
                         PreferenceRow(
                           label: '보관함',
                           onTap: () => context.pushNamed(Routes.archive),
+                        ),
+                        // #46 — 태그 이름 변경·병합·삭제.
+                        PreferenceRow(
+                          label: '태그 관리',
+                          onTap: () => context.pushNamed(Routes.tags),
                         ),
                       ],
                     ),

@@ -9,6 +9,7 @@ import '../../features/add_item/new_item_draft.dart';
 import '../models/item.dart';
 import '../models/item_filter.dart';
 import '../models/item_patch.dart';
+import '../models/item_tags.dart';
 import '../models/wear_event.dart';
 import 'item_repository.dart';
 
@@ -44,6 +45,7 @@ class IsarItemRepository implements ItemRepository {
       washCycle: draft.washCycle <= 0 ? 1 : draft.washCycle,
       createdAt: now,
       purchasedAt: draft.purchasedAt,
+      tags: normalizeTags(draft.tags),
     );
     final id = _items.autoIncrement();
     item.id = id;
@@ -158,6 +160,7 @@ class IsarItemRepository implements ItemRepository {
         ..purposes = _normalizePurposes(patch.purposes)
         ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
         ..purchasedAt = patch.purchasedAt;
+      if (patch.tags case final tags?) item.tags = normalizeTags(tags);
 
       // 사진 3-way 의도(data-model.md §3): 교체 > 제거 > 유지.
       if (replacementPath != null) {
