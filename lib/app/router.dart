@@ -11,12 +11,14 @@ import '../core/widgets/bottom_nav.dart';
 import '../core/widgets/top_bar.dart';
 import '../data/models/item.dart';
 import '../data/models/item_filter.dart';
+import '../data/models/item_tags.dart';
 import '../features/add_item/add_item_screen.dart';
 import '../features/archive/archive_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/item_detail/item_detail_screen.dart';
 import '../features/laundry/laundry_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/tags/tag_manage_screen.dart';
 import '../features/wardrobe/wardrobe_screen.dart';
 import '../data/providers/app_providers.dart';
 
@@ -32,6 +34,9 @@ abstract final class Routes {
 
   /// 보관함(#44). 설정 > 옷 관리에서 push로 진입한다.
   static const archive = 'archive';
+
+  /// 태그 관리(#46). 설정 > 옷 관리에서 push로 진입한다.
+  static const tags = 'tags';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -132,6 +137,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (ctx, st) => const ArchiveScreen(),
       ),
+      GoRoute(
+        path: '/tags',
+        name: Routes.tags,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (ctx, st) => const TagManageScreen(),
+      ),
     ],
   );
 });
@@ -143,6 +154,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 /// - `group=<HomeBucket.name>`: 홈 카드 합산 범위(예: `others` = '그 외').
 ///   `category`와 함께 오면 `group`이 우선한다.
 /// - `purpose=<ItemPurpose.name>[,…]`: 용도 축(OR).
+/// - `tag=<태그>[,…]`: 사용자 태그 축(OR, #46). 태그에는 쉼표가 없다(정규화 규칙).
 /// 알 수 없는 값은 무시한다(전체).
 ItemFilter wardrobeFilterFromQuery(Map<String, String> query) {
   var categories = <Category>{};
@@ -165,7 +177,8 @@ ItemFilter wardrobeFilterFromQuery(Map<String, String> query) {
       for (final p in ItemPurpose.values)
         if (p.name == raw) p,
   };
-  return ItemFilter(categories: categories, purposes: purposes);
+  final tags = normalizeTags((query['tag'] ?? '').split(',')).toSet();
+  return ItemFilter(categories: categories, purposes: purposes, tags: tags);
 }
 
 /// 옷장 필터 → `/wardrobe` 쿼리. [wardrobeFilterFromQuery]의 역방향이며
@@ -182,6 +195,9 @@ Map<String, String> wardrobeQueryParameters(ItemFilter filter) {
     final names = filter.purposes.toList()
       ..sort((a, b) => a.index.compareTo(b.index));
     params['purpose'] = names.map((p) => p.name).join(',');
+  }
+  if (filter.tags.isNotEmpty) {
+    params['tag'] = (filter.tags.toList()..sort()).join(',');
   }
   return params;
 }

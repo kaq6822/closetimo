@@ -17,11 +17,13 @@ import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
 import '../../data/models/item_patch.dart';
+import '../../data/models/item_tags.dart';
 import '../../data/providers/app_providers.dart';
 import 'new_item_draft.dart';
 import 'widgets/care_method_picker.dart';
 import 'widgets/category_picker.dart';
 import 'widgets/photo_picker_card.dart';
+import 'widgets/tag_input.dart';
 import 'widgets/wash_cycle_stepper.dart';
 
 class AddItemScreen extends ConsumerStatefulWidget {
@@ -111,9 +113,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   /// 등록 모드는 명칭 또는 사진만 있으면 된다(#42 FR-002). 저장 진행 중에는
   /// 모든 저장 버튼을 막아 중복 생성을 차단한다(FR-001b).
   bool get _canSubmit =>
-      !_saving &&
-      _isDirty &&
-      (_isEdit ? _draft.canSave : _draft.canQuickSave);
+      !_saving && _isDirty && (_isEdit ? _draft.canSave : _draft.canQuickSave);
 
   void _pickPhoto(File file) {
     setState(() {
@@ -135,6 +135,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         careMode: _draft.careMode,
         careMethod: _draft.careMethod,
         purchasedAt: _draft.purchasedAt,
+        tags: _draft.tags,
       );
       // 원본 사진이 있었을 때만 "제거" 의도가 유의미하다. 원본이 없는데
       // 새로 골랐다 지운 경우는 순변화 없음이므로 dirty로 오판하지 않는다.
@@ -204,6 +205,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             purchasedAt: _draft.purchasedAt,
             newPhoto: _draft.tempPhoto,
             removePhoto: _photoCleared,
+            tags: _draft.tags,
           ),
         );
         // 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가 이전
@@ -262,6 +264,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
+    // #46 — 이미 쓴 태그(많이 쓴 순)를 입력 제안으로 쓴다.
+    final usages = ref.watch(tagUsageProvider).valueOrNull;
+    final tagSuggestions = [
+      for (final u in usages ?? const <TagUsage>[]) u.name,
+    ];
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator.adaptive()),
@@ -337,10 +344,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             ),
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(
-                            label: '종류',
-                            note: '선택',
-                          ),
+                          const _FieldLabel(label: '종류', note: '선택'),
                           CategoryPicker(
                             value: _draft.category,
                             onChanged: (c) => setState(
@@ -374,6 +378,17 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                               hint: '예) ZARA',
                               onChanged: (v) => setState(
                                 () => _draft = _draft.copyWith(brand: v),
+                              ),
+                            ),
+                            const SizedBox(height: ClosetimoSpacing.lg),
+                            // #46 — 사용자 태그(선택). 이미 쓴 태그를 제안한다.
+                            const _FieldLabel(label: '태그', note: '색상·계절 등'),
+                            TagInput(
+                              key: ValueKey('tags-$_formGeneration'),
+                              value: _draft.tags,
+                              suggestions: tagSuggestions,
+                              onChanged: (t) => setState(
+                                () => _draft = _draft.copyWith(tags: t),
                               ),
                             ),
                             const SizedBox(height: ClosetimoSpacing.lg),
@@ -529,7 +544,7 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-/// "추가 정보 (선택)" 접이식 헤더(#42). 브랜드·세탁 주기·세탁 방법·구매일을
+/// "추가 정보 (선택)" 접이식 헤더(#42). 브랜드·태그(#46)·세탁 주기·세탁 방법·구매일을
 /// 접어 두어 처음 등록할 때 모두 채워야 한다는 부담을 줄인다.
 class _OptionalSectionHeader extends StatelessWidget {
   const _OptionalSectionHeader({required this.expanded, required this.onTap});
@@ -571,7 +586,7 @@ class _OptionalSectionHeader extends StatelessWidget {
                       ),
                       SizedBox(height: ClosetimoSpacing.space2),
                       Text(
-                        '브랜드 · 세탁 주기 · 세탁 방법 · 구매일',
+                        '브랜드 · 태그 · 세탁 주기 · 세탁 방법 · 구매일',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,

@@ -544,7 +544,8 @@ void main() {
       await tester.ensureVisible(header);
       await tester.tap(header);
       await tester.pumpAndSettle();
-      expect(find.byType(TextField), findsNWidgets(2));
+      // 명칭 + 브랜드 + 태그(#46, 추가 정보 안에 접혀 있음).
+      expect(find.byType(TextField), findsNWidgets(3));
       expect(find.text('구매일 선택'), findsOneWidget);
     });
 

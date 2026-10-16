@@ -80,6 +80,7 @@ final ItemSchema = IsarGeneratedSchema(
 
         enumMap: {"unspecified": 0, "seasonal": 1, "noLongerOwned": 2},
       ),
+      IsarPropertySchema(name: 'tags', type: IsarType.stringList),
     ],
     indexes: [
       IsarIndexSchema(
@@ -184,6 +185,14 @@ int serializeItem(IsarWriter writer, Item object) {
     object.archivedAt?.toUtc().microsecondsSinceEpoch ?? -9223372036854775808,
   );
   IsarCore.writeByte(writer, 19, object.archiveReason.index);
+  {
+    final list = object.tags;
+    final listWriter = IsarCore.beginList(writer, 20, list.length);
+    for (var i = 0; i < list.length; i++) {
+      IsarCore.writeString(listWriter, i, list[i]);
+    }
+    IsarCore.endList(writer, listWriter);
+  }
   return object.id;
 }
 
@@ -363,6 +372,23 @@ Item deserializeItem(IsarReader reader) {
           ArchiveReason.unspecified;
     }
   }
+  final List<String> _tags;
+  {
+    final length = IsarCore.readList(reader, 20, IsarCore.readerPtrPtr);
+    {
+      final reader = IsarCore.readerPtr;
+      if (reader.isNull) {
+        _tags = const [];
+      } else {
+        final list = List<String>.filled(length, '', growable: true);
+        for (var i = 0; i < length; i++) {
+          list[i] = IsarCore.readString(reader, i) ?? '';
+        }
+        IsarCore.freeReader(reader);
+        _tags = list;
+      }
+    }
+  }
   final object = Item(
     name: _name,
     brand: _brand,
@@ -383,6 +409,7 @@ Item deserializeItem(IsarReader reader) {
     purposes: _purposes,
     archivedAt: _archivedAt,
     archiveReason: _archiveReason,
+    tags: _tags,
   );
   object.id = IsarCore.readId(reader);
   return object;
@@ -560,6 +587,23 @@ dynamic deserializeItemProp(IsarReader reader, int property) {
         } else {
           return _itemArchiveReason[IsarCore.readByte(reader, 19)] ??
               ArchiveReason.unspecified;
+        }
+      }
+    case 20:
+      {
+        final length = IsarCore.readList(reader, 20, IsarCore.readerPtrPtr);
+        {
+          final reader = IsarCore.readerPtr;
+          if (reader.isNull) {
+            return const [];
+          } else {
+            final list = List<String>.filled(length, '', growable: true);
+            for (var i = 0; i < length; i++) {
+              list[i] = IsarCore.readString(reader, i) ?? '';
+            }
+            IsarCore.freeReader(reader);
+            return list;
+          }
         }
       }
     default:
@@ -2409,6 +2453,180 @@ extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
       );
     });
   }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(
+          property: 20,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementGreaterThan(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(
+          property: 20,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+  tagsElementGreaterThanOrEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(
+          property: 20,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementLessThan(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 20, value: value, caseSensitive: caseSensitive),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementLessThanOrEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(
+          property: 20,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementBetween(
+    String lower,
+    String upper, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(
+          property: 20,
+          lower: lower,
+          upper: upper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        StartsWithCondition(
+          property: 20,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EndsWithCondition(
+          property: 20,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        ContainsCondition(
+          property: 20,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        MatchesCondition(
+          property: 20,
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const EqualCondition(property: 20, value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const GreaterCondition(property: 20, value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsIsEmpty() {
+    return not().tagsIsNotEmpty();
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> tagsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const GreaterOrEqualCondition(property: 20, value: null),
+      );
+    });
+  }
 }
 
 extension ItemQueryObject on QueryBuilder<Item, Item, QFilterCondition> {}
@@ -3017,6 +3235,12 @@ extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
       return query.addDistinctBy(19);
     });
   }
+
+  QueryBuilder<Item, Item, QAfterDistinct> distinctByTags() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(20);
+    });
+  }
 }
 
 extension ItemQueryProperty1 on QueryBuilder<Item, Item, QProperty> {
@@ -3137,6 +3361,12 @@ extension ItemQueryProperty1 on QueryBuilder<Item, Item, QProperty> {
   QueryBuilder<Item, ArchiveReason, QAfterProperty> archiveReasonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(19);
+    });
+  }
+
+  QueryBuilder<Item, List<String>, QAfterProperty> tagsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(20);
     });
   }
 }
@@ -3263,6 +3493,12 @@ extension ItemQueryProperty2<R> on QueryBuilder<Item, R, QAfterProperty> {
       return query.addProperty(19);
     });
   }
+
+  QueryBuilder<Item, (R, List<String>), QAfterProperty> tagsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(20);
+    });
+  }
 }
 
 extension ItemQueryProperty3<R1, R2>
@@ -3386,6 +3622,12 @@ extension ItemQueryProperty3<R1, R2>
   archiveReasonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(19);
+    });
+  }
+
+  QueryBuilder<Item, (R1, R2, List<String>), QOperations> tagsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(20);
     });
   }
 }

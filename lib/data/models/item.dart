@@ -26,6 +26,7 @@ class Item {
     this.inLaundry = false,
     this.imagePath,
     this.fallbackColor = 0xFFE5E4DC,
+    this.tags = const [],
   });
 
   int id = 0;
@@ -87,6 +88,13 @@ class Item {
   /// [ArchiveReason.unspecified]다(Isar Plus는 nullable enum을 지원하지 않는다).
   /// 보관 여부는 이 값이 아니라 [archivedAt]으로 판단한다.
   ArchiveReason archiveReason;
+
+  // ── 사용자 태그(#46) 추가 필드. 필드가 없는 구 데이터는 빈 목록으로 읽힌다. ──
+
+  /// 사용자 태그(색상·계절 등 반복 검색 단서, 0개 이상). 관리 상태·바구니·보관은
+  /// 태그가 아니라 시스템 필드로만 표현한다. `normalizeTags`(item_tags.dart)로
+  /// 정규화해 저장하며, 기본값은 불변 목록이므로 새 목록을 대입한다.
+  List<String> tags;
 }
 
 /// 보관 사유(#44). ordinal 저장이므로 **끝에만 추가**한다.
@@ -194,7 +202,8 @@ enum HomeBucket {
 }
 
 /// 선택 용도 축(#41). 종류와 독립이며 여러 개를 가질 수 있다. ordinal 저장이므로
-/// **끝에만 추가**한다. 후속 속성 확장(#46)은 이 enum에 값을 덧붙인다.
+/// **끝에만 추가**한다. 색상·계절 같은 사용자 단서는 enum이 아니라
+/// [Item.tags](#46)로 표현한다(data-model.md §1.1c).
 enum ItemPurpose { sport }
 
 extension ItemPurposeLabel on ItemPurpose {

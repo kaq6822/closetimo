@@ -23,6 +23,8 @@ abstract class NewItemDraft with _$NewItemDraft {
     @Default(CareMethod.unspecified) CareMethod careMethod,
     DateTime? purchasedAt,
     File? tempPhoto,
+    // #46 — 사용자 태그(선택). 저장 시 repository가 정규화한다.
+    @Default(<String>[]) List<String> tags,
   }) = _NewItemDraft;
 
   const NewItemDraft._();
@@ -39,6 +41,7 @@ abstract class NewItemDraft with _$NewItemDraft {
     careMode: item.careMode,
     careMethod: item.careMethod,
     purchasedAt: item.purchasedAt,
+    tags: List.unmodifiable(item.tags),
   );
 
   /// 사진만으로 등록할 때 채우는 기본 명칭(FR-002, 2026-10-16 #42).
@@ -52,6 +55,5 @@ abstract class NewItemDraft with _$NewItemDraft {
 
   /// 등록 저장용 draft. 명칭이 비어 있으면 [untitledName]으로 채운다.
   /// 저장소의 `name.isNotEmpty` 규칙은 그대로 유지된다.
-  NewItemDraft forCreate() =>
-      canSave ? this : copyWith(name: untitledName);
+  NewItemDraft forCreate() => canSave ? this : copyWith(name: untitledName);
 }

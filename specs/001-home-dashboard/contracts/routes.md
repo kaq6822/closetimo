@@ -15,6 +15,7 @@
 │     query: ?category=<Category.name>   ← 개별 종류 1개 (예: etc = 개별 '기타')
 │            ?group=<HomeBucket.name>    ← 합산 범위 (홈 '그 외' 카드: group=others)
 │            ?purpose=<ItemPurpose.name>[,…] ← 용도 축(OR), 종류와 AND
+│            ?tag=<태그>[,…]              ← 사용자 태그 축(OR), 다른 축과 AND (#46)
 ├── /laundry       (LaundryScreen, tab=laundry)      US4
 └── /settings      (SettingsScreen, tab=settings)    US5
 
@@ -23,6 +24,7 @@
 /add-item         (AddItemScreen, 모달 transition)   US1
 /item/:id/edit    (AddItemScreen(editId), 모달)      002
 /archive          (ArchiveScreen, 보관함)            #44
+/tags             (TagManageScreen, 태그 관리)       #46
 ```
 
 ## 2. 진입점 & 초기 경로
@@ -50,6 +52,12 @@
 | `/item/:id` 백 버튼 | 탭 | pop | 변경사항 자동 저장 |
 | `/laundry` "세탁 완료 처리" | 탭 | 같은 화면 유지 | 항목 제거 + Toast: "N점의 세탁이 완료됐어요" |
 | `/settings` 옷 관리 > `보관함` | 탭 | `/archive` | `pushNamed(Routes.archive)` (#44) |
+| `/settings` 옷 관리 > `태그 관리` | 탭 | `/tags` | `pushNamed(Routes.tags)` (#46) |
+| `/tags` 태그 `이름 변경` | 탭 → 다이얼로그 → (같은 이름이 있으면 병합 확인) | 같은 화면 유지 | Toast: "'<새 이름>'(으)로 이름을 바꿨어요" / "'<이름>' 태그로 합쳤어요" |
+| `/tags` 태그 `삭제` | 탭 → 다이얼로그("옷과 착용 기록은 그대로 남아요") → `지우기` | 같은 화면 유지 | Toast: "'<이름>' 태그를 지웠어요" |
+| `/wardrobe` `태그` 칩 | 탭 → 시트에서 다중 선택 → 적용 | `/wardrobe?…&tag=<a,b>` | 쿼리를 선택과 동기화(#46) |
+| `/wardrobe` `조건 초기화` | 탭 | `/wardrobe` (쿼리 없음) | 검색어·'입을 수 있음'·종류·용도·태그 모두 해제(#46) |
+| `/wardrobe` 선택 바 `태그` | 탭 → 시트(붙이기/떼기) | 같은 화면 유지 | 선택 종료 + Toast: "N벌에 '<태그>' 태그를 붙였어요" / "N벌에서 '<태그>' 태그를 뗐어요" (#46) |
 | `/archive` 항목 | 탭 | `/item/:id` | 보관 안내·복원 버튼이 있는 상세 |
 | `/archive` 항목 `꺼내기` | 탭 | 같은 화면 유지 | 목록에서 제거 + Toast: "<이름>을(를) 옷장으로 꺼냈어요" |
 | `/item/:id` 메뉴 `보관하기` | 탭 → 다이얼로그(사유 선택, 선택 사항) → `보관` | 상세 유지(보관 안내 표시) | Toast(상단): "보관함으로 옮겼어요. 기록은 그대로 남아요" (#44) |
@@ -62,6 +70,8 @@
 - `group`이 있으면 `category`보다 우선한다. 알 수 없는 값은 무시(전체)한다.
 - 과거 링크 호환을 위해 `category`는 한국어 라벨(`상의` 등)도 받는다.
 - 검색어와 '입을 수 있음'(`ItemFilter.readyToWear`, #43)은 URL에 싣지 않는다(화면 State).
+- `tag`는 쉼표로 구분한 태그 목록이다(#46). 태그 정규화가 쉼표를 허용하지 않으므로 구분이 모호하지 않다.
+  `normalizeTags`로 다시 정규화하며, 빈 값은 무시한다. 출력은 이름순 정렬.
 - 홈 카드 진입으로 쿼리의 필터가 바뀌면 옷장은 검색어·'입을 수 있음'·다중 선택을 초기화한다(#33, FR-006a).
 
 ## 4. 가드 / 검증
@@ -87,6 +97,7 @@ abstract final class Routes {
   static const addItem = 'addItem';
   static const editItem = 'editItem';
   static const archive = 'archive';     // #44
+  static const tags = 'tags';           // #46
 }
 ```
 
