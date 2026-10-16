@@ -92,6 +92,8 @@ void main() {
       expect(find.text('신규 옷 등록'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).at(0), '오프라인 코트');
+      // #42 — 브랜드는 접힌 "추가 정보 (선택)" 안에 있다.
+      await tapVisible(tester, find.text('추가 정보 (선택)'));
       await tester.enterText(find.byType(TextField).at(1), 'ZARA');
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('아우터'));
