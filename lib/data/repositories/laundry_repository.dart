@@ -10,5 +10,7 @@ abstract interface class LaundryRepository {
 
   /// FR-016 — 선택된 옷들을 status=clean, wearSinceWash=0,
   /// lastWashedAt=now, inLaundry=false로 갱신 + WearEvent(kind: wash) 기록.
-  Future<void> completeWashFor(List<int> itemIds);
+  /// 현재 바구니(inLaundry=true)에 없는 옷은 처리하지 않으며,
+  /// 실제로 처리된 옷의 수를 반환한다.
+  Future<int> completeWashFor(List<int> itemIds);
 }

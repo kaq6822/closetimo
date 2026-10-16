@@ -72,7 +72,7 @@ class _FakeLaundryRepo implements LaundryRepository {
   @override
   Future<void> toggle(int itemId) async => item.inLaundry = !item.inLaundry;
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {}
+  Future<int> completeWashFor(List<int> itemIds) async => 0;
 }
 
 Widget _harness(Item item, List<WearEvent> events) {
