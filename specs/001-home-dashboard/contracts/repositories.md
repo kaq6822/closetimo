@@ -44,6 +44,7 @@ class ItemFilter {                        // lib/data/models/item_filter.dart (�
   final Set<ItemPurpose> purposes;       // 비면 전체. 축 안 OR, 축 간 AND
   final String query;                    // 이름·브랜드, 대소문자 무시
   final ArchiveScope archive;            // #44. active(기본) | archived | all
+  final bool readyToWear;                // #43 '입을 수 있음' = status==clean && !inLaundry (축 간 AND)
   factory ItemFilter.category(Category c);        // 개별 종류(옷장 칩)
   factory ItemFilter.homeBucket(HomeBucket b);    // 홈 카드와 같은 범위
   bool matches(Item item);

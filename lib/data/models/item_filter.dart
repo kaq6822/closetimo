@@ -17,6 +17,7 @@ class ItemFilter {
     this.purposes = const {},
     this.query = '',
     this.archive = ArchiveScope.active,
+    this.readyToWear = false,
   });
 
   /// 개별 종류 1개만 보는 필터(옷장 종류 칩).
@@ -39,11 +40,16 @@ class ItemFilter {
   /// 보관 축(#44). 기본은 활성 옷만.
   final ArchiveScope archive;
 
-  /// 검색어를 제외한 조건(종류·용도)이 하나라도 걸려 있는지.
+  /// '입을 수 있음'만 남길지(#43). [ItemReadiness.isReadyToWear] 참조.
+  /// 검색어처럼 라우트 쿼리에 싣지 않는 화면 State 조건이다.
+  final bool readyToWear;
+
+  /// 검색어를 제외한 조건(종류·용도·보관·입을 수 있음)이 하나라도 걸려 있는지.
   bool get hasScope =>
       categories.isNotEmpty ||
       purposes.isNotEmpty ||
-      archive != ArchiveScope.active;
+      archive != ArchiveScope.active ||
+      readyToWear;
 
   /// 조건이 하나라도 걸려 있는지(검색어 포함).
   bool get isActive => hasScope || query.trim().isNotEmpty;
@@ -64,6 +70,7 @@ class ItemFilter {
 
   bool matches(Item item) {
     if (!archive.includes(item)) return false;
+    if (readyToWear && !item.isReadyToWear) return false;
     if (categories.isNotEmpty && !categories.contains(item.category)) {
       return false;
     }
@@ -84,11 +91,13 @@ class ItemFilter {
     Set<ItemPurpose>? purposes,
     String? query,
     ArchiveScope? archive,
+    bool? readyToWear,
   }) => ItemFilter(
     categories: categories ?? this.categories,
     purposes: purposes ?? this.purposes,
     query: query ?? this.query,
     archive: archive ?? this.archive,
+    readyToWear: readyToWear ?? this.readyToWear,
   );
 
   @override
@@ -96,6 +105,7 @@ class ItemFilter {
       other is ItemFilter &&
       other.query == query &&
       other.archive == archive &&
+      other.readyToWear == readyToWear &&
       _sameSet(other.categories, categories) &&
       _sameSet(other.purposes, purposes);
 
@@ -105,6 +115,7 @@ class ItemFilter {
     archive,
     Object.hashAllUnordered(categories),
     Object.hashAllUnordered(purposes),
+    readyToWear,
   );
 
   static bool _sameSet<T>(Set<T> a, Set<T> b) =>
@@ -127,4 +138,15 @@ enum ArchiveScope {
     ArchiveScope.archived => item.isArchived,
     ArchiveScope.all => true,
   };
+}
+
+/// '입을 수 있음' 판정(#43, spec FR-005a). **앱이 기록한 상태만** 본다.
+///
+/// - `status == clean`: 착용 횟수 기준 관리 권장(`dirty`) 전. 실제 청결을 뜻하지
+///   않는다(data-model.md §1.2).
+/// - `!inLaundry`: 세탁 바구니에 담겨 있지 않음.
+/// - `!isArchived`: 보관한 옷(#44)은 제외한다.
+extension ItemReadiness on Item {
+  bool get isReadyToWear =>
+      status == ItemStatus.clean && !inLaundry && !isArchived;
 }

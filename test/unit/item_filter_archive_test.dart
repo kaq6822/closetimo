@@ -63,4 +63,12 @@ void main() {
     expect(ArchiveReason.seasonal.index, 1);
     expect(ArchiveReason.noLongerOwned.index, 2);
   });
+
+  test('입을 수 있음 판정은 보관한 옷을 제외한다(#43 × #44)', () {
+    expect(active.isReadyToWear, isTrue);
+    expect(archived.isReadyToWear, isFalse);
+    const ready = ItemFilter(archive: ArchiveScope.all, readyToWear: true);
+    expect(ready.matches(active), isTrue);
+    expect(ready.matches(archived), isFalse);
+  });
 }

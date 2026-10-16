@@ -58,7 +58,8 @@
 - 코덱은 `lib/app/router.dart`의 `wardrobeFilterFromQuery` / `wardrobeQueryParameters`가 단일 구현이다.
 - `group`이 있으면 `category`보다 우선한다. 알 수 없는 값은 무시(전체)한다.
 - 과거 링크 호환을 위해 `category`는 한국어 라벨(`상의` 등)도 받는다.
-- 검색어는 URL에 싣지 않는다.
+- 검색어와 '입을 수 있음'(`ItemFilter.readyToWear`, #43)은 URL에 싣지 않는다(화면 State).
+- 홈 카드 진입으로 쿼리의 필터가 바뀌면 옷장은 검색어·'입을 수 있음'·다중 선택을 초기화한다(#33, FR-006a).
 
 ## 4. 가드 / 검증
 

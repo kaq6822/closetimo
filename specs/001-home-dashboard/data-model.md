@@ -145,7 +145,12 @@ enum HomeBucket { outer, top, bottom, others }
 - **같은 축 안은 OR, 축 사이는 AND**. 빈 집합은 해당 축을 제한하지 않는다(전체).
 - `ItemFilter.homeBucket(b)` = `categories: b.categories`. 홈 집계(`Category.homeBucket`)와 같은
   정의를 공유하므로 카드 수와 이동 목록 수가 항상 같다.
-- 후속 속성(색상·계절 등, #46)·사용 가능 상태(#43)는 이 객체에 축을 추가해 확장한다(보관 #44는 `archive` 축으로 추가됨).
+- 후속 속성(색상·계절 등, #46)·사용 가능 상태(#43)·보관(#44)은 이 객체에 축을 추가해 확장한다.
+  새 필드는 생성자·클래스 **끝에** 추가하고 `copyWith`·`==`·`hashCode`에 반영한다.
+- `readyToWear: bool`(#43, 기본 false): true이면 `Item.isReadyToWear`(`item_filter.dart`의
+  `ItemReadiness` 확장)인 옷만 남긴다. 정의 = `status == clean && !inLaundry`(보관 #44 도입 시
+  `!isArchived` 조건을 이 getter에 포함). 기록된 상태 기준이며 실제 오염 여부를 뜻하지 않는다.
+  검색어와 마찬가지로 라우트 쿼리에 싣지 않는다. `hasScope`에 포함된다.
 
 ### 1.2 상태 전이
 

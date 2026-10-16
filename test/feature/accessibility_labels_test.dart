@@ -214,14 +214,18 @@ void main() {
     // Android는 입력 필드 라벨을 content-desc가 아닌 hintText로 내보내 덤프에는
     // 보이지 않는다. 필드 노드에 힌트가 실리는지는 여기서 검증한다.
     final handle = tester.ensureSemantics();
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(
       _host(
         WardrobeFilterBar(
-          query: '',
+          searchController: controller,
           scope: const ItemFilter(),
+          readyToWear: false,
           sort: WardrobeSort.statusCleanFirst,
           onQueryChanged: (_) {},
           onScopeChanged: (_) {},
+          onReadyToWearChanged: (_) {},
           onSortChanged: (_) {},
         ),
       ),
