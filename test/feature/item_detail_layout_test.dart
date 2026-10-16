@@ -52,11 +52,23 @@ class _FakeEventRepo implements EventRepository {
   @override
   Stream<List<WearEvent>> watchForItem(int itemId) => Stream.value(const []);
   @override
-  Future<void> recordWear(int itemId, {String? note}) async {}
+  Future<int?> recordWear(int itemId, {String? note, DateTime? wornOn}) async =>
+      null;
   @override
   Future<void> updateEventNote(int eventId, String? note) async {}
   @override
   Future<void> deleteWearEvent(int eventId) async {}
+
+  @override
+  Future<WearBatchResult> recordWearBatch(
+    Iterable<int> itemIds, {
+    DateTime? wornOn,
+    String? note,
+  }) async => const WearBatchResult(eventIds: [], skipped: 0);
+  @override
+  Future<void> updateWearDate(int eventId, DateTime wornOn) async {}
+  @override
+  Future<void> deleteWearEvents(Iterable<int> eventIds) async {}
 }
 
 class _FakeLaundryRepo implements LaundryRepository {
@@ -130,9 +142,7 @@ void main() {
   for (final size in [_normal, _narrow]) {
     final label = '${size.width.toInt()}×${size.height.toInt()}';
 
-    testWidgets('사진 없는 옷: 짧은 헤더 뒤 이름·상태·기록 액션이 첫 화면에 ($label)', (
-      tester,
-    ) async {
+    testWidgets('사진 없는 옷: 짧은 헤더 뒤 이름·상태·기록 액션이 첫 화면에 ($label)', (tester) async {
       await _pump(tester, _item(), size);
 
       // 3:4 빈 영역 대신 짧은 스와치 헤더.
@@ -168,9 +178,7 @@ void main() {
       // 사진 영역이 의미 있는 크기로 남는다(빈 헤더로 축소되지 않음).
       expect(
         heroHeight,
-        greaterThanOrEqualTo(
-          size.height * HeroImage.minScreenHeightFraction,
-        ),
+        greaterThanOrEqualTo(size.height * HeroImage.minScreenHeightFraction),
       );
 
       _expectOnFirstScreen(

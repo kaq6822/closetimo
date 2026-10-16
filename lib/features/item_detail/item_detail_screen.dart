@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/utils/clock.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/bottom_nav.dart';
 import '../../core/widgets/chip_filter.dart';
@@ -15,6 +16,7 @@ import '../../core/widgets/soft_button.dart';
 import '../../core/widgets/status_label.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
+import '../../core/widgets/wear_record_sheet.dart';
 import '../../data/models/item.dart';
 import '../../data/models/wear_event.dart';
 import '../../data/providers/app_providers.dart';
@@ -25,7 +27,6 @@ import 'widgets/edit_note_sheet.dart';
 import 'widgets/hero_image.dart';
 import 'widgets/history_timeline.dart';
 import 'widgets/stats_grid.dart';
-import 'widgets/wear_record_sheet.dart';
 
 class ItemDetailScreen extends ConsumerStatefulWidget {
   const ItemDetailScreen({required this.id, super.key});
@@ -70,16 +71,61 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   // #22 — 상세 화면에 머무는 토스트는 방금 누른 버튼(스크롤 후 화면 하단에 오기
   // 쉬움)을 가리지 않도록 상단바 아래에 띄운다. 화면을 벗어나는 토스트는 기본(하단).
   Future<void> _recordWear() async {
-    final result = await WearRecordSheet.show(context);
+    final now = ref.read(clockProvider).now();
+    final result = await WearRecordSheet.show(context, today: now);
     if (result == null) return;
-    await ref
-        .read(eventRepositoryProvider)
-        .recordWear(widget.id, note: result.note);
+    final events = ref.read(eventRepositoryProvider);
+    final int? eventId;
+    try {
+      eventId = await events.recordWear(
+        widget.id,
+        note: result.note,
+        wornOn: result.wornOn,
+      );
+    } catch (e) {
+      debugPrint('Failed to record wear for item ${widget.id}: $e');
+      if (!context.mounted) return;
+      showClosetimoToast(
+        context,
+        '착용을 기록하지 못했어요. 다시 시도해 주세요.',
+        placement: ToastPlacement.top,
+      );
+      return;
+    }
+    await _refresh();
+    if (!context.mounted) return;
+    // #39 FR-010e — 직후 실행 취소.
+    showClosetimoToast(
+      context,
+      '${formatWearDay(result.wornOn, now: now)}의 착용이 기록되었어요',
+      placement: ToastPlacement.top,
+      actionLabel: eventId == null ? null : '실행 취소',
+      onAction: eventId == null ? null : () => _undoWear(eventId!),
+    );
+  }
+
+  Future<void> _undoWear(int eventId) async {
+    await ref.read(eventRepositoryProvider).deleteWearEvents([eventId]);
+    await _refresh();
+    if (!context.mounted) return;
+    showClosetimoToast(context, '착용 기록을 취소했어요', placement: ToastPlacement.top);
+  }
+
+  // #39 FR-010c — 기록 날짜 수정. 카운터·상태 재계산은 repository가 맡는다.
+  Future<void> _editEventDate(WearEvent event) async {
+    final now = ref.read(clockProvider).now();
+    final picked = await pickWearDate(
+      context,
+      today: now,
+      initial: event.occurredAt,
+    );
+    if (picked == null) return;
+    await ref.read(eventRepositoryProvider).updateWearDate(event.id, picked);
     await _refresh();
     if (!context.mounted) return;
     showClosetimoToast(
       context,
-      '오늘의 착용이 기록되었어요',
+      '착용 날짜를 ${formatMonthDay(picked)}로 바꿨어요',
       placement: ToastPlacement.top,
     );
   }
@@ -304,6 +350,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     HistoryTimeline(
                       itemId: item.id,
                       onEdit: _editEventNote,
+                      onEditDate: _editEventDate,
                       onDelete: _deleteEvent,
                     ),
                   ],

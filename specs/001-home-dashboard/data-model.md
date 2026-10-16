@@ -167,6 +167,8 @@ clean ─────"착용 기록(FR-010)"─────► clean ───�
 - 옷 등록 시: `status = clean`, `wearSinceWash = 0`, `totalWears = 0`, `inLaundry = false`, `createdAt = now`. 폼 기본값은 `category = uncategorized`, `careMethod = unspecified`, `careMode = wearCycle`, `washCycle = 5`, `purposes = []`.
 - **상태 계산(FR-011, #45)**: `derivedStatus = (careMode == wearCycle && wearSinceWash >= washCycle) ? dirty : clean` (`ItemCareRules` 확장). `clean`은 "횟수 기준 관리 권장 없음"이며 실제 청결을 뜻하지 않는다.
 - 착용 기록(FR-010): `wearSinceWash++`, `totalWears++`, `lastWornAt = now`. `careMode == wearCycle`이고 `wearSinceWash >= washCycle`이면 `status = dirty`로 전환(FR-011). `careMode == manual`이면 카운터만 늘고 상태는 바뀌지 않는다. 사용자가 시트에서 입력한 메모(`note`, ≤80자, nullable)는 함께 생성되는 wear 이벤트에만 저장되고 `Item`에는 반영되지 않는다.
+- 날짜 지정 착용 기록(FR-010d, #39): `occurredAt`은 착용 날짜가 오늘이면 `now`, 과거면 그날 12:00(미래 거부). `totalWears++`, `lastWornAt = max(lastWornAt, occurredAt)`, `wearSinceWash`는 새 이벤트가 현재 세탁 주기(아래 FR-010b 정의)에 속할 때만 +1, `status = derivedStatus`. 가장 최근 세탁 이전으로 기록한 착용은 세탁 후 착용 횟수·상태에 영향을 주지 않는다. 여러 벌 일괄 기록(FR-008c)은 옷마다 같은 규칙을 단일 트랜잭션에서 적용하며 중복 id·보관·미존재 옷은 건너뛴다.
+- 착용 날짜 수정(FR-010c, #39): `occurredAt`만 바꾸고(같은 날짜면 no-op) 수정 전후 현재 주기 소속이 바뀌면 `wearSinceWash` ±1(0 미만 불가), `totalWears` 유지, `lastWornAt` = 남은 wear 이벤트 최신 `occurredAt`, `status = derivedStatus`.
 - 세탁 완료(FR-016): `wearSinceWash = 0`, `status = clean`, `lastWashedAt = now`, `inLaundry = false`. 관리 방식과 무관하다.
 - 착용 기록 삭제(FR-010b): 단일 트랜잭션으로 wear 이벤트 1건 삭제 + `totalWears = max(0, prev-1)`, `wearSinceWash`는 삭제된 이벤트가 현재 세탁 주기에 속할 때만 `max(0, prev-1)`(세탁 전 기록이면 유지). 현재 세탁 주기는 해당 옷의 가장 최근 `wash` 이벤트 이후에 기록된 wear 이벤트로 정의한다. 같은 `occurredAt`이면 `id`가 큰(나중에 저장된) 이벤트를 이후로 본다. `wash` 이벤트가 없으면(세탁 이력이 없거나 이벤트 없이 카운터만 있는 기존 데이터 포함) 모든 wear 이벤트를 현재 주기로 간주한다. 세탁 완료의 사후 취소는 본 릴리스 범위 외이므로 "유효한 최근 세탁"은 저장된 가장 최근 `wash` 이벤트다. `lastWornAt`은 남은 wear 이벤트의 최신 `occurredAt`(없으면 `null`)로 재계산. 결과 `wearSinceWash < washCycle`이고 직전 `status == dirty`였다면 `status = clean`으로 자동 복귀. `inLaundry`는 변경하지 않는다. `derivedStatus` 기준이므로 manual 옷은 dirty가 되지 않아 이 복귀 규칙과 충돌하지 않는다.
 - 수정(002 FR-004): `careMode`·`washCycle` 변경 후 `status = derivedStatus`로 재평가한다. manual로 바꾸면 dirty였던 옷도 clean이 되고, 다시 wearCycle로 켜면 보존된 `washCycle`·`wearSinceWash`로 재평가된다. 카운터는 바꾸지 않는다.
@@ -236,8 +238,9 @@ enum EventKind { wear, wash }
 - 세탁 완료(FR-016) 호출 시 처리된 각 옷마다 `kind = wash` 이벤트 1건 생성. `wash` 이벤트는 본 릴리스에서 사용자 메모 입력을 받지 않으므로 `note = null` 고정.
 - 옷 삭제(v1 범위 외)는 v1에서 발생하지 않으므로 cascade 삭제 미구현.
 
-사후 변경 규칙(FR-010a / FR-010b, `kind = wear`에 한정):
+사후 변경 규칙(FR-010a / FR-010b / FR-010c, `kind = wear`에 한정):
 - 메모 편집: `EventRepository.updateEventNote(eventId, note)`로 `note` 본문만 갱신. `kind = wash` 이벤트에 대한 호출은 거부(assert).
+- 날짜 수정(FR-010c): `EventRepository.updateWearDate(eventId, wornOn)`. 실행 취소(FR-010e): `EventRepository.deleteWearEvents(eventIds)`가 여러 건을 FR-010b 규칙으로 단일 트랜잭션에서 삭제한다.
 - 이벤트 삭제: `EventRepository.deleteWearEvent(eventId)`는 이벤트 row 제거 + `Item` 카운터·`lastWornAt`·`status` 사이드이펙트 역적용을 단일 트랜잭션으로 수행한다. `kind = wash` 이벤트 삭제는 본 릴리스 범위 외(스키마는 허용하지만 UI에서 노출하지 않음).
 
 ### 2.1 쿼리 패턴

@@ -118,30 +118,86 @@ abstract interface class ArchiveRepository {
 ```dart
 abstract interface class EventRepository {
   Stream<List<WearEvent>> watchForItem(int itemId);                 // FR-013
-  Future<void> recordWear(int itemId, {String? note});              // FR-010 → 카운터 갱신 + note 저장
+  Future<int?> recordWear(int itemId, {String? note, DateTime? wornOn}); // FR-010·010d → 생성된 이벤트 id
+  Future<WearBatchResult> recordWearBatch(Iterable<int> itemIds,
+      {DateTime? wornOn, String? note});                                // FR-008c (#39) 일괄 기록
   Future<void> updateEventNote(int eventId, String? note);          // FR-010a (wear 이벤트 한정)
+  Future<void> updateWearDate(int eventId, DateTime wornOn);        // FR-010c (#39) 날짜 수정
   Future<void> deleteWearEvent(int eventId);                        // FR-010b (사이드이펙트 역적용)
+  Future<void> deleteWearEvents(Iterable<int> eventIds);            // FR-010e (#39) 실행 취소
 }
+
+class WearBatchResult {
+  final List<int> eventIds;   // 생성된 wear 이벤트 id(실행 취소용), 입력 순서
+  final int skipped;          // 중복 id·보관·미존재로 제외한 수
+  int get recorded => eventIds.length;
+}
+```
+
+### 착용 날짜 규칙 (FR-010d, #39)
+
+`wornOn`은 달력 날짜이며 시각 부분은 무시한다. `null`이면 오늘이다.
+
+```text
+occurredAt(wornOn) =
+  wornOn이 오늘   → now
+  wornOn이 과거   → DateTime(wornOn.y, wornOn.m, wornOn.d, 12)
+  wornOn이 미래   → ArgumentError
+inCurrentCycle(at, id) = lastWash == null
+                         or at > lastWash.occurredAt
+                         or (at == lastWash.occurredAt and id > lastWash.id)
 ```
 
 ### `recordWear` 사이드이펙트 (FR-010 → FR-011)
 
 ```text
-input: itemId, note (단일행, 빈 입력은 null로 정규화, 길이 검증은 UI에서 80자 한도 보장)
+input: itemId, note (단일행, 빈 입력은 null로 정규화, 길이 검증은 UI에서 80자 한도 보장), wornOn (FR-010d)
 
 txn {
   item = items.get(itemId)
-  item.wearSinceWash += 1
+  if item == null: return null
+  at = occurredAt(wornOn)
+  ev = WearEvent(itemId, kind: wear, occurredAt: at, note: note)   # id 할당
+  if inCurrentCycle(at, ev.id): item.wearSinceWash += 1  # 세탁 이전 날짜면 유지(FR-010d)
   item.totalWears    += 1
-  item.lastWornAt     = now
-  if item.careMode == wearCycle and item.wearSinceWash >= item.washCycle:
-      item.status = dirty                    # FR-011 자동 전이 (manual이면 전이 없음, #45)
-  items.put(item)
-  events.put(WearEvent(itemId, kind: wear, occurredAt: now, note: note))
+  item.lastWornAt     = max(item.lastWornAt, at)
+  item.status         = item.derivedStatus  # FR-011 (manual이면 항상 clean, #45)
+  items.put(item); events.put(ev)
+  return ev.id
 }
 ```
 
-UI 흐름: 상세 화면의 "착용 기록하기" 버튼을 누르면 가벼운 바텀시트가 떠 메모 입력란을 노출한다(단일행, 최대 80자, 빈 입력 허용). 시트의 "기록" 액션이 `recordWear(itemId, note: ...)`를 호출하고, 성공 후 `Toast("오늘의 착용이 기록되었어요")` + 직전 화면으로 pop(US3 AC1·AC2). 호출 측에서 `note?.length`가 80자를 넘으면 ArgumentError를 throw해야 한다(UI 가드 회귀 방어).
+### `recordWearBatch` 사이드이펙트 (FR-008c, #39)
+
+단일 `isar.write`로 `itemIds`를 입력 순서대로 처리한다. 이미 처리한 id(중복)·존재하지 않는 옷·보관한
+옷(`archivedAt != null`)은 건너뛰고 `skipped`에 센다. 나머지 각 옷에 `recordWear`와 같은 규칙으로
+같은 `occurredAt`·`note`의 wear 이벤트 1건을 만든다. note 검증 실패(ArgumentError)·미래 날짜는
+트랜잭션 전에 거부하므로 일부만 저장되는 경우가 없다.
+
+### `updateWearDate` 사이드이펙트 (FR-010c, #39)
+
+```text
+txn {
+  ev = events.get(eventId); if null: return
+  assert ev.kind == wear                    # wash는 StateError
+  at = occurredAt(wornOn)
+  if 같은 달력 날짜(ev.occurredAt, at): return     # no-op
+  wasIn = inCurrentCycle(ev.occurredAt, ev.id)
+  ev.occurredAt = at; events.put(ev)
+  nowIn = inCurrentCycle(at, ev.id)
+  item.wearSinceWash += (nowIn ? 1 : 0) - (wasIn ? 1 : 0)   # 0 미만 불가
+  item.lastWornAt = 남은 wear 이벤트 최신 occurredAt
+  item.status = item.derivedStatus          # totalWears·inLaundry 유지
+}
+```
+
+### `deleteWearEvents` 사이드이펙트 (FR-010e, #39)
+
+`eventIds` 각각에 `deleteWearEvent`와 같은 역적용을 **단일** `isar.write`에서 순서대로 수행한다.
+없는 id·wash 이벤트 id는 건너뛴다(실행 취소가 이미 지운 기록 때문에 실패하지 않도록). 착용 기록
+직후 토스트의 "실행 취소"가 호출한다.
+
+UI 흐름: 상세 화면의 "착용 기록하기" 버튼을 누르면 가벼운 바텀시트가 떠 메모 입력란을 노출한다(단일행, 최대 80자, 빈 입력 허용). 시트는 착용 날짜(오늘·어제·날짜 선택)도 받는다(#39). 시트의 "기록" 액션이 `recordWear(itemId, note: ..., wornOn: ...)`를 호출하고, 성공 후 `Toast("오늘의 착용이 기록되었어요", action: 실행 취소 → deleteWearEvents([id]))`(오늘이 아니면 "어제의 착용"·"M/d의 착용")를 띄운다(US3 AC1·AC2, FR-010e). 호출 측에서 `note?.length`가 80자를 넘으면 ArgumentError를 throw해야 한다(UI 가드 회귀 방어).
 
 ### `updateEventNote` 사이드이펙트 (FR-010a)
 
@@ -188,8 +244,7 @@ txn {
   item.lastWornAt = remaining?.occurredAt
 
   # dirty → clean 자동 복귀 (FR-011 역방향)
-  if item.status == dirty and item.wearSinceWash < item.washCycle:
-      item.status = clean
+  item.status = item.derivedStatus
 
   items.put(item)
 }

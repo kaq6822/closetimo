@@ -56,9 +56,10 @@ class _FakeEventRepository implements EventRepository {
   final List<int> worn = [];
 
   @override
-  Future<void> recordWear(int itemId, {String? note}) async {
+  Future<int?> recordWear(int itemId, {String? note, DateTime? wornOn}) async {
     expect(note, isNull);
     worn.add(itemId);
+    return worn.length;
   }
 
   @override
@@ -67,6 +68,17 @@ class _FakeEventRepository implements EventRepository {
   Future<void> updateEventNote(int eventId, String? note) async {}
   @override
   Future<void> deleteWearEvent(int eventId) async {}
+
+  @override
+  Future<WearBatchResult> recordWearBatch(
+    Iterable<int> itemIds, {
+    DateTime? wornOn,
+    String? note,
+  }) async => const WearBatchResult(eventIds: [], skipped: 0);
+  @override
+  Future<void> updateWearDate(int eventId, DateTime wornOn) async {}
+  @override
+  Future<void> deleteWearEvents(Iterable<int> eventIds) async {}
 }
 
 class _FakeLaundryRepository implements LaundryRepository {

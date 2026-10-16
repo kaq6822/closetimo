@@ -39,10 +39,10 @@ class _InMemoryEventRepo implements EventRepository {
   );
 
   @override
-  Future<void> recordWear(int itemId, {String? note}) async {
+  Future<int?> recordWear(int itemId, {String? note, DateTime? wornOn}) async {
     final normalized = _normalizeNote(note);
     final item = items[itemId];
-    if (item == null) return;
+    if (item == null) return null;
     item
       ..wearSinceWash += 1
       ..totalWears += 1
@@ -58,6 +58,7 @@ class _InMemoryEventRepo implements EventRepository {
         note: normalized,
       )..id = _nextId++,
     );
+    return events.last.id;
   }
 
   @override
@@ -101,6 +102,17 @@ class _InMemoryEventRepo implements EventRepository {
       item.status = ItemStatus.clean;
     }
   }
+
+  @override
+  Future<WearBatchResult> recordWearBatch(
+    Iterable<int> itemIds, {
+    DateTime? wornOn,
+    String? note,
+  }) async => const WearBatchResult(eventIds: [], skipped: 0);
+  @override
+  Future<void> updateWearDate(int eventId, DateTime wornOn) async {}
+  @override
+  Future<void> deleteWearEvents(Iterable<int> eventIds) async {}
 }
 
 void main() {
