@@ -58,7 +58,7 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 abstract interface class LaundryRepository {
   Stream<List<Item>> watchBasket();                  // FR-014 (inLaundry == true)
   Future<void> toggle(int itemId);                   // FR-012
-  Future<void> completeWashFor(List<int> itemIds);   // FR-016
+  Future<int> completeWashFor(List<int> itemIds);    // FR-016, 처리된 수 반환
 }
 ```
 
@@ -66,6 +66,7 @@ abstract interface class LaundryRepository {
 
 - `toggle`: `Item.inLaundry`를 반전. 상태 전이 없음(FR-012 명시).
 - `completeWashFor`:
+  0. `inLaundry == true`가 아닌(또는 존재하지 않는) `itemId`는 건너뛰고, 실제 처리한 수를 반환한다(토스트 표시용).
   1. 각 `itemId`의 Item을 `status=clean, wearSinceWash=0, lastWashedAt=now, inLaundry=false`로 갱신(FR-016).
   2. 각 Item에 대해 `WearEvent(kind: wash, occurredAt: now)` 1건 추가(FR-013 타임라인 보강).
   3. 모두 단일 `isar.write`로 묶어 원자성 보장.
@@ -133,7 +134,11 @@ txn {
   events.delete(eventId)
 
   item = items.get(itemId)
-  item.wearSinceWash = max(0, item.wearSinceWash - 1)
+  # 현재 주기 = 가장 최근 wash 이벤트 이후 wear (같은 occurredAt이면 id가 큰 쪽이 이후).
+  # wash 이벤트가 없으면(카운터만 있는 기존 데이터 포함) 전부 현재 주기.
+  lastWash = events.where().itemIdEqualTo(itemId).filter().kindEqualTo(wash)의 최신 (occurredAt, id)
+  if lastWash == null or (ev.occurredAt, ev.id) > (lastWash.occurredAt, lastWash.id):
+      item.wearSinceWash = max(0, item.wearSinceWash - 1)
   item.totalWears    = max(0, item.totalWears - 1)
   # lastWornAt 재계산: 같은 itemId의 남은 wear 이벤트 중 최신 occurredAt, 없으면 null
   remaining = events

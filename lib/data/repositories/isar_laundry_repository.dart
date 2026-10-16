@@ -33,13 +33,15 @@ class IsarLaundryRepository implements LaundryRepository {
   }
 
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {
-    if (itemIds.isEmpty) return;
+  Future<int> completeWashFor(List<int> itemIds) async {
+    if (itemIds.isEmpty) return 0;
     final now = _clock.now();
-    _isar.write((isar) {
-      for (final id in itemIds) {
+    return _isar.write((isar) {
+      var processed = 0;
+      for (final id in itemIds.toSet()) {
         final item = isar.items.get(id);
-        if (item == null) continue;
+        // 바구니에 없는 옷은 세탁 완료 대상이 아니다.
+        if (item == null || !item.inLaundry) continue;
         item
           ..status = ItemStatus.clean
           ..wearSinceWash = 0
@@ -52,7 +54,9 @@ class IsarLaundryRepository implements LaundryRepository {
           occurredAt: now,
         )..id = isar.wearEvents.autoIncrement();
         isar.wearEvents.put(event);
+        processed++;
       }
+      return processed;
     });
   }
 }

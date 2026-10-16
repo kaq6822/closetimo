@@ -99,7 +99,7 @@ class _FakeLaundryRepository implements LaundryRepository {
   Future<void> toggle(int itemId) async {}
 
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {}
+  Future<int> completeWashFor(List<int> itemIds) async => 0;
 }
 
 class _FakePreferencesRepository implements PreferencesRepository {

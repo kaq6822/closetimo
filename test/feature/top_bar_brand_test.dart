@@ -21,9 +21,7 @@ void main() {
   });
 
   testWidgets('서브타이틀 모드에서는 심볼을 숨긴다', (tester) async {
-    await tester.pumpWidget(
-      _host(TopBar(subtitle: '옷 상세', onBack: () {})),
-    );
+    await tester.pumpWidget(_host(TopBar(subtitle: '옷 상세', onBack: () {})));
 
     expect(find.byKey(symbol), findsNothing);
     expect(find.text('옷 상세'), findsOneWidget);

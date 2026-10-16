@@ -20,7 +20,7 @@ class LaundryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final basket = ref.watch(laundryRepositoryProvider).watchBasket();
-    final selection = ref.watch(laundrySelectionProvider);
+    final rawSelection = ref.watch(laundrySelectionProvider);
     final selectionCtl = ref.read(laundrySelectionProvider.notifier);
 
     return Column(
@@ -35,6 +35,14 @@ class LaundryScreen extends ConsumerWidget {
             stream: basket,
             builder: (ctx, snap) {
               final items = snap.data ?? const [];
+              // 제외·삭제·외부 완료로 사라진 항목은 선택에서 제거한다.
+              final basketIds = items.map((i) => i.id).toSet();
+              final selection = rawSelection.where(basketIds.contains).toSet();
+              if (snap.hasData && selection.length != rawSelection.length) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  selectionCtl.retainOnly(basketIds);
+                });
+              }
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
                   ClosetimoSpacing.lg,
@@ -68,14 +76,14 @@ class LaundryScreen extends ConsumerWidget {
                           ? null
                           : () async {
                               final ids = selection.toList();
-                              await ref
+                              final done = await ref
                                   .read(laundryRepositoryProvider)
                                   .completeWashFor(ids);
                               selectionCtl.clear();
-                              if (context.mounted) {
+                              if (context.mounted && done > 0) {
                                 showClosetimoToast(
                                   context,
-                                  '${ids.length}점의 세탁이 완료됐어요',
+                                  '$done점의 세탁이 완료됐어요',
                                 );
                               }
                             },

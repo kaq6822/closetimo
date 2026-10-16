@@ -116,7 +116,7 @@ clean ─────"착용 기록(FR-010)"─────► clean ───�
 - 옷 등록 시: `status = clean`, `wearSinceWash = 0`, `totalWears = 0`, `inLaundry = false`, `createdAt = now`.
 - 착용 기록(FR-010): `wearSinceWash++`, `totalWears++`, `lastWornAt = now`. 결과적으로 `wearSinceWash >= washCycle`이면 `status = dirty`로 전환(FR-011). 사용자가 시트에서 입력한 메모(`note`, ≤80자, nullable)는 함께 생성되는 wear 이벤트에만 저장되고 `Item`에는 반영되지 않는다.
 - 세탁 완료(FR-016): `wearSinceWash = 0`, `status = clean`, `lastWashedAt = now`, `inLaundry = false`.
-- 착용 기록 삭제(FR-010b): 단일 트랜잭션으로 wear 이벤트 1건 삭제 + `wearSinceWash = max(0, prev-1)`, `totalWears = max(0, prev-1)`, `lastWornAt`은 남은 wear 이벤트의 최신 `occurredAt`(없으면 `null`)로 재계산. 결과 `wearSinceWash < washCycle`이고 직전 `status == dirty`였다면 `status = clean`으로 자동 복귀. `inLaundry`는 변경하지 않는다.
+- 착용 기록 삭제(FR-010b): 단일 트랜잭션으로 wear 이벤트 1건 삭제 + `totalWears = max(0, prev-1)`, `wearSinceWash`는 삭제된 이벤트가 현재 세탁 주기에 속할 때만 `max(0, prev-1)`(세탁 전 기록이면 유지). 현재 세탁 주기는 해당 옷의 가장 최근 `wash` 이벤트 이후에 기록된 wear 이벤트로 정의한다. 같은 `occurredAt`이면 `id`가 큰(나중에 저장된) 이벤트를 이후로 본다. `wash` 이벤트가 없으면(세탁 이력이 없거나 이벤트 없이 카운터만 있는 기존 데이터 포함) 모든 wear 이벤트를 현재 주기로 간주한다. 세탁 완료의 사후 취소는 본 릴리스 범위 외이므로 "유효한 최근 세탁"은 저장된 가장 최근 `wash` 이벤트다., `lastWornAt`은 남은 wear 이벤트의 최신 `occurredAt`(없으면 `null`)로 재계산. 결과 `wearSinceWash < washCycle`이고 직전 `status == dirty`였다면 `status = clean`으로 자동 복귀. `inLaundry`는 변경하지 않는다.
 - `inLaundry` 토글(FR-012)은 `status`를 변경하지 않는다(세탁 완료 처리 시까지 상태 보존).
 
 ### 1.3 검증
