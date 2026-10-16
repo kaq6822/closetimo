@@ -35,7 +35,7 @@ Android 기기에서 출시 전(또는 회귀) QA를 수행하는 에이전트·
 | L0 정적 | `flutter analyze` · `dart run tool/check_design_tokens.dart` | 경고 0, 토큰 일치 |
 | L1 단위·위젯 | `flutter test` | 전부 통과 |
 | L2 빌드 | `flutter build apk --release` | 성공. APK 메타 점검(§3) |
-| L3 자동 E2E | `tool/qa/run_android_e2e.sh` | 4종 PASS, perf는 profile 수치로 판정 |
+| L3 자동 E2E | `tool/qa/run_android_e2e.sh` | 5종 PASS(백업·복원 포함), perf는 profile 수치로 판정 |
 | L4 탐색 QA | `source tool/qa/android_qa.sh` 후 §4 체크리스트 | 결함은 리포트에 P0~P3로 기록 |
 | L5 환경 변화 | §5 | 크래시 0, 레이아웃 붕괴 없음 |
 

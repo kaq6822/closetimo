@@ -218,6 +218,25 @@ abstract interface class PreferencesRepository {
 
 ---
 
+## 4a. `BackupRepository` (#40)
+
+사용자 실행형 백업·복원. 계약·예외·원자성 규칙은
+[004 contracts/backup-service.md](../../004-backup-restore/contracts/backup-service.md)를 따른다.
+
+```dart
+abstract interface class BackupRepository {
+  Future<BackupCounts> currentCounts();
+  Future<BackupExport> createBackup(Directory outputDir);
+  Future<ValidatedBackup> inspect(File archive);      // 검증만, 무변경
+  Future<RestoreResult> restore(ValidatedBackup b);   // 전체 교체, 실패 시 무변경
+}
+```
+
+`ItemRepository.update`는 새 사진으로 교체할 때 이전 `imagePath`가 새 경로와 다르면(복원된 사진
+`items/{id}_r{token}.jpg` 등) 이전 파일을 best-effort로 지운다.
+
+---
+
 ## 5. 공통 규약
 
 - 모든 `watch*` 메서드는 Isar `watchLazy()` 또는 컬렉션 `watch(fireImmediately: true)`를 변환한 Stream.

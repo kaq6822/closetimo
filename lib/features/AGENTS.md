@@ -12,7 +12,7 @@ features/
 ├── item_detail/  # 옷 상세 (히어로 이미지, 착용 기록, 히스토리 타임라인)
 ├── add_item/     # 옷 등록 (사진, 카테고리, 세탁 방법, freezed draft 폼 state)
 ├── laundry/      # 세탁 바구니 (선택 provider, 세탁 완료 처리)
-├── settings/     # 설정 (프로필, 환경설정, 옷 관리 > 보관함 진입)
+├── settings/     # 설정 (프로필, 환경설정, 옷 관리 > 보관함 진입, backup/ 백업·복원 흐름 #40)
 └── archive/      # 보관함 (보관한 옷 확인·복원, #44)
 ```
 

@@ -309,6 +309,12 @@ legacy Isar 3 이전 경로도 같은 규칙을 적용해 곧바로 v2로 기록
 `test/unit/storage_migrator_test.dart`(v1 스키마 고정본 `test/support/storage_v1_item_fixture.dart`로
 구 디스크 데이터를 재현)에 있다.
 
+### 백업 형식과의 관계 (#40)
+
+`Item`·`WearEvent`·`UserPreferences`에 필드를 추가하면 백업 codec(`lib/data/backup/backup_codec.dart`)과
+[004 data-model.md](../004-backup-restore/data-model.md)도 함께 갱신하고 백업 `formatVersion`을 올린다.
+`test/unit/backup_codec_test.dart`의 필드 목록 가드가 누락을 잡는다.
+
 ## 6. 시드(seed) 데이터 정책
 
 - 디자인 패키지의 샘플 의류(ZARA 코트, A.P.C. 데님 등)는 사용자 환경에 자동 주입하지 않는다(spec Assumption).

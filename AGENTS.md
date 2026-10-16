@@ -23,6 +23,7 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 - [specs/001-home-dashboard/contracts/routes.md](specs/001-home-dashboard/contracts/routes.md) — 네비게이션 계약
 - [specs/001-home-dashboard/contracts/repositories.md](specs/001-home-dashboard/contracts/repositories.md) — 데이터 접근 계약
 - [specs/001-home-dashboard/quickstart.md](specs/001-home-dashboard/quickstart.md) — 개발 환경 부트스트랩
+- [specs/004-backup-restore/spec.md](specs/004-backup-restore/spec.md) — 사용자 실행형 백업·복원(#40): 형식·복원 정책·플랫폼 흐름
 
 ## 언어 규칙
 
@@ -90,7 +91,7 @@ dart run tool/check_design_tokens.dart                 # 디자인 토큰 하드
 # 실기기 E2E (사전: xcrun simctl uninstall booted com.closetimo.app)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/full_flow_verification_test.dart -d <device-id>
-# Android E2E 4종 (기기 자동 선택·앱 초기화·perf는 profile) — 스크린샷 build/android_verify_shots/
+# Android E2E 5종 (기기 자동 선택·앱 초기화·perf는 profile) — 스크린샷 build/android_verify_shots/
 tool/qa/run_android_e2e.sh
 # Android 탐색 QA 헬퍼 (source 해서 사용: descs, tap "<라벨>", shot, guard …)
 source tool/qa/android_qa.sh
