@@ -332,6 +332,13 @@ abstract interface class BackupRepository {
 
 - 모든 `watch*` 메서드는 Isar `watchLazy()` 또는 컬렉션 `watch(fireImmediately: true)`를 변환한 Stream.
 - 모든 `Future<void>` 변경 메서드는 실패 시 `Exception`을 throw(UI 레이어가 토스트로 처리).
+- UI 오류 처리 규칙(spec FR-029·FR-030, #48):
+  - `watch*` 스트림의 오류 이벤트는 빈 목록·0으로 대체하지 않는다. 화면은
+    `lib/core/widgets/async_state_view.dart`의 `StreamStateBuilder`(로딩·실패·데이터 분기, 실패 시
+    스트림 재구독)로 그리고, Riverpod provider(`AsyncValue`)는 `AsyncErrorView` + `ref.invalidate`로 재시도한다.
+  - 쓰기 메서드 호출은 `lib/core/widgets/action_guard.dart`의 `ActionGuardMixin.runGuarded`
+    (진행 중 재진입 차단 + 실패 토스트) 또는 `runWithFailureToast`(실패 토스트만)로 감싼다.
+    예외를 삼키는 쪽은 UI이며 repository는 계속 throw한다.
 - 시각 도메인은 `DateTime.now()`를 직접 호출하지 않고 `Clock` Provider를 주입받아 테스트에서 가짜 시계 사용.
 - 메서드 시그니처 변경은 본 문서 갱신을 동반해야 한다. PR 리뷰어는 본 문서와 코드 일치성을 확인.
 

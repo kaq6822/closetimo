@@ -1,4 +1,5 @@
 // US3 T054 — 옷 상세 화면.
+// #48 FR-029·030 — 읽기 실패 안내·재시도, 쓰기 액션 중복 입력 차단·진행 표시·실패 토스트.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,8 @@ import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/utils/clock.dart';
 import '../../core/utils/date_formatter.dart';
+import '../../core/widgets/action_guard.dart';
+import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/bottom_nav.dart';
 import '../../core/widgets/chip_filter.dart';
 import '../../core/widgets/primary_button.dart';
@@ -37,9 +40,16 @@ class ItemDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<ItemDetailScreen> createState() => _ItemDetailScreenState();
 }
 
-class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
+/// 진행 표시를 그릴 버튼별 액션 태그(#48).
+enum _DetailAction { wear, restore, other }
+
+class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen>
+    with ActionGuardMixin {
   Item? _item;
   bool _loading = true;
+
+  /// #48 FR-029 — 옷 정보를 읽지 못했다. "옷을 찾을 수 없음"과 구분한다.
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -49,16 +59,34 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
   Future<void> _load() async {
     final repo = ref.read(itemRepositoryProvider);
-    final item = await repo.get(widget.id);
+    final Item? item;
+    try {
+      item = await repo.get(widget.id);
+    } catch (e) {
+      debugPrint('Failed to load item ${widget.id}: $e');
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadFailed = true;
+        });
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _item = item;
       _loading = false;
+      _loadFailed = false;
     });
     if (item == null && context.mounted) {
       showClosetimoToast(context, '옷을 찾을 수 없어요');
       context.pop();
     }
+  }
+
+  void _retryLoad() {
+    setState(() => _loading = true);
+    _load();
   }
 
   Future<void> _refresh() async {
@@ -67,6 +95,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     if (mounted) setState(() => _item = item);
   }
 
+  /// #48 FR-030 — 쓰기 액션을 한 번에 하나만 실행하고 실패하면 상단 오류 토스트.
+  /// 확인 시트·다이얼로그는 가드 밖에서 먼저 받고, 저장소 쓰기만 감싼다.
+  Future<bool> _guard(
+    Future<void> Function() write, {
+    required String failureMessage,
+    _DetailAction tag = _DetailAction.other,
+  }) => runGuarded(
+    write,
+    failureMessage: failureMessage,
+    tag: tag,
+    placement: ToastPlacement.top,
+  );
+
   // ignore_for_file: use_build_context_synchronously
   // #22 — 상세 화면에 머무는 토스트는 방금 누른 버튼(스크롤 후 화면 하단에 오기
   // 쉬움)을 가리지 않도록 상단바 아래에 띄운다. 화면을 벗어나는 토스트는 기본(하단).
@@ -74,40 +115,35 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final now = ref.read(clockProvider).now();
     final result = await WearRecordSheet.show(context, today: now);
     if (result == null) return;
-    final events = ref.read(eventRepositoryProvider);
-    final int? eventId;
-    try {
-      eventId = await events.recordWear(
-        widget.id,
-        note: result.note,
-        wornOn: result.wornOn,
-      );
-    } catch (e) {
-      debugPrint('Failed to record wear for item ${widget.id}: $e');
-      if (!context.mounted) return;
-      showClosetimoToast(
-        context,
-        '착용을 기록하지 못했어요. 다시 시도해 주세요.',
-        placement: ToastPlacement.top,
-      );
-      return;
-    }
-    await _refresh();
-    if (!context.mounted) return;
+    int? eventId;
+    final ok = await _guard(
+      () async {
+        eventId = await ref
+            .read(eventRepositoryProvider)
+            .recordWear(widget.id, note: result.note, wornOn: result.wornOn);
+        await _refresh();
+      },
+      tag: _DetailAction.wear,
+      failureMessage: '착용을 기록하지 못했어요. 다시 시도해 주세요.',
+    );
+    if (!ok || !context.mounted) return;
+    final id = eventId;
     // #39 FR-010e — 직후 실행 취소.
     showClosetimoToast(
       context,
       '${formatWearDay(result.wornOn, now: now)}의 착용이 기록되었어요',
       placement: ToastPlacement.top,
-      actionLabel: eventId == null ? null : '실행 취소',
-      onAction: eventId == null ? null : () => _undoWear(eventId!),
+      actionLabel: id == null ? null : '실행 취소',
+      onAction: id == null ? null : () => _undoWear(id),
     );
   }
 
   Future<void> _undoWear(int eventId) async {
-    await ref.read(eventRepositoryProvider).deleteWearEvents([eventId]);
-    await _refresh();
-    if (!context.mounted) return;
+    final ok = await _guard(() async {
+      await ref.read(eventRepositoryProvider).deleteWearEvents([eventId]);
+      await _refresh();
+    }, failureMessage: '착용 기록을 취소하지 못했어요. 다시 시도해 주세요.');
+    if (!ok || !context.mounted) return;
     showClosetimoToast(context, '착용 기록을 취소했어요', placement: ToastPlacement.top);
   }
 
@@ -120,9 +156,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       initial: event.occurredAt,
     );
     if (picked == null) return;
-    await ref.read(eventRepositoryProvider).updateWearDate(event.id, picked);
-    await _refresh();
-    if (!context.mounted) return;
+    final ok = await _guard(() async {
+      await ref.read(eventRepositoryProvider).updateWearDate(event.id, picked);
+      await _refresh();
+    }, failureMessage: '착용 날짜를 바꾸지 못했어요. 다시 시도해 주세요.');
+    if (!ok || !context.mounted) return;
     showClosetimoToast(
       context,
       '착용 날짜를 ${formatMonthDay(picked)}로 바꿨어요',
@@ -133,9 +171,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _toggleLaundry() async {
     if (_item == null) return;
     final wasIn = _item!.inLaundry;
-    await ref.read(laundryRepositoryProvider).toggle(widget.id);
-    await _refresh();
-    if (!context.mounted) return;
+    final ok = await _guard(() async {
+      await ref.read(laundryRepositoryProvider).toggle(widget.id);
+      await _refresh();
+    }, failureMessage: '세탁 바구니를 바꾸지 못했어요. 다시 시도해 주세요.');
+    if (!ok || !context.mounted) return;
     showClosetimoToast(
       context,
       wasIn ? '세탁 바구니에서 제외됐어요' : '세탁 바구니에 담겼어요',
@@ -146,19 +186,24 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _editEventNote(WearEvent event) async {
     final result = await EditNoteSheet.show(context, initial: event.note);
     if (result == null) return;
-    await ref
-        .read(eventRepositoryProvider)
-        .updateEventNote(event.id, result.note);
-    if (!context.mounted) return;
+    final ok = await _guard(
+      () => ref
+          .read(eventRepositoryProvider)
+          .updateEventNote(event.id, result.note),
+      failureMessage: '메모를 수정하지 못했어요. 다시 시도해 주세요.',
+    );
+    if (!ok || !context.mounted) return;
     showClosetimoToast(context, '메모를 수정했어요', placement: ToastPlacement.top);
   }
 
   Future<void> _deleteEvent(WearEvent event) async {
-    final ok = await DeleteEventDialog.confirm(context);
-    if (!ok) return;
-    await ref.read(eventRepositoryProvider).deleteWearEvent(event.id);
-    await _refresh();
-    if (!context.mounted) return;
+    final confirmed = await DeleteEventDialog.confirm(context);
+    if (!confirmed) return;
+    final ok = await _guard(() async {
+      await ref.read(eventRepositoryProvider).deleteWearEvent(event.id);
+      await _refresh();
+    }, failureMessage: '착용 기록을 삭제하지 못했어요. 다시 시도해 주세요.');
+    if (!ok || !context.mounted) return;
     showClosetimoToast(context, '착용 기록을 삭제했어요', placement: ToastPlacement.top);
   }
 
@@ -175,11 +220,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _archive() async {
     final reason = await ArchiveItemDialog.show(context);
     if (reason == null) return;
-    await ref
-        .read(archiveRepositoryProvider)
-        .archive(widget.id, reason: reason);
-    await _refresh();
-    if (!context.mounted) return;
+    final ok = await _guard(() async {
+      await ref
+          .read(archiveRepositoryProvider)
+          .archive(widget.id, reason: reason);
+      await _refresh();
+    }, failureMessage: '보관하지 못했어요. 다시 시도해 주세요.');
+    if (!ok || !context.mounted) return;
     showClosetimoToast(
       context,
       '보관함으로 옮겼어요. 기록은 그대로 남아요',
@@ -189,18 +236,27 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
   // #44 — 보관을 해제해 기록을 유지한 채 활성 옷장으로 되돌린다.
   Future<void> _restore() async {
-    await ref.read(archiveRepositoryProvider).restore(widget.id);
-    await _refresh();
-    if (!context.mounted) return;
+    final ok = await _guard(
+      () async {
+        await ref.read(archiveRepositoryProvider).restore(widget.id);
+        await _refresh();
+      },
+      tag: _DetailAction.restore,
+      failureMessage: '옷장으로 꺼내지 못했어요. 다시 시도해 주세요.',
+    );
+    if (!ok || !context.mounted) return;
     showClosetimoToast(context, '옷장으로 다시 꺼냈어요', placement: ToastPlacement.top);
   }
 
   // 002 FR-008~012 — 확인 후 옷을 삭제하고 옷장으로 복귀한다.
   Future<void> _delete() async {
-    final ok = await DeleteItemDialog.confirm(context);
-    if (!ok) return;
-    await ref.read(itemRepositoryProvider).delete(widget.id);
-    if (!context.mounted) return;
+    final confirmed = await DeleteItemDialog.confirm(context);
+    if (!confirmed) return;
+    final ok = await _guard(
+      () => ref.read(itemRepositoryProvider).delete(widget.id),
+      failureMessage: '옷을 삭제하지 못했어요. 다시 시도해 주세요.',
+    );
+    if (!ok || !context.mounted) return;
     showClosetimoToast(context, '옷을 옷장에서 삭제했어요');
     // FR-012 — 삭제 후에는 진입 경로(홈·세탁 타일 포함)와 무관하게 옷장 탭으로
     // 복귀해야 한다. pop()은 진입 스택으로 돌아가므로 goNamed로 탭을 전환한다.
@@ -221,10 +277,23 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         body: Center(child: CircularProgressIndicator.adaptive()),
       );
     }
+    if (_loadFailed) {
+      return Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              TopBar(onBack: () => context.pop()),
+              AsyncErrorView(message: '옷 정보를 불러오지 못했어요', onRetry: _retryLoad),
+            ],
+          ),
+        ),
+      );
+    }
     final item = _item;
     if (item == null) {
       return const Scaffold(body: SizedBox.shrink());
     }
+    final busy = actionBusy;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -233,6 +302,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               onBack: () => context.pop(),
               rightSlot: PopupMenuButton<String>(
                 icon: const Icon(Icons.more_horiz_rounded),
+                enabled: !busy,
                 onSelected: (value) {
                   switch (value) {
                     case 'edit':
@@ -259,6 +329,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 ],
               ),
             ),
+            if (busy) const LinearProgressIndicator(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -317,13 +388,15 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       PrimaryButton(
                         label: '옷장으로 꺼내기',
                         leading: const Icon(Icons.unarchive_outlined),
-                        onPressed: _restore,
+                        busy: isActionBusy(_DetailAction.restore),
+                        onPressed: busy ? null : _restore,
                       ),
                     ] else ...[
                       PrimaryButton(
                         label: '착용 기록하기',
                         leading: const Icon(Icons.add_rounded),
-                        onPressed: _recordWear,
+                        busy: isActionBusy(_DetailAction.wear),
+                        onPressed: busy ? null : _recordWear,
                       ),
                       const SizedBox(height: ClosetimoSpacing.space12),
                       SoftButton(
@@ -331,7 +404,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         leading: const Icon(
                           Icons.local_laundry_service_rounded,
                         ),
-                        onPressed: _toggleLaundry,
+                        onPressed: busy ? null : _toggleLaundry,
                       ),
                     ],
                     const SizedBox(height: ClosetimoSpacing.space26),

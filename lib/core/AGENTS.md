@@ -25,3 +25,8 @@ core/
   해당 `features/<feature>/widgets/`에 둔다.
 - 시간 의존 로직은 `DateTime.now()` 직접 호출 대신 `clock.dart`를 주입받는다 (테스트 격리).
 - `utils/`의 순수 로직은 `test/unit/`에 단위 테스트를 반드시 갖춘다 (예: `date_formatter_test.dart`).
+- **비동기 상태 표시(#48, spec FR-029·FR-030)**: 저장소 스트림 화면은 `widgets/async_state_view.dart`의
+  `StreamStateBuilder`(로딩·실패·데이터 분기 + 다시 시도)로 그리고, `AsyncValue`는 `AsyncErrorView` +
+  `ref.invalidate`로 재시도한다. 스트림 오류를 `snap.data ?? const []`로 빈 값 처리하지 않는다.
+  쓰기 액션은 `widgets/action_guard.dart`의 `ActionGuardMixin.runGuarded`(재진입 차단·진행 상태·실패 토스트)
+  또는 `runWithFailureToast`로 감싼다. 진행 표시는 `PrimaryButton(busy:)`·"… 중…" 라벨을 쓴다.

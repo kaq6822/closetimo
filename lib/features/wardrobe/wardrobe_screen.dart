@@ -1,6 +1,7 @@
 // US2 T045 — 옷장 탭. 검색·필터·정렬 + 2 컬럼 그리드.
 // #43 — '입을 수 있음' 필터, 타일 빠른 동작, 다중 선택 바(FR-005a·008a·008b).
 // #39 — 선택 바 '착용 기록'(FR-008c)은 selection/wear_record_action.dart.
+// #48 FR-029 — 로딩·읽기 실패를 빈 옷장·검색 무결과와 구분한다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
@@ -207,7 +209,6 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
   Widget build(BuildContext context) {
     final repo = ref.watch(itemRepositoryProvider);
     final filter = _scope.copyWith(query: _query, readyToWear: _readyToWear);
-    final stream = repo.watchFiltered(filter: filter, sort: _sort);
     final selection = ref.watch(wardrobeSelectionProvider);
     // 선택 모드에서 시스템 뒤로 가기는 앱을 닫지 않고 선택만 끝낸다.
     return PopScope(
@@ -277,23 +278,14 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                     ],
                   ),
                 ),
-                StreamBuilder<List<Item>>(
-                  stream: stream,
-                  builder: (ctx, snap) {
-                    final items = snap.data ?? const <Item>[];
+                StreamStateBuilder<List<Item>>(
+                  stream: () => repo.watchFiltered(filter: filter, sort: _sort),
+                  streamKey: (repo, filter, _sort),
+                  errorMessage: '옷장을 불러오지 못했어요',
+                  wrapState: (child) => SliverToBoxAdapter(child: child),
+                  builder: (ctx, items) {
                     _resetScrollIfEmpty(items);
                     _syncSelection(items);
-                    if (snap.connectionState == ConnectionState.waiting &&
-                        !snap.hasData) {
-                      return const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: ClosetimoSpacing.space40,
-                          ),
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                      );
-                    }
                     final results = _buildResults(filter, items);
                     if (!filter.isActive) return results;
                     // #46 — 조건이 걸려 있으면 결과 수와 초기화를 목록 위에 보인다.
