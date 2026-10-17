@@ -24,16 +24,17 @@ class BulkTagCommand {
   final bool remove;
 }
 
-/// 선택 바에 넣을 '태그' 액션. [selected]는 현재 선택된 옷(보이는 목록 기준)이다.
+/// 선택 바에 넣을 '태그' 액션. [selected]는 탭 시점에 현재 선택된 옷(보이는 목록 기준)을 돌려준다.
 SelectionAction bulkTagAction(
   BuildContext context,
   WidgetRef ref, {
-  required List<Item> selected,
+  required List<Item> Function() selected,
 }) {
   return SelectionAction(
     label: '태그',
     icon: Icons.sell_outlined,
-    onPressed: () => _run(context, ref, selected),
+    // 탭하는 시점의 목록으로 계산한다(선택 바 빌드 이후 옷이 바뀌었을 수 있다).
+    onPressed: () => _run(context, ref, selected()),
   );
 }
 
@@ -78,7 +79,7 @@ Future<void> _run(
         ? (command.remove ? '뗄 태그가 없었어요' : '이미 모두 붙어 있어요')
         : command.remove
         ? '$changed벌에서 $label 태그를 뗐어요'
-        : '${ids.length}벌에 $label 태그를 붙였어요',
+        : '$changed벌에 $label 태그를 붙였어요',
   );
 }
 

@@ -86,10 +86,14 @@ abstract final class BackupCodec {
 
   // ── 인코딩 ──
 
+  /// 시각은 UTC 순간(`Z`)으로 기록한다. 로컬 시각 문자열은 다른 시간대 기기에서
+  /// 복원하면 모든 날짜가 어긋난다(착용·세탁 순서 판정에도 영향).
+  static String? _iso(DateTime? d) => d?.toUtc().toIso8601String();
+
   static Map<String, Object?> encode(BackupPayload payload) => {
     'format': BackupFormat.id,
     'formatVersion': BackupFormat.currentVersion,
-    'createdAt': payload.createdAt.toIso8601String(),
+    'createdAt': _iso(payload.createdAt),
     'items': [
       for (final item in payload.items)
         encodeItem(item, imageRef: payload.imageRefs[item.id]),
@@ -110,16 +114,16 @@ abstract final class BackupCodec {
     'washCycle': item.washCycle,
     'wearSinceWash': item.wearSinceWash,
     'totalWears': item.totalWears,
-    'lastWornAt': item.lastWornAt?.toIso8601String(),
-    'lastWashedAt': item.lastWashedAt?.toIso8601String(),
-    'purchasedAt': item.purchasedAt?.toIso8601String(),
+    'lastWornAt': _iso(item.lastWornAt),
+    'lastWashedAt': _iso(item.lastWashedAt),
+    'purchasedAt': _iso(item.purchasedAt),
     'inLaundry': item.inLaundry,
     'image': imageRef,
     'fallbackColor': item.fallbackColor,
-    'createdAt': item.createdAt.toIso8601String(),
+    'createdAt': _iso(item.createdAt),
     'careMode': item.careMode.name,
     'purposes': [for (final p in item.purposes) p.name],
-    'archivedAt': item.archivedAt?.toIso8601String(),
+    'archivedAt': _iso(item.archivedAt),
     'archiveReason': item.archiveReason.name,
     'tags': item.tags,
   };
@@ -128,7 +132,7 @@ abstract final class BackupCodec {
     'id': e.id,
     'itemId': e.itemId,
     'kind': e.kind.name,
-    'occurredAt': e.occurredAt.toIso8601String(),
+    'occurredAt': _iso(e.occurredAt),
     'note': e.note,
   };
 
@@ -138,7 +142,7 @@ abstract final class BackupCodec {
     'notifUnworn': p.notifUnworn,
     'accent': p.accent,
     'lastTab': p.lastTab,
-    'firstLaunchedAt': p.firstLaunchedAt?.toIso8601String(),
+    'firstLaunchedAt': _iso(p.firstLaunchedAt),
   };
 
   // ── 디코딩 ──
@@ -318,7 +322,8 @@ class _Obj {
     return _parseDate(key, s) ?? fail(key, 'is not a datetime');
   }
 
-  DateTime? _parseDate(String key, String s) => DateTime.tryParse(s);
+  // 오프셋이 없는 문자열은 로컬로 읽히고, `Z`는 UTC 순간이므로 로컬로 바꿔 돌려준다.
+  DateTime? _parseDate(String key, String s) => DateTime.tryParse(s)?.toLocal();
 
   T enumValue<T extends Enum>(String key, List<T> values) =>
       _byName(key, string(key), values);

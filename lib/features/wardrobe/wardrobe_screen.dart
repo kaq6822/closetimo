@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/widgets/action_guard.dart';
 import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
@@ -129,10 +130,13 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
       for (final i in _visibleItems)
         if (ids.contains(i.id) && !i.inLaundry) i.id,
     ];
-    for (final id in targets) {
-      await laundry.toggle(id);
-    }
-    if (!mounted) return;
+    // #48 FR-030 — 쓰기 실패를 알리고 선택을 유지한다.
+    final ok = await runWithFailureToast(context, () async {
+      for (final id in targets) {
+        await laundry.toggle(id);
+      }
+    }, failureMessage: '세탁 바구니에 담지 못했어요. 다시 시도해 주세요.');
+    if (!ok || !mounted) return;
     ref.read(wardrobeSelectionProvider.notifier).exit();
     showClosetimoToast(
       context,
@@ -326,9 +330,9 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                 bulkTagAction(
                   context,
                   ref,
-                  selected: [
+                  selected: () => [
                     for (final i in _visibleItems)
-                      if (selection.ids.contains(i.id)) i,
+                      if (ref.read(wardrobeSelectionProvider).contains(i.id)) i,
                   ],
                 ),
               ],

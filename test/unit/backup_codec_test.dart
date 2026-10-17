@@ -147,6 +147,30 @@ void main() {
     expect(BackupCodec.decode(_json(p)).preferences, isNull);
   });
 
+  group('시각은 UTC 순간으로 왕복한다 (리뷰 #50)', () {
+    test('인코딩은 Z 접미 UTC 문자열이다', () {
+      final json = _json(_payload());
+      final item = (json['items']! as List).single as Map<String, Object?>;
+      expect(json['createdAt'], endsWith('Z'));
+      expect(item['lastWornAt'], endsWith('Z'));
+      expect(item['archivedAt'], endsWith('Z'));
+      final event = (json['wearEvents']! as List).first as Map<String, Object?>;
+      expect(event['occurredAt'], endsWith('Z'));
+    });
+
+    test('다른 시간대에서 만든 백업도 같은 순간으로 복원된다', () {
+      final json = _json(_payload());
+      final item = (json['items']! as List).single as Map<String, Object?>;
+      // KST(+9) 기기에서 2026-10-10 08:30(로컬)에 입은 기록 = 23:30Z(전날).
+      item['lastWornAt'] = '2026-10-09T23:30:00.000Z';
+      final decoded = BackupCodec.decode(json).items.single;
+      expect(
+        decoded.lastWornAt!.isAtSameMomentAs(DateTime.utc(2026, 10, 9, 23, 30)),
+        isTrue,
+      );
+    });
+  });
+
   group('복원 값 정규화', () {
     Map<String, Object?> item(Map<String, Object?> j) =>
         (j['items']! as List).first as Map<String, Object?>;

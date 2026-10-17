@@ -25,7 +25,7 @@ closetimo-backup-YYYYMMDD-HHmm.zip
 {
   "format": "closetimo-backup",      // 고정 식별자. 다르면 손상/타 파일로 거부
   "formatVersion": 1,                // 정수. 앱 지원 최대값보다 크면 거부
-  "createdAt": "2026-10-17T09:30:00.000", // 백업 생성 시각(ISO-8601, 로컬 시각)
+  "createdAt": "2026-10-17T00:30:00.000Z", // 백업 생성 시각(ISO-8601, UTC)
   "items": [ /* §2.1 */ ],
   "wearEvents": [ /* §2.2 */ ],
   "preferences": { /* §2.3 */ }       // 설정 행이 없었으면 null
@@ -34,7 +34,8 @@ closetimo-backup-YYYYMMDD-HHmm.zip
 
 공통 규칙:
 
-- `DateTime`은 ISO-8601 문자열(`DateTime.toIso8601String()`), 없으면 `null`.
+- `DateTime`은 UTC 순간의 ISO-8601 문자열(`toUtc().toIso8601String()`, `Z` 접미), 없으면 `null`. 복원 시 기기 로컬 시각으로
+  바꾼다. 로컬 시각 문자열은 다른 시간대 기기에서 모든 날짜가 어긋나므로 쓰지 않는다.
 - **enum은 ordinal이 아니라 이름(`name`) 문자열**로 저장한다. 저장 순서 변경·추가에 견고하고, 알 수 없는 이름은
   손상으로 간주한다.
 - 모든 키는 필수다(값이 `null`일 수 있는 필드도 키는 있어야 한다). 누락·타입 불일치는 손상으로 간주한다.

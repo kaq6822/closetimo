@@ -60,6 +60,9 @@ class _FakeItemRepository implements ItemRepository {
 class _FakeTagRepository implements TagRepository {
   final List<String> calls = [];
 
+  /// null이면 선택한 옷 수만큼 바뀐 것으로 돌려준다.
+  int? changed;
+
   @override
   Future<int> addTag(Set<int> itemIds, String tag) async {
     calls.add('add ${(itemIds.toList()..sort()).join(',')} $tag');
@@ -75,7 +78,7 @@ class _FakeTagRepository implements TagRepository {
   @override
   Future<int> addTags(Set<int> itemIds, Iterable<String> tags) async {
     calls.add('add ${(itemIds.toList()..sort()).join(',')} ${tags.join('|')}');
-    return itemIds.length;
+    return changed ?? itemIds.length;
   }
 
   @override
@@ -248,7 +251,7 @@ void main() {
 
   testWidgets('다중 선택 바의 태그 액션으로 여러 옷에 일괄로 붙이고 뗀다', (tester) async {
     _phoneViewport(tester);
-    final tags = _FakeTagRepository();
+    final tags = _FakeTagRepository()..changed = 1; // 선택 2벌 중 1벌만 새로 붙는 상황
     await tester.pumpWidget(
       _app(
         items: _FakeItemRepository(_items),
@@ -282,7 +285,8 @@ void main() {
     await tester.pumpAndSettle();
     // 여러 태그는 한 번의 호출(한 트랜잭션)로 적용한다.
     expect(tags.calls, ['add 1,3 출근|데일리']);
-    expect(find.text('2벌에 \'출근\', \'데일리\' 태그를 붙였어요'), findsOneWidget);
+    // 토스트는 선택 수가 아니라 실제로 바뀐 옷 수를 알린다.
+    expect(find.text('1벌에 \'출근\', \'데일리\' 태그를 붙였어요'), findsOneWidget);
     // 액션 후 선택 모드가 끝난다.
     expect(find.text('모두 선택'), findsNothing);
     await _drainToast(tester);
