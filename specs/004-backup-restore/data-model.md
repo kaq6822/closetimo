@@ -38,6 +38,9 @@ closetimo-backup-YYYYMMDD-HHmm.zip
 - **enum은 ordinal이 아니라 이름(`name`) 문자열**로 저장한다. 저장 순서 변경·추가에 견고하고, 알 수 없는 이름은
   손상으로 간주한다.
 - 모든 키는 필수다(값이 `null`일 수 있는 필드도 키는 있어야 한다). 누락·타입 불일치는 손상으로 간주한다.
+- 복원 시 값 정규화: `tags`는 앱 입력 규칙(`normalizeTags`: 공백 정리·20자·대소문자 중복 제거)을 다시 적용하고,
+  보관한 옷(`archivedAt != null`)의 `inLaundry`는 `false`로 해제한다(보관한 옷은 바구니에 담을 수 없음, #44).
+  `fallbackColor`가 32비트 ARGB 범위(0~0xFFFFFFFF) 밖이면 손상으로 간주한다.
 
 ### 2.1 `items[]` (Item 전 필드)
 

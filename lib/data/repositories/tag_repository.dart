@@ -11,15 +11,23 @@ abstract interface class TagRepository {
   /// 존재하지 않는 id는 무시한다.
   Future<int> addTag(Set<int> itemIds, String tag);
 
-  /// [itemIds]의 옷에서 [tag]를 뗀다. 바뀐 옷 수를 돌려준다.
+  /// [itemIds]의 옷에서 [tag]를 뗀다(대소문자 무시). 바뀐 옷 수를 돌려준다.
   Future<int> removeTag(Set<int> itemIds, String tag);
 
-  /// 모든 옷(보관 포함)에서 [from]을 [to]로 바꾼다. 이미 [to]가 붙은 옷은
+  /// [addTag]를 여러 태그에 대해 **한 트랜잭션**으로 적용한다. 일부만 저장되지 않으며,
+  /// 하나라도 정규화 후 비면 아무것도 쓰지 않고 [ArgumentError]. 바뀐 **옷** 수를
+  /// 돌려준다(옷 하나가 여러 태그로 바뀌어도 1).
+  Future<int> addTags(Set<int> itemIds, Iterable<String> tags);
+
+  /// [removeTag]를 여러 태그에 대해 한 트랜잭션으로 적용한다. 바뀐 옷 수를 돌려준다.
+  Future<int> removeTags(Set<int> itemIds, Iterable<String> tags);
+
+  /// 모든 옷(보관 포함)에서 [from](대소문자 무시)을 [to]로 바꾼다. 이미 [to]가 붙은 옷은
   /// 중복 없이 하나로 합친다(중복 병합). 바뀐 옷 수를 돌려준다.
   /// [to]가 정규화 후 비면 [ArgumentError].
   Future<int> renameTag(String from, String to);
 
-  /// 모든 옷(보관 포함)에서 [tag]를 뗀다. 옷과 착용 기록은 남는다.
+  /// 모든 옷(보관 포함)에서 [tag](대소문자 무시)를 뗀다. 옷과 착용 기록은 남는다.
   /// 바뀐 옷 수를 돌려준다.
   Future<int> deleteTag(String tag);
 }

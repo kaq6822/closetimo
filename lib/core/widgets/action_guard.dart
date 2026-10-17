@@ -54,6 +54,17 @@ mixin ActionGuardMixin<W extends StatefulWidget> on State<W> {
     Object tag = 'action',
     ToastPlacement placement = ToastPlacement.bottom,
   }) async {
+    if (!mounted) {
+      // 토스트의 "실행 취소"처럼 화면을 떠난 뒤 들어온 호출. 진행 표시·토스트 없이
+      // 쓰기만 수행하고 실패는 로그로 남긴다.
+      try {
+        await action();
+        return true;
+      } catch (e, st) {
+        debugPrint('Action failed after unmount ($failureMessage): $e\n$st');
+        return false;
+      }
+    }
     if (_busyTag != null) return false;
     setState(() => _busyTag = tag);
     try {

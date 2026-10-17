@@ -33,7 +33,8 @@ Item _fullItem() => Item(
   lastWornAt: DateTime(2026, 10, 10, 8, 30),
   lastWashedAt: DateTime(2026, 9, 1),
   purchasedAt: DateTime(2025, 12, 24),
-  inLaundry: true,
+  // 보관한 옷은 바구니에 둘 수 없다(복원 시 해제되므로 왕복 비교에서 false).
+  inLaundry: false,
   imagePath: 'items/7.jpg',
   fallbackColor: 0xFF123456,
   createdAt: DateTime(2025, 12, 25, 10),
@@ -146,6 +147,34 @@ void main() {
     expect(BackupCodec.decode(_json(p)).preferences, isNull);
   });
 
+  group('복원 값 정규화', () {
+    Map<String, Object?> item(Map<String, Object?> j) =>
+        (j['items']! as List).first as Map<String, Object?>;
+
+    test('태그는 앱 규칙(공백 정리·20자·대소문자 중복)으로 정규화한다', () {
+      final json = _json(_payload());
+      item(json)['tags'] = [' 여름 ', 'Black', 'black', '', 'x' * 30];
+      final tags = BackupCodec.decode(json).items.single.tags;
+      expect(tags, ['여름', 'Black', 'x' * 20]);
+    });
+
+    test('보관하지 않은 옷의 바구니 값은 그대로 복원한다', () {
+      final json = _json(_payload());
+      item(json)['archivedAt'] = null;
+      item(json)['inLaundry'] = true;
+      expect(BackupCodec.decode(json).items.single.inLaundry, isTrue);
+    });
+
+    test('보관한 옷의 바구니 값은 해제한다', () {
+      final json = _json(_payload());
+      item(json)['archivedAt'] = '2026-10-01T00:00:00.000';
+      item(json)['inLaundry'] = true;
+      final decoded = BackupCodec.decode(json).items.single;
+      expect(decoded.isArchived, isTrue);
+      expect(decoded.inLaundry, isFalse);
+    });
+  });
+
   group('손상 케이스는 BackupFormatException', () {
     void expectFormatError(void Function(Map<String, Object?> json) mutate) {
       final json = _json(_payload());
@@ -161,6 +190,10 @@ void main() {
     Map<String, Object?> event(Map<String, Object?> j) =>
         (j['wearEvents']! as List).first as Map<String, Object?>;
 
+    test('범위 밖 fallbackColor', () {
+      expectFormatError((j) => item(j)['fallbackColor'] = 0x1FFFFFFFF);
+      expectFormatError((j) => item(j)['fallbackColor'] = -1);
+    });
     test('루트가 객체가 아님', () {
       expect(
         () => BackupCodec.decode([1, 2]),

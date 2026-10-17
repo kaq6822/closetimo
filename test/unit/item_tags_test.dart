@@ -64,6 +64,25 @@ void main() {
     ]);
   });
 
+  test('summarizeTags는 대소문자만 다른 태그를 하나로 모으고 많이 쓴 표기를 이름으로 쓴다', () {
+    final usages = summarizeTags([
+      _item(1, 'a', tags: ['summer']),
+      _item(2, 'b', tags: ['Summer']),
+      _item(3, 'c', tags: ['summer']),
+    ]);
+    expect(usages, const [
+      TagUsage(name: 'summer', itemCount: 3, activeItemCount: 3),
+    ]);
+  });
+
+  test('ItemFilter 태그 조건은 대소문자를 구분하지 않는다', () {
+    final upper = _item(1, 'a', tags: ['Summer']);
+    final lower = _item(2, 'b', tags: ['summer']);
+    const filter = ItemFilter(tags: {'Summer'});
+    expect(filter.matches(upper), isTrue);
+    expect(filter.matches(lower), isTrue);
+  });
+
   group('ItemFilter.tags', () {
     final shirt = _item(1, '셔츠', tags: ['여름', '흰색']);
     final pants = _item(

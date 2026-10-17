@@ -10,24 +10,29 @@ class IsarTagRepository implements TagRepository {
   final Isar _isar;
 
   @override
-  Future<int> addTag(Set<int> itemIds, String tag) async {
-    final normalized = _require(tag);
+  Future<int> addTag(Set<int> itemIds, String tag) => addTags(itemIds, [tag]);
+
+  @override
+  Future<int> removeTag(Set<int> itemIds, String tag) =>
+      removeTags(itemIds, [tag]);
+
+  @override
+  Future<int> addTags(Set<int> itemIds, Iterable<String> tags) async {
+    // 검증을 먼저 끝내 일부만 저장되는 일이 없게 한다.
+    final normalized = [for (final t in tags) _require(t)];
     return _rewrite(
       (isar) => isar.items.getAll(itemIds.toList()).nonNulls,
-      (tags) => normalizeTags([...tags, normalized]),
+      (current) => normalizeTags([...current, ...normalized]),
     );
   }
 
   @override
-  Future<int> removeTag(Set<int> itemIds, String tag) async {
-    final normalized = normalizeTag(tag);
-    if (normalized == null) return 0;
+  Future<int> removeTags(Set<int> itemIds, Iterable<String> tags) async {
+    final targets = [for (final t in tags) ?normalizeTag(t)];
+    if (targets.isEmpty) return 0;
     return _rewrite(
       (isar) => isar.items.getAll(itemIds.toList()).nonNulls,
-      (tags) => [
-        for (final t in tags)
-          if (t != normalized) t,
-      ],
+      (current) => _without(current, targets),
     );
   }
 
@@ -35,11 +40,14 @@ class IsarTagRepository implements TagRepository {
   Future<int> renameTag(String from, String to) async {
     final target = _require(to);
     final source = normalizeTag(from);
+    // 대소문자만 바꾸는 이름 변경은 표기 통일이므로 허용한다.
     if (source == null || source == target) return 0;
     return _rewrite(
       (isar) => isar.items.where().findAll(),
       // 원래 자리에 새 이름을 두고, 이미 있던 같은 태그는 normalizeTags가 합친다.
-      (tags) => normalizeTags([for (final t in tags) t == source ? target : t]),
+      (current) => normalizeTags([
+        for (final t in current) isSameTag(t, source) ? target : t,
+      ]),
     );
   }
 
@@ -49,12 +57,14 @@ class IsarTagRepository implements TagRepository {
     if (normalized == null) return 0;
     return _rewrite(
       (isar) => isar.items.where().findAll(),
-      (tags) => [
-        for (final t in tags)
-          if (t != normalized) t,
-      ],
+      (current) => _without(current, [normalized]),
     );
   }
+
+  static List<String> _without(List<String> current, List<String> targets) => [
+    for (final t in current)
+      if (!targets.any((x) => isSameTag(t, x))) t,
+  ];
 
   static String _require(String tag) {
     final normalized = normalizeTag(tag);

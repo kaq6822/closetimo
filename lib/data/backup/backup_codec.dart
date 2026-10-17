@@ -7,6 +7,7 @@
 //   4. specs/004-backup-restore/data-model.md 표를 갱신한다.
 
 import '../models/item.dart';
+import '../models/item_tags.dart';
 import '../models/user_preferences.dart';
 import '../models/wear_event.dart';
 import 'backup_format.dart';
@@ -200,6 +201,12 @@ abstract final class BackupCodec {
     if (wearSinceWash < 0 || totalWears < 0) {
       o.fail('wearSinceWash/totalWears', 'must be >= 0');
     }
+    final fallbackColor = o.integer('fallbackColor');
+    if (fallbackColor < 0 || fallbackColor > 0xFFFFFFFF) {
+      o.fail('fallbackColor', 'must be a 32-bit ARGB value');
+    }
+    final archivedAt = o.nullableDateTime('archivedAt');
+    final inLaundry = o.boolean('inLaundry');
     return Item(
       name: name,
       brand: o.nullableString('brand'),
@@ -212,14 +219,16 @@ abstract final class BackupCodec {
       lastWornAt: o.nullableDateTime('lastWornAt'),
       lastWashedAt: o.nullableDateTime('lastWashedAt'),
       purchasedAt: o.nullableDateTime('purchasedAt'),
-      inLaundry: o.boolean('inLaundry'),
-      fallbackColor: o.integer('fallbackColor'),
+      // 보관한 옷은 바구니에 담을 수 없다(#44). 손으로 편집한 백업을 방어한다.
+      inLaundry: inLaundry && archivedAt == null,
+      fallbackColor: fallbackColor,
       createdAt: o.dateTime('createdAt'),
       careMode: o.enumValue('careMode', CareMode.values),
       purposes: o.enumList('purposes', ItemPurpose.values),
-      archivedAt: o.nullableDateTime('archivedAt'),
+      archivedAt: archivedAt,
       archiveReason: o.enumValue('archiveReason', ArchiveReason.values),
-      tags: o.stringList('tags'),
+      // 앱 입력 규칙(공백 정리·20자·대소문자 중복)을 복원 값에도 적용한다.
+      tags: normalizeTags(o.stringList('tags')),
     )..id = o.integer('id');
   }
 

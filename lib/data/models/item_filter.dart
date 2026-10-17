@@ -2,6 +2,7 @@
 // data-model.md §1.4 / contracts/repositories.md §1 참조.
 
 import 'item.dart';
+import 'item_tags.dart';
 
 /// 옷장 목록·홈 카드 이동이 공유하는 필터.
 ///
@@ -74,6 +75,10 @@ class ItemFilter {
     return null;
   }
 
+  /// 선택한 태그 중 하나라도 옷에 붙어 있는가(대소문자 무시).
+  bool _hasAnyTag(Item item) =>
+      item.tags.any((t) => tags.any((wanted) => isSameTag(t, wanted)));
+
   bool matches(Item item) {
     if (!archive.includes(item)) return false;
     if (readyToWear && !item.isReadyToWear) return false;
@@ -83,7 +88,7 @@ class ItemFilter {
     if (purposes.isNotEmpty && !item.purposes.any(purposes.contains)) {
       return false;
     }
-    if (tags.isNotEmpty && !item.tags.any(tags.contains)) return false;
+    if (tags.isNotEmpty && !_hasAnyTag(item)) return false;
     final q = query.trim().toLowerCase();
     if (q.isNotEmpty) {
       final name = item.name.toLowerCase();

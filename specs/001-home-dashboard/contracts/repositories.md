@@ -123,12 +123,14 @@ abstract interface class ArchiveRepository {
 abstract interface class TagRepository {
   Future<int> addTag(Set<int> itemIds, String tag);    // 일괄 붙이기. 바뀐 옷 수
   Future<int> removeTag(Set<int> itemIds, String tag); // 일괄 떼기. 바뀐 옷 수
+  Future<int> addTags(Set<int> itemIds, Iterable<String> tags);    // 여러 태그를 한 트랜잭션으로. 바뀐 옷 수(옷 단위)
+  Future<int> removeTags(Set<int> itemIds, Iterable<String> tags); // 여러 태그를 한 트랜잭션으로. 바뀐 옷 수(옷 단위)
   Future<int> renameTag(String from, String to);       // 전체(보관 포함) 이름 변경 = 같은 이름이 있으면 병합
   Future<int> deleteTag(String tag);                   // 전체(보관 포함)에서 태그만 제거
 }
 
 class TagUsage { String name; int itemCount /* 보관 포함 */; int activeItemCount /* 보관 제외 */; }
-List<TagUsage> summarizeTags(Iterable<Item> items);   // 많이 쓴 순, 같으면 이름순
+List<TagUsage> summarizeTags(Iterable<Item> items);   // 대소문자 무시로 합산, 이름은 많이 쓴 표기. 많이 쓴 순, 같으면 이름순
 ```
 
 ### 정규화 (`normalizeTag` / `normalizeTags`)
@@ -139,9 +141,13 @@ List<TagUsage> summarizeTags(Iterable<Item> items);   // 많이 쓴 순, 같으�
 ### 사이드이펙트
 
 - 모든 메서드는 단일 `isar.write`에서 실제로 태그가 바뀐 옷만 `putAll`한다. 바뀐 옷 수를 돌려준다.
+- **태그 비교는 대소문자를 구분하지 않는다**(`isSameTag`): `removeTag`·`removeTags`·`renameTag`·`deleteTag`·
+  `ItemFilter.tags`·`summarizeTags`가 모두 같은 기준을 쓴다. 옷마다 `Summer`/`summer`처럼 표기가 달라도 한 태그다.
+- `addTags`·`removeTags`: 여러 태그를 한 `isar.write`로 적용한다. `addTags`는 하나라도 정규화 후 비면 아무것도 쓰지
+  않고 `ArgumentError`. 바뀐 옷 수는 옷 단위다(한 옷이 여러 태그로 바뀌어도 1).
 - `addTag`: 정규화 후 빈 태그면 `ArgumentError`. 이미 같은 태그(대소문자 무시)가 있으면 그대로. 미존재 id 무시.
 - `renameTag(from, to)`: `from`을 원래 자리에서 `to`로 바꾸고, 이미 `to`가 있던 옷은 하나로 합친다(중복 병합).
-  `to`가 비면 `ArgumentError`, `from == to`면 no-op.
+  `to`가 비면 `ArgumentError`, `from`과 `to`가 표기까지 같으면 no-op(대소문자만 다르면 표기 통일로 적용).
 - `deleteTag`·`removeTag`·`renameTag`는 **옷·사진·WearEvent를 지우지 않고** 카운터·`status`·`inLaundry`·보관 필드를
   바꾸지 않는다. 관리 상태·바구니·보관은 태그가 아니라 시스템 필드다.
 
@@ -191,7 +197,7 @@ input: itemId, note (단일행, 빈 입력은 null로 정규화, 길이 검증�
 
 txn {
   item = items.get(itemId)
-  if item == null: return null
+  if item == null || item.isArchived: return null   # 보관한 옷은 기록하지 않는다(#44, recordWearBatch와 동일)
   at = occurredAt(wornOn)
   ev = WearEvent(itemId, kind: wear, occurredAt: at, note: note)   # id 할당
   if inCurrentCycle(at, ev.id): item.wearSinceWash += 1  # 세탁 이전 날짜면 유지(FR-010d)

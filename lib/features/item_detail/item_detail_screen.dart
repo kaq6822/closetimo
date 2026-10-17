@@ -23,6 +23,7 @@ import '../../core/widgets/wear_record_sheet.dart';
 import '../../data/models/item.dart';
 import '../../data/models/wear_event.dart';
 import '../../data/providers/app_providers.dart';
+import '../../data/repositories/event_repository.dart';
 import 'widgets/archive_item_dialog.dart';
 import 'widgets/delete_event_dialog.dart';
 import 'widgets/delete_item_dialog.dart';
@@ -90,6 +91,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen>
   }
 
   Future<void> _refresh() async {
+    // 화면을 떠난 뒤 실행 취소가 끝나는 경우 ref를 읽을 수 없다.
+    if (!mounted) return;
     final repo = ref.read(itemRepositoryProvider);
     final item = await repo.get(widget.id);
     if (mounted) setState(() => _item = item);
@@ -128,22 +131,24 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen>
     );
     if (!ok || !context.mounted) return;
     final id = eventId;
+    // 토스트는 화면을 떠난 뒤에도 남으므로 저장소를 미리 잡아 둔다(unmounted ref 접근 방지).
+    final events = ref.read(eventRepositoryProvider);
     // #39 FR-010e — 직후 실행 취소.
     showClosetimoToast(
       context,
       '${formatWearDay(result.wornOn, now: now)}의 착용이 기록되었어요',
       placement: ToastPlacement.top,
       actionLabel: id == null ? null : '실행 취소',
-      onAction: id == null ? null : () => _undoWear(id),
+      onAction: id == null ? null : () => _undoWear(events, id),
     );
   }
 
-  Future<void> _undoWear(int eventId) async {
+  Future<void> _undoWear(EventRepository events, int eventId) async {
     final ok = await _guard(() async {
-      await ref.read(eventRepositoryProvider).deleteWearEvents([eventId]);
+      await events.deleteWearEvents([eventId]);
       await _refresh();
     }, failureMessage: '착용 기록을 취소하지 못했어요. 다시 시도해 주세요.');
-    if (!ok || !context.mounted) return;
+    if (!ok || !mounted) return;
     showClosetimoToast(context, '착용 기록을 취소했어요', placement: ToastPlacement.top);
   }
 

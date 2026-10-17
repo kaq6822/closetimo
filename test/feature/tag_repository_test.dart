@@ -174,4 +174,66 @@ void main() {
     expect(history, hasLength(2));
     expect(history.map((e) => e.note), contains('출근'));
   });
+
+  group('대소문자 무시 (리뷰 #50)', () {
+    test('removeTag·deleteTag·renameTag는 대소문자만 다른 태그도 대상으로 본다', () async {
+      final a = await create('셔츠', t: ['Summer']);
+      final b = await create('바지', t: ['summer']);
+
+      expect(await tags.removeTag({a, b}, 'SUMMER'), 2);
+      expect(tagsOf(a), isEmpty);
+      expect(tagsOf(b), isEmpty);
+
+      await tags.addTag({a}, 'Summer');
+      await tags.addTag({b}, 'summer');
+      expect(await tags.renameTag('SUMMER', '여름'), 2);
+      expect(tagsOf(a), ['여름']);
+      expect(tagsOf(b), ['여름']);
+
+      await tags.addTag({a, b}, 'Black');
+      await tags.addTag({a}, 'black'); // 이미 Black이 있으므로 그대로
+      expect(tagsOf(a), ['여름', 'Black']);
+      expect(await tags.deleteTag('bLaCk'), 2);
+      expect(tagsOf(a), ['여름']);
+      expect(tagsOf(b), ['여름']);
+    });
+  });
+
+  group('여러 태그 일괄 편집 (리뷰 #50)', () {
+    test('addTags는 한 번에 적용하고 바뀐 옷 수를 옷 단위로 센다', () async {
+      final a = await create('셔츠', t: ['여름']);
+      final b = await create('바지');
+
+      expect(await tags.addTags({a, b}, ['여름', '검정']), 2);
+      expect(tagsOf(a), ['여름', '검정']);
+      expect(tagsOf(b), ['여름', '검정']);
+      expect(await tags.addTags({a, b}, ['여름', '검정']), 0);
+    });
+
+    test('addTags는 빈 태그가 섞이면 아무것도 쓰지 않고 거부한다', () async {
+      final a = await create('셔츠');
+      expect(() => tags.addTags({a}, ['검정', '  ']), throwsArgumentError);
+      expect(tagsOf(a), isEmpty);
+    });
+
+    test('removeTags는 옷 단위로 센다', () async {
+      final a = await create('셔츠', t: ['여름', '검정']);
+      final b = await create('바지', t: ['검정']);
+      expect(await tags.removeTags({a, b}, ['여름', '검정']), 2);
+      expect(tagsOf(a), isEmpty);
+      expect(tagsOf(b), isEmpty);
+    });
+  });
+
+  test('보관한 옷에는 recordWear가 기록하지 않는다 (리뷰 #50)', () async {
+    final a = await create('셔츠');
+    await IsarArchiveRepository(isar: isar, clock: _FixedClock()).archive(a);
+
+    expect(await events.recordWear(a), isNull);
+
+    final item = isar.items.get(a)!;
+    expect(item.totalWears, 0);
+    expect(item.lastWornAt, isNull);
+    expect(await events.watchForItem(a).first, isEmpty);
+  });
 }

@@ -315,6 +315,36 @@ void main() {
     await _drainToast(tester);
   });
 
+  testWidgets('리뷰 #50: 화면을 떠난 뒤 토스트의 실행 취소를 눌러도 예외 없이 취소된다', (tester) async {
+    _phoneViewport(tester);
+    final events = _RecordingEventRepo();
+    await tester.pumpWidget(_app('/wardrobe', events));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_tile('옥스퍼드 셔츠'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('착용 기록하기'));
+    await tester.tap(find.text('착용 기록하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('기록'));
+    await tester.pumpAndSettle();
+    expect(find.text('오늘의 착용이 기록되었어요'), findsOneWidget);
+
+    // 토스트가 남아 있는 동안 옷장으로 돌아간다(상세 화면 State가 dispose됨).
+    GoRouter.of(tester.element(find.byType(ItemDetailScreen))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(ItemDetailScreen), findsNothing);
+
+    await tester.tap(find.widgetWithText(TextButton, '실행 취소'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(events.undone, [
+      [55],
+    ]);
+    await _drainToast(tester);
+  });
+
   testWidgets('FR-010c: 타임라인 "기록 관리" 버튼으로 날짜를 수정한다', (tester) async {
     _phoneViewport(tester);
     final events = _RecordingEventRepo(

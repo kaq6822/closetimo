@@ -56,13 +56,12 @@ Future<void> _run(
   if (command == null || !context.mounted) return;
   final repo = ref.read(tagRepositoryProvider);
   final ids = {for (final i in selected) i.id};
-  var changed = 0;
+  int changed;
   try {
-    for (final tag in command.tags) {
-      changed += command.remove
-          ? await repo.removeTag(ids, tag)
-          : await repo.addTag(ids, tag);
-    }
+    // 여러 태그도 한 트랜잭션으로 적용해 일부만 저장되지 않게 하고, 바뀐 옷 수를 옷 단위로 센다.
+    changed = command.remove
+        ? await repo.removeTags(ids, command.tags)
+        : await repo.addTags(ids, command.tags);
   } catch (e, st) {
     debugPrint('Failed to apply bulk tag edit: $e\n$st');
     if (context.mounted) {

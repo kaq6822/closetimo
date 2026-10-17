@@ -58,7 +58,8 @@ class IsarEventRepository implements EventRepository {
     final at = _resolveWornAt(wornOn);
     return _isar.write((isar) {
       final item = isar.items.get(itemId);
-      if (item == null) return null;
+      // 보관한 옷은 기록하지 않는다(recordWearBatch와 같은 규칙, #44).
+      if (item == null || item.isArchived) return null;
       return _applyWear(isar, item, at, normalized);
     });
   }
