@@ -11,6 +11,7 @@
 //     --target=integration_test/backup_restore_test.dart -d <device-id>
 
 import 'dart:io';
+import 'dart:math';
 
 import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/data/models/item.dart';
@@ -73,7 +74,9 @@ void main() {
 
     // ── 1. 원본 데이터(사진 포함) ──
     final tmp = await getTemporaryDirectory();
-    final photoBytes = List<int>.generate(8192, (i) => (i * 31) % 256);
+    // 주기적 패턴은 zip(deflate)에서 크게 줄어들므로 시드 난수로 압축이 안 되는 바이트를 만든다.
+    final rng = Random(7);
+    final photoBytes = List<int>.generate(8192, (_) => rng.nextInt(256));
     final photo = File(p.join(tmp.path, 'e2e-photo.jpg'))
       ..writeAsBytesSync(photoBytes);
     final coatId = await items.create(
