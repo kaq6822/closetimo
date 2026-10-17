@@ -58,6 +58,27 @@ class _FakeLaundryRepo implements LaundryRepository {
   }
 }
 
+/// 구독 시점의 저장 상태만 한 번 방출하고 이후 변경은 방출하지 않는 저장소.
+class _SnapshotOnlyLaundryRepo implements LaundryRepository {
+  _SnapshotOnlyLaundryRepo(this._basket);
+
+  List<Item> _basket;
+  final List<List<int>> completed = [];
+
+  @override
+  Stream<List<Item>> watchBasket() => Stream.value(List.of(_basket));
+
+  @override
+  Future<void> toggle(int itemId) async {}
+
+  @override
+  Future<int> completeWashFor(List<int> itemIds) async {
+    completed.add(itemIds);
+    _basket = _basket.where((i) => !itemIds.contains(i.id)).toList();
+    return itemIds.length;
+  }
+}
+
 Item _item(int id) => Item(
   name: '옷$id',
   category: Category.top,
@@ -102,6 +123,44 @@ void main() {
       await tester.pump();
       expect(container.read(laundrySelectionProvider), isEmpty);
       expect(repo.completed, isEmpty);
+    });
+  });
+
+  group('#48 세탁 완료 후 목록 갱신', () {
+    testWidgets('watch가 변경을 방출하지 않아도 완료 직후 새 구독으로 목록이 비워진다', (tester) async {
+      // 실기기에서 관측된 상황: 쓰기 후 watch 이벤트가 오지 않는다.
+      // 구독할 때마다 현재 저장 상태만 한 번 내보내는 저장소로 재현한다.
+      final repo = _SnapshotOnlyLaundryRepo([_item(1)]);
+      final container = ProviderContainer(
+        overrides: [laundryRepositoryProvider.overrideWithValue(repo)],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: buildClosetimoTheme(),
+            home: const Scaffold(body: LaundryScreen()),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('옷1'), findsOneWidget);
+
+      await tester.tap(find.text('모두 선택'));
+      await tester.pump();
+      await tester.tap(find.text('선택 항목 세탁 완료 처리'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.completed, [
+        [1],
+      ]);
+      expect(find.text('세탁할 옷이 없어요.'), findsOneWidget);
+      expect(find.text('옷1'), findsNothing);
+      // 토스트 타이머 정리.
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 

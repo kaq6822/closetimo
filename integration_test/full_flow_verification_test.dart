@@ -36,7 +36,8 @@ void main() {
 
   /// 스크롤로 노출을 보장한 뒤 탭한다.
   Future<void> tapVisible(WidgetTester tester, Finder f) async {
-    await tester.ensureVisible(f);
+    // 상단 바·하단 CTA 뒤에 걸치지 않도록 뷰포트 가운데로 스크롤한다.
+    await Scrollable.ensureVisible(tester.element(f.first), alignment: 0.5);
     await tester.pumpAndSettle();
     await tester.tap(f);
     await tester.pumpAndSettle();
@@ -73,6 +74,10 @@ void main() {
 
         await tester.enterText(find.byType(TextField).at(0), '오버사이즈 캐시미어 코트');
         // #42 — 브랜드·세탁 주기·세탁 방법·구매일은 접힌 "추가 정보 (선택)" 안에 있다.
+        // 실기기에서는 명칭 입력 뒤 소프트 키보드가 올라와 헤더가 키보드 뒤에 가려진다.
+        // 포커스를 해제해 키보드를 내린 뒤 탭한다.
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
         await tapVisible(tester, find.text('추가 정보 (선택)'));
         await tester.enterText(find.byType(TextField).at(1), 'ZARA');
         await tester.pumpAndSettle();
@@ -113,12 +118,12 @@ void main() {
         await shot(tester, '07_wardrobe_grid');
 
         await tester.enterText(find.byType(TextField).first, '존재하지않는옷');
-        await tester.pumpAndSettle();
+        await pumpUntilFound(tester, find.text('검색 결과가 없습니다.'));
         expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
         await shot(tester, '08_wardrobe_search_empty');
 
         await tester.enterText(find.byType(TextField).first, '캐시미어');
-        await tester.pumpAndSettle();
+        await pumpUntilFound(tester, find.text('오버사이즈 캐시미어 코트'));
         expect(find.text('오버사이즈 캐시미어 코트'), findsOneWidget);
         await tester.enterText(find.byType(TextField).first, '');
         await tester.pumpAndSettle();
@@ -232,7 +237,7 @@ void main() {
       await tester.tap(find.text('옷장'));
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('오버사이즈 캐시미어 코트'));
-      await tapVisible(tester, find.byIcon(Icons.more_horiz_rounded));
+      await tapVisible(tester, find.byIcon(Icons.more_horiz_rounded).first);
       await tapVisible(tester, find.text('수정하기'));
       expect(find.text('옷 정보 수정'), findsOneWidget);
       await shot(tester, '17_edit_prefilled');
@@ -254,7 +259,7 @@ void main() {
       await shot(tester, '19_detail_after_edit');
 
       // ── 8. 삭제 플로우 (FR-012: 옷장 탭 복귀) ────────────
-      await tapVisible(tester, find.byIcon(Icons.more_horiz_rounded));
+      await tapVisible(tester, find.byIcon(Icons.more_horiz_rounded).first);
       await tapVisible(tester, find.text('삭제하기'));
       expect(find.text('이 옷을 삭제할까요?'), findsOneWidget);
       await shot(tester, '20_delete_dialog');
