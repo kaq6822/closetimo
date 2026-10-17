@@ -5,12 +5,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:closetimo/app/theme/app_theme.dart';
+import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/data/models/item.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/data/models/wear_event.dart';
 import 'package:closetimo/data/providers/app_providers.dart';
+import 'package:closetimo/data/repositories/isar_archive_repository.dart';
 import 'package:closetimo/data/repositories/isar_event_repository.dart';
+import 'package:closetimo/data/repositories/isar_item_repository.dart';
 import 'package:closetimo/data/repositories/isar_laundry_repository.dart';
 import 'package:closetimo/data/repositories/laundry_repository.dart';
 import 'package:closetimo/features/laundry/laundry_screen.dart';
@@ -54,27 +57,6 @@ class _FakeLaundryRepo implements LaundryRepository {
   @override
   Future<int> completeWashFor(List<int> itemIds) async {
     completed.add(itemIds);
-    return itemIds.length;
-  }
-}
-
-/// 구독 시점의 저장 상태만 한 번 방출하고 이후 변경은 방출하지 않는 저장소.
-class _SnapshotOnlyLaundryRepo implements LaundryRepository {
-  _SnapshotOnlyLaundryRepo(this._basket);
-
-  List<Item> _basket;
-  final List<List<int>> completed = [];
-
-  @override
-  Stream<List<Item>> watchBasket() => Stream.value(List.of(_basket));
-
-  @override
-  Future<void> toggle(int itemId) async {}
-
-  @override
-  Future<int> completeWashFor(List<int> itemIds) async {
-    completed.add(itemIds);
-    _basket = _basket.where((i) => !itemIds.contains(i.id)).toList();
     return itemIds.length;
   }
 }
@@ -126,44 +108,6 @@ void main() {
     });
   });
 
-  group('#48 세탁 완료 후 목록 갱신', () {
-    testWidgets('watch가 변경을 방출하지 않아도 완료 직후 새 구독으로 목록이 비워진다', (tester) async {
-      // 실기기에서 관측된 상황: 쓰기 후 watch 이벤트가 오지 않는다.
-      // 구독할 때마다 현재 저장 상태만 한 번 내보내는 저장소로 재현한다.
-      final repo = _SnapshotOnlyLaundryRepo([_item(1)]);
-      final container = ProviderContainer(
-        overrides: [laundryRepositoryProvider.overrideWithValue(repo)],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: buildClosetimoTheme(),
-            home: const Scaffold(body: LaundryScreen()),
-          ),
-        ),
-      );
-      await tester.pump();
-      expect(find.text('옷1'), findsOneWidget);
-
-      await tester.tap(find.text('모두 선택'));
-      await tester.pump();
-      await tester.tap(find.text('선택 항목 세탁 완료 처리'));
-      await tester.pump();
-      await tester.pump();
-
-      expect(repo.completed, [
-        [1],
-      ]);
-      expect(find.text('세탁할 옷이 없어요.'), findsOneWidget);
-      expect(find.text('옷1'), findsNothing);
-      // 토스트 타이머 정리.
-      await tester.pump(const Duration(seconds: 5));
-    });
-  });
-
   group('Isar repository', () {
     late Directory directory;
     late Isar isar;
@@ -182,6 +126,87 @@ void main() {
     tearDown(() {
       if (isar.isOpen) isar.close(deleteFromDisk: true);
       if (directory.existsSync()) directory.deleteSync(recursive: true);
+    });
+
+    // Isar Plus는 인덱스 조건 쿼리 watch가 "조건 밖으로 나가는" 수정을 방출하지 않는다.
+    // 실기기에서 세탁 완료 후에도 바구니에 옷이 남던 문제의 원인이다.
+    Future<List<int>> collect(
+      Stream<List<Item>> stream,
+      Future<void> Function() act,
+    ) async {
+      final lengths = <int>[];
+      final sub = stream.listen((l) => lengths.add(l.length));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await act();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await sub.cancel();
+      return lengths;
+    }
+
+    test('#48 세탁 완료로 바구니에서 나가면 watchBasket이 빈 목록을 방출한다', () async {
+      isar.write((isar) => isar.items.put(_item(1)..inLaundry = true));
+      final repo = IsarLaundryRepository(isar: isar, clock: _MutableClock(t0));
+
+      final lengths = await collect(
+        repo.watchBasket(),
+        () => repo.completeWashFor([1]),
+      );
+
+      expect(lengths.first, 1);
+      expect(lengths.last, 0);
+    });
+
+    test('#48 보관한 옷은 바구니 목록에서 빠지고 복원하면 보관함에서 빠진다', () async {
+      isar.write((isar) => isar.items.put(_item(1)..inLaundry = true));
+      final laundry = IsarLaundryRepository(
+        isar: isar,
+        clock: _MutableClock(t0),
+      );
+      final archive = IsarArchiveRepository(
+        isar: isar,
+        clock: _MutableClock(t0),
+      );
+
+      final basket = await collect(
+        laundry.watchBasket(),
+        () => archive.archive(1, reason: ArchiveReason.seasonal),
+      );
+      expect(basket.last, 0);
+
+      final archived = await collect(
+        archive.watchArchived(),
+        () => archive.restore(1),
+      );
+      expect(archived.first, 1);
+      expect(archived.last, 0);
+    });
+
+    test('#48 보관하면 홈 최근 착용에서 빠진다', () async {
+      isar.write((isar) {
+        isar.items.put(_item(1)..lastWornAt = t0);
+        isar.items.put(_item(2)..lastWornAt = t0.add(const Duration(days: 1)));
+      });
+      final items = IsarItemRepository(
+        isar: isar,
+        clock: _MutableClock(t0),
+        imageStore: ImageStore(overrideRoot: directory),
+      );
+      final archive = IsarArchiveRepository(
+        isar: isar,
+        clock: _MutableClock(t0),
+      );
+
+      final recent = <List<int>>[];
+      final sub = items.watchRecentlyWorn().listen(
+        (l) => recent.add([for (final i in l) i.id]),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(recent.first, [2, 1]);
+      await archive.archive(2, reason: ArchiveReason.seasonal);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await sub.cancel();
+
+      expect(recent.last, [1]);
     });
 
     test('#36 completeWashFor는 바구니 밖 항목을 처리하지 않고 처리 수를 반환한다', () async {

@@ -92,13 +92,19 @@ class IsarItemRepository implements ItemRepository {
   @override
   Stream<List<Item>> watchRecentlyWorn({int limit = 2}) {
     // 보관한 옷은 홈 최근 착용에서 제외한다(#44).
+    // 인덱스 조건 watch는 조건 밖으로 나가는 수정(보관)을 방출하지 않으므로
+    // 전체를 구독하고 Dart에서 거른다.
     return _items
         .where()
-        .lastWornAtIsNotNull()
-        .and()
-        .archivedAtIsNull()
-        .sortByLastWornAtDesc()
-        .watch(fireImmediately: true, limit: limit);
+        .sortByCreatedAtDesc()
+        .watch(fireImmediately: true)
+        .map((all) {
+          final worn = [
+            for (final i in all)
+              if (i.lastWornAt != null && !i.isArchived) i,
+          ]..sort((a, b) => b.lastWornAt!.compareTo(a.lastWornAt!));
+          return worn.take(limit).toList();
+        });
   }
 
   @override

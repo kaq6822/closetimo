@@ -26,11 +26,6 @@ class LaundryScreen extends ConsumerStatefulWidget {
 
 class _LaundryScreenState extends ConsumerState<LaundryScreen>
     with ActionGuardMixin {
-  /// 세탁 완료 처리 후 바구니 스트림을 다시 구독하기 위한 세대 번호.
-  /// 실기기에서 Isar watch가 "바구니가 비는" 변경을 늦게/누락해 방출하는 경우에도
-  /// 목록이 쓰기 결과를 바로 반영하도록 쓰기 직후 새 구독(fireImmediately)을 받는다.
-  int _basketGeneration = 0;
-
   /// 선택 항목을 세탁 완료 처리한다. 실패하면 선택을 유지한다.
   Future<void> _completeWash(Set<int> selection) => runGuarded(() async {
     final done = await ref
@@ -38,7 +33,6 @@ class _LaundryScreenState extends ConsumerState<LaundryScreen>
         .completeWashFor(selection.toList());
     if (!mounted) return;
     ref.read(laundrySelectionProvider.notifier).clear();
-    setState(() => _basketGeneration++);
     if (done > 0) showClosetimoToast(context, '$done점의 세탁이 완료됐어요');
   }, failureMessage: '세탁 완료 처리에 실패했어요. 다시 시도해 주세요.');
 
@@ -58,7 +52,7 @@ class _LaundryScreenState extends ConsumerState<LaundryScreen>
         Expanded(
           child: StreamStateBuilder<List<Item>>(
             stream: repo.watchBasket,
-            streamKey: (repo, _basketGeneration),
+            streamKey: repo,
             errorMessage: '세탁 바구니를 불러오지 못했어요',
             builder: (ctx, items) {
               // 제외·삭제·외부 완료로 사라진 항목은 선택에서 제거한다.

@@ -14,11 +14,19 @@ class IsarArchiveRepository implements ArchiveRepository {
 
   @override
   Stream<List<Item>> watchArchived() {
+    // 인덱스 조건 watch는 조건 밖으로 나가는 수정(복원)을 방출하지 않으므로
+    // 전체를 구독하고 Dart에서 거른다.
     return _isar.items
         .where()
-        .archivedAtIsNotNull()
-        .sortByArchivedAtDesc()
-        .watch(fireImmediately: true);
+        .sortByCreatedAtDesc()
+        .watch(fireImmediately: true)
+        .map((all) {
+          final archived = [
+            for (final i in all)
+              if (i.isArchived) i,
+          ]..sort((a, b) => b.archivedAt!.compareTo(a.archivedAt!));
+          return archived;
+        });
   }
 
   @override

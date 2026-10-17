@@ -15,13 +15,19 @@ class IsarLaundryRepository implements LaundryRepository {
 
   @override
   Stream<List<Item>> watchBasket() {
+    // Isar Plus는 인덱스 조건 쿼리(inLaundryEqualTo)를 watch할 때 옷이 조건 밖으로
+    // 나가는 수정(세탁 완료·바구니 제외)을 방출하지 않는다. 전체 옷을 구독하고
+    // 조건은 Dart에서 거른다(`isar_item_repository.watchAll`과 같은 방식).
     return _isar.items
         .where()
-        .inLaundryEqualTo(true)
-        .and()
-        .archivedAtIsNull()
         .sortByCreatedAtDesc()
-        .watch(fireImmediately: true);
+        .watch(fireImmediately: true)
+        .map(
+          (all) => [
+            for (final i in all)
+              if (i.inLaundry && !i.isArchived) i,
+          ],
+        );
   }
 
   @override
