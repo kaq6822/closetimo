@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 옷장이모 Android E2E 러너 — integration_test 4종을 실기기(없으면 에뮬레이터)에서 순차 실행한다.
+# 옷장이모 Android E2E 러너 — integration_test 5종을 실기기(없으면 에뮬레이터)에서 순차 실행한다.
 #
 #   tool/qa/run_android_e2e.sh                # 전체
 #   tool/qa/run_android_e2e.sh full_flow      # 이름에 full_flow가 들어간 테스트만
@@ -21,7 +21,7 @@ export SHOTS_DIR=build/android_verify_shots
 mkdir -p "$LOG_DIR"
 rm -rf "$SHOTS_DIR"
 
-TESTS=(full_flow_verification_test offline_smoke_test restart_persistence_test perf_wardrobe_test)
+TESTS=(full_flow_verification_test offline_smoke_test restart_persistence_test backup_restore_test perf_wardrobe_test)
 FILTER="${1:-}"
 fail=0
 ran=0

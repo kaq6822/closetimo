@@ -25,8 +25,10 @@ class TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        ClosetimoSpacing.md,
+      // #49 — 뒤로 버튼은 48×48 터치 영역 안에 여백을 가지므로 좌측 패딩을
+      // 줄여 아이콘의 시각 위치를 유지한다.
+      padding: EdgeInsets.fromLTRB(
+        onBack != null ? ClosetimoSpacing.sm : ClosetimoSpacing.md,
         ClosetimoSpacing.sm,
         ClosetimoSpacing.lg,
         ClosetimoSpacing.sm,
@@ -39,7 +41,7 @@ class TopBar extends StatelessWidget {
               semanticLabel: '뒤로 가기',
               onTap: onBack!,
             ),
-          if (onBack != null) const SizedBox(width: ClosetimoSpacing.space8),
+          if (onBack != null) const SizedBox(width: ClosetimoSpacing.space2),
           if (subtitle == null) ...[
             Image.asset(
               closetimoSymbolAsset,
@@ -49,17 +51,22 @@ class TopBar extends StatelessWidget {
             ),
             const SizedBox(width: ClosetimoSpacing.sm),
           ],
-          Text(
-            subtitle ?? title,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: subtitle != null ? 14 : 17,
-              fontWeight: FontWeight.w600,
-              color: ClosetimoColors.ink,
-              letterSpacing: subtitle != null ? 0 : 0.2,
+          // #49 — 48×48 버튼과 큰 글꼴(2.0)이 겹쳐도 좁은 화면에서 넘치지 않도록
+          // 제목이 남는 폭만 쓰고 말줄임한다.
+          Expanded(
+            child: Text(
+              subtitle ?? title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: subtitle != null ? 14 : 17,
+                fontWeight: FontWeight.w600,
+                color: ClosetimoColors.ink,
+                letterSpacing: subtitle != null ? 0 : 0.2,
+              ),
             ),
           ),
-          const Spacer(),
           if (rightSlot != null) rightSlot!,
         ],
       ),
@@ -81,16 +88,19 @@ class _IconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // #49 — 아이콘(18)은 그대로 두고 터치·시맨틱 영역을 최소 48×48로 넓힌다.
     return Semantics(
       container: true,
       button: true,
       label: semanticLabel,
       child: InkResponse(
         onTap: onTap,
-        radius: 22,
-        child: Padding(
-          padding: const EdgeInsets.all(ClosetimoSpacing.sm),
-          child: Icon(icon, size: 18, color: ClosetimoColors.ink),
+        radius: ClosetimoSize.minTouchTarget / 2,
+        child: SizedBox.square(
+          dimension: ClosetimoSize.minTouchTarget,
+          child: Center(
+            child: Icon(icon, size: 18, color: ClosetimoColors.ink),
+          ),
         ),
       ),
     );

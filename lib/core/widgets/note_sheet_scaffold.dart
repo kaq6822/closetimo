@@ -1,11 +1,12 @@
 // 공용 노트 시트 스캐폴드 — WearRecordSheet(T054a)와 EditNoteSheet(T054b)이
-// 동일한 80자 단일행 메모 입력 UX를 공유한다.
+// 동일한 80자 단일행 메모 입력 UX를 공유한다. #39에서 옷 상세·옷장 다중 선택이
+// 함께 쓰도록 core로 옮겼다.
 
 import 'package:flutter/material.dart';
 
-import '../../../app/theme/app_theme.dart';
-import '../../../app/theme/tokens.dart';
-import '../../../core/widgets/primary_button.dart';
+import '../../app/theme/app_theme.dart';
+import '../../app/theme/tokens.dart';
+import 'primary_button.dart';
 
 const int kNoteMaxLength = 80;
 
@@ -18,6 +19,7 @@ class NoteSheetScaffold extends StatefulWidget {
     this.hint,
     this.initial,
     this.confirmIcon,
+    this.header,
     super.key,
   });
 
@@ -28,6 +30,9 @@ class NoteSheetScaffold extends StatefulWidget {
   final String confirmLabel;
   final IconData? confirmIcon;
   final ValueChanged<String?> onConfirm;
+
+  /// 제목·부제와 메모 입력란 사이에 넣는 추가 입력(예: 착용 날짜 선택, #39).
+  final Widget? header;
 
   @override
   State<NoteSheetScaffold> createState() => _NoteSheetScaffoldState();
@@ -113,6 +118,10 @@ class _NoteSheetScaffoldState extends State<NoteSheetScaffold> {
                     height: 1.4,
                   ),
                 ),
+              ],
+              if (widget.header != null) ...[
+                const SizedBox(height: ClosetimoSpacing.md),
+                widget.header!,
               ],
               const SizedBox(height: ClosetimoSpacing.lg),
               TextField(

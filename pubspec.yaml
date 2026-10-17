@@ -42,6 +42,13 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
 
+  # 사용자 실행형 백업·복원(#40, specs/004-backup-restore/plan.md).
+  # 모두 네트워크 호출이 없다(헌법 III): zip은 순수 Dart, 저장·선택은 OS 공유
+  # 시트·문서 선택기에 맡긴다(권한 요청 없음).
+  archive: ^4.5.2
+  share_plus: ^13.3.1
+  file_selector: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

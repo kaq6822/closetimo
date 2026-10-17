@@ -22,19 +22,22 @@ class _InMemoryLaundryRepo implements LaundryRepository {
   }
 
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {
-    if (itemIds.isEmpty) return;
+  Future<int> completeWashFor(List<int> itemIds) async {
+    if (itemIds.isEmpty) return 0;
+    var processed = 0;
     final now = DateTime(2026, 5, 19);
     for (final id in itemIds) {
       final i = items[id];
-      if (i == null) continue;
+      if (i == null || !i.inLaundry) continue;
       i
         ..status = ItemStatus.clean
         ..wearSinceWash = 0
         ..lastWashedAt = now
         ..inLaundry = false;
       events.add(WearEvent(itemId: id, kind: EventKind.wash, occurredAt: now));
+      processed++;
     }
+    return processed;
   }
 }
 

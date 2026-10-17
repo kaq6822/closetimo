@@ -7,7 +7,9 @@ import '../../core/persistence/image_store.dart';
 import '../../core/utils/clock.dart';
 import '../../features/add_item/new_item_draft.dart';
 import '../models/item.dart';
+import '../models/item_filter.dart';
 import '../models/item_patch.dart';
+import '../models/item_tags.dart';
 import '../models/wear_event.dart';
 import 'item_repository.dart';
 
@@ -38,9 +40,12 @@ class IsarItemRepository implements ItemRepository {
       brand: draft.brand.trim().isEmpty ? null : draft.brand.trim(),
       category: draft.category,
       careMethod: draft.careMethod,
+      careMode: draft.careMode,
+      purposes: _normalizePurposes(draft.purposes),
       washCycle: draft.washCycle <= 0 ? 1 : draft.washCycle,
       createdAt: now,
       purchasedAt: draft.purchasedAt,
+      tags: normalizeTags(draft.tags),
     );
     final id = _items.autoIncrement();
     item.id = id;
@@ -59,24 +64,11 @@ class IsarItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query = '',
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   }) {
-    final q = query.trim().toLowerCase();
     return watchAll().map((items) {
-      var arr = items;
-      if (category != null) {
-        arr = arr.where((i) => i.category == category).toList();
-      }
-      if (q.isNotEmpty) {
-        arr = arr.where((i) {
-          final name = i.name.toLowerCase();
-          final brand = (i.brand ?? '').toLowerCase();
-          return name.contains(q) || brand.contains(q);
-        }).toList();
-      }
-      final sorted = [...arr];
+      final sorted = items.where(filter.matches).toList();
       switch (sort) {
         case WardrobeSort.statusCleanFirst:
           sorted.sort((a, b) {
@@ -99,34 +91,44 @@ class IsarItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchRecentlyWorn({int limit = 2}) {
-    return _items.where().lastWornAtIsNotNull().sortByLastWornAtDesc().watch(
-      fireImmediately: true,
-      limit: limit,
-    );
+    // 보관한 옷은 홈 최근 착용에서 제외한다(#44).
+    // 인덱스 조건 watch는 조건 밖으로 나가는 수정(보관)을 방출하지 않으므로
+    // 전체를 구독하고 Dart에서 거른다.
+    return _items
+        .where()
+        .sortByCreatedAtDesc()
+        .watch(fireImmediately: true)
+        .map((all) {
+          final worn = [
+            for (final i in all)
+              if (i.lastWornAt != null && !i.isArchived) i,
+          ]..sort((a, b) => b.lastWornAt!.compareTo(a.lastWornAt!));
+          return worn.take(limit).toList();
+        });
   }
 
   @override
   Stream<WardrobeStats> watchStats() {
     return watchAll().map((items) {
-      final perBucket = <Category, int>{
-        Category.outer: 0,
-        Category.top: 0,
-        Category.bottom: 0,
-        Category.etc: 0,
+      final perBucket = <HomeBucket, int>{
+        for (final b in HomeBucket.values) b: 0,
       };
       var clean = 0;
       var dirty = 0;
-      for (final i in items) {
+      // 보관한 옷은 활성 통계·홈 카드 집계에서 제외한다(#44). 기본
+      // ItemFilter(활성만)와 같은 범위라 perBucket과 목록 수가 일치한다.
+      final active = items.where((i) => !i.isArchived).toList();
+      for (final i in active) {
         if (i.status == ItemStatus.clean) {
           clean++;
         } else {
           dirty++;
         }
         final bucket = i.category.homeBucket;
-        perBucket[bucket] = (perBucket[bucket] ?? 0) + 1;
+        perBucket[bucket] = perBucket[bucket]! + 1;
       }
       return WardrobeStats(
-        total: items.length,
+        total: active.length,
         clean: clean,
         dirty: dirty,
         perBucket: perBucket,
@@ -160,21 +162,27 @@ class IsarItemRepository implements ItemRepository {
             : patch.brand!.trim()
         ..category = patch.category
         ..careMethod = patch.careMethod
+        ..careMode = patch.careMode
+        ..purposes = _normalizePurposes(patch.purposes)
         ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
         ..purchasedAt = patch.purchasedAt;
+      if (patch.tags case final tags?) item.tags = normalizeTags(tags);
 
       // 사진 3-way 의도(data-model.md §3): 교체 > 제거 > 유지.
       if (replacementPath != null) {
+        // 복원된 사진(`items/{id}_r….jpg`, #40)처럼 경로가 바뀌면 이전 파일이
+        // 고아로 남지 않도록 지운다. 같은 경로면 copyTo가 이미 덮어썼다.
+        if (item.imagePath != null && item.imagePath != replacementPath) {
+          pathToDelete = item.imagePath;
+        }
         item.imagePath = replacementPath;
       } else if (patch.removePhoto) {
         pathToDelete = item.imagePath;
         item.imagePath = null;
       }
 
-      // status 재평가(FR-004) — wearSinceWash/washCycle 불변식을 다시 맞춘다.
-      item.status = item.wearSinceWash >= item.washCycle
-          ? ItemStatus.dirty
-          : ItemStatus.clean;
+      // status 재평가(FR-004, #45) — 주기·관리 방식 변경을 반영한다.
+      item.status = item.derivedStatus;
 
       isar.items.put(item);
     });
@@ -205,4 +213,8 @@ class IsarItemRepository implements ItemRepository {
       await _imageStore.delete(pathToDelete!); // best-effort(FR-011)
     }
   }
+
+  /// 용도 목록을 중복 없이 enum 순서로 정규화한다(저장 형태 안정화).
+  static List<ItemPurpose> _normalizePurposes(Iterable<ItemPurpose> raw) =>
+      raw.toSet().toList()..sort((a, b) => a.index.compareTo(b.index));
 }

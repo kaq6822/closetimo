@@ -10,6 +10,7 @@ import 'package:closetimo/core/widgets/chip_filter.dart';
 import 'package:closetimo/core/widgets/toast.dart';
 import 'package:closetimo/core/widgets/top_bar.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/features/add_item/add_item_screen.dart';
 import 'package:closetimo/features/add_item/widgets/photo_picker_card.dart';
 import 'package:closetimo/features/add_item/widgets/wash_cycle_stepper.dart';
@@ -102,6 +103,7 @@ void main() {
     final item = Item(
       name: '울 코트',
       category: Category.outer,
+      careMethod: CareMethod.machine,
       washCycle: 5,
       createdAt: DateTime(2026, 1, 1),
     )..id = 1;
@@ -149,6 +151,10 @@ void main() {
     // 필드 노드 라벨은 "<필드 이름>\n<힌트>"로 합쳐진다(위의 시각 라벨 텍스트와 구분).
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(_host(const AddItemScreen()));
+    await tester.pumpAndSettle();
+    // #42 — 브랜드는 "추가 정보 (선택)" 접이식 영역 안에 있다.
+    await tester.ensureVisible(find.text('추가 정보 (선택)'));
+    await tester.tap(find.text('추가 정보 (선택)'));
     await tester.pumpAndSettle();
 
     for (final label in ['의류 명칭', '브랜드']) {
@@ -212,21 +218,25 @@ void main() {
     // Android는 입력 필드 라벨을 content-desc가 아닌 hintText로 내보내 덤프에는
     // 보이지 않는다. 필드 노드에 힌트가 실리는지는 여기서 검증한다.
     final handle = tester.ensureSemantics();
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(
       _host(
         WardrobeFilterBar(
-          query: '',
-          category: null,
+          searchController: controller,
+          scope: const ItemFilter(),
+          readyToWear: false,
           sort: WardrobeSort.statusCleanFirst,
           onQueryChanged: (_) {},
-          onCategoryChanged: (_) {},
+          onScopeChanged: (_) {},
+          onReadyToWearChanged: (_) {},
           onSortChanged: (_) {},
         ),
       ),
     );
 
     expect(
-      tester.getSemantics(find.bySemanticsLabel(RegExp('옷 이름 또는 브랜드 검색'))),
+      tester.getSemantics(find.bySemanticsLabel(RegExp('옷 이름·브랜드·태그 검색'))),
       isSemantics(isTextField: true),
     );
     handle.dispose();
@@ -239,6 +249,7 @@ void main() {
     final item = Item(
       name: '울 코트',
       category: Category.outer,
+      careMethod: CareMethod.machine,
       washCycle: 5,
       createdAt: DateTime(2026, 1, 1),
     )..id = 1;

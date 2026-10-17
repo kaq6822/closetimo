@@ -16,6 +16,13 @@ class LaundrySelectionNotifier extends Notifier<Set<int>> {
     state = {...ids};
   }
 
+  /// 현재 바구니에 남아 있는 id만 선택 상태로 유지한다.
+  void retainOnly(Iterable<int> basketIds) {
+    final keep = basketIds.toSet();
+    if (state.every(keep.contains)) return;
+    state = state.where(keep.contains).toSet();
+  }
+
   void clear() => state = const <int>{};
 }
 

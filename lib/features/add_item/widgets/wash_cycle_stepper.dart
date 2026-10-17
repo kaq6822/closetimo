@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
+import '../../../core/widgets/min_touch_target.dart';
 
 class WashCycleStepper extends StatelessWidget {
   const WashCycleStepper({
@@ -23,9 +24,10 @@ class WashCycleStepper extends StatelessWidget {
         color: surfaces.containerLow,
         borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
       ),
+      // #49 — ± 버튼이 48×48 터치 영역을 가지므로 세로 패딩을 줄여 높이를 유지한다.
       padding: const EdgeInsets.symmetric(
         horizontal: ClosetimoSpacing.md,
-        vertical: ClosetimoSpacing.space12,
+        vertical: ClosetimoSpacing.space5,
       ),
       child: Row(
         children: [
@@ -46,7 +48,7 @@ class WashCycleStepper extends StatelessWidget {
             foreground: ClosetimoColors.ink,
             onTap: value > 1 ? () => onChanged(value - 1) : null,
           ),
-          const SizedBox(width: ClosetimoSpacing.space12),
+          const SizedBox(width: ClosetimoSpacing.space4),
           SizedBox(
             width: ClosetimoSpacing.space28,
             child: Text(
@@ -60,7 +62,7 @@ class WashCycleStepper extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: ClosetimoSpacing.space12),
+          const SizedBox(width: ClosetimoSpacing.space4),
           _RoundButton(
             icon: Icons.add_rounded,
             semanticLabel: '착용 횟수 늘리기',
@@ -93,21 +95,25 @@ class _RoundButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final disabled = onTap == null;
     // #17 — 아이콘만 있어 TalkBack이 이름 없이 읽던 ± 버튼에 라벨을 붙인다.
-    return Semantics(
-      container: true,
-      button: true,
-      enabled: !disabled,
-      label: semanticLabel,
-      child: Material(
-        color: background.withValues(alpha: disabled ? 0.5 : 1),
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: ClosetimoSpacing.space34,
-            height: ClosetimoSpacing.space34,
-            child: Icon(icon, size: 16, color: foreground),
+    // #49 — 시각 원(34)은 유지하고 터치 영역만 48×48로 넓힌다.
+    return MinTouchTarget(
+      onTap: onTap,
+      child: Semantics(
+        container: true,
+        button: true,
+        enabled: !disabled,
+        label: semanticLabel,
+        child: Material(
+          color: background.withValues(alpha: disabled ? 0.5 : 1),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: ClosetimoSpacing.space34,
+              height: ClosetimoSpacing.space34,
+              child: Icon(icon, size: 16, color: foreground),
+            ),
           ),
         ),
       ),

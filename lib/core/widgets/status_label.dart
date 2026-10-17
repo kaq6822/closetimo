@@ -35,8 +35,11 @@ class StatusLabel extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: fg),
           const SizedBox(width: ClosetimoSpacing.xs),
+          // #19 — 큰 글꼴에서 "세탁 필/요"처럼 끊기지 않게 한 줄로 둔다.
           Text(
             text,
+            maxLines: 1,
+            softWrap: false,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 11,
