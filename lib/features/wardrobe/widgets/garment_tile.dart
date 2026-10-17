@@ -36,116 +36,124 @@ class GarmentTile extends ConsumerWidget {
       wardrobeSelectionProvider.select((s) => (s.active, s.contains(item.id))),
     );
     final selection = ref.read(wardrobeSelectionProvider.notifier);
-    return Material(
-      color: selected ? ClosetimoColors.primarySoft : surfaces.containerLowest,
-      borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: selecting
-            ? () => selection.toggle(item.id)
-            : () => context.pushNamed(
-                Routes.itemDetail,
-                pathParameters: {'id': '${item.id}'},
-              ),
-        onLongPress: selecting
-            ? () => selection.toggle(item.id)
-            : () => selection.start(item.id),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 1 / 1.05,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _ItemImage(
-                      imagePath: item.imagePath,
-                      fallback: Color(item.fallbackColor),
-                    ),
-                    if (showCleanBadge || showDirtyBadge)
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: StatusLabel(
-                          variant: showCleanBadge
-                              ? StatusLabelVariant.clean
-                              : StatusLabelVariant.dirty,
-                        ),
+    // #49 — 선택 모드에서는 타일 전체가 체크 컨트롤이므로 checked 상태를 타일
+    // 노드에 싣는다(우상단 표시는 시각 단서일 뿐 별도 노드로 읽지 않는다).
+    return Semantics(
+      container: true,
+      checked: selecting ? selected : null,
+      child: Material(
+        color: selected
+            ? ClosetimoColors.primarySoft
+            : surfaces.containerLowest,
+        borderRadius: BorderRadius.circular(ClosetimoRadius.xl),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: selecting
+              ? () => selection.toggle(item.id)
+              : () => context.pushNamed(
+                  Routes.itemDetail,
+                  pathParameters: {'id': '${item.id}'},
+                ),
+          onLongPress: selecting
+              ? () => selection.toggle(item.id)
+              : () => selection.start(item.id),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1 / 1.05,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _ItemImage(
+                        imagePath: item.imagePath,
+                        fallback: Color(item.fallbackColor),
                       ),
-                    Positioned(
-                      top: ClosetimoSpacing.space4,
-                      right: ClosetimoSpacing.space4,
-                      child: selecting
-                          ? _SelectionMark(selected: selected)
-                          : _QuickActionMenu(item: item),
+                      if (showCleanBadge || showDirtyBadge)
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: StatusLabel(
+                            variant: showCleanBadge
+                                ? StatusLabelVariant.clean
+                                : StatusLabelVariant.dirty,
+                          ),
+                        ),
+                      Positioned(
+                        top: ClosetimoSpacing.space4,
+                        right: ClosetimoSpacing.space4,
+                        child: selecting
+                            ? _SelectionMark(selected: selected)
+                            : _QuickActionMenu(item: item),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  ClosetimoSpacing.space14,
+                  ClosetimoSpacing.space14,
+                  ClosetimoSpacing.space14,
+                  ClosetimoSpacing.md,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: ClosetimoColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: ClosetimoSpacing.space10),
+                    // #19 — 큰 글꼴에서 "마지막 세/탁"처럼 단어 중간에서 줄바꿈하지 않도록
+                    // 한 줄을 유지하고 공간이 모자라면 글자를 줄인다.
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _MetaLabel('착용 횟수'),
+                        SizedBox(width: ClosetimoSpacing.space4),
+                        _MetaLabel('마지막 세탁', alignEnd: true),
+                      ],
+                    ),
+                    const SizedBox(height: ClosetimoSpacing.space2),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${item.wearSinceWash}/${item.washCycle}',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: ClosetimoColors.ink,
+                          ),
+                        ),
+                        Text(
+                          item.lastWashedAt == null
+                              ? '—'
+                              : formatMonthDay(item.lastWashedAt!),
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: ClosetimoColors.ink,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                ClosetimoSpacing.space14,
-                ClosetimoSpacing.space14,
-                ClosetimoSpacing.space14,
-                ClosetimoSpacing.md,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    item.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Manrope',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: ClosetimoColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: ClosetimoSpacing.space10),
-                  // #19 — 큰 글꼴에서 "마지막 세/탁"처럼 단어 중간에서 줄바꿈하지 않도록
-                  // 한 줄을 유지하고 공간이 모자라면 글자를 줄인다.
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _MetaLabel('착용 횟수'),
-                      SizedBox(width: ClosetimoSpacing.space4),
-                      _MetaLabel('마지막 세탁', alignEnd: true),
-                    ],
-                  ),
-                  const SizedBox(height: ClosetimoSpacing.space2),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${item.wearSinceWash}/${item.washCycle}',
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: ClosetimoColors.ink,
-                        ),
-                      ),
-                      Text(
-                        item.lastWashedAt == null
-                            ? '—'
-                            : formatMonthDay(item.lastWashedAt!),
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: ClosetimoColors.ink,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -188,9 +196,7 @@ class _SelectionMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surfaces = Theme.of(context).extension<ClosetimoSurfaces>()!;
-    return Semantics(
-      checked: selected,
-      label: selected ? '선택됨' : '선택 안 됨',
+    return ExcludeSemantics(
       child: Padding(
         padding: const EdgeInsets.all(ClosetimoSpacing.space8),
         child: DecoratedBox(

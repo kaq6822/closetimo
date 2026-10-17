@@ -101,6 +101,13 @@ abstract final class ClosetimoSpacing {
 abstract final class ClosetimoSize {
   /// 세탁 목록 타일의 정사각 사진 크기.
   static const double tileThumbnail = 62;
+
+  /// #49 — 탭 가능한 컨트롤의 최소 터치 영역(Material·Android 권장 48dp).
+  /// 시각 크기가 이보다 작은 컨트롤은 `MinTouchTarget`으로 감싸 영역만 넓힌다.
+  static const double minTouchTarget = 48;
+
+  /// #49 — 비선택 체크 컨트롤의 윤곽선·선택된 세탁 방법 타일의 테두리 두께.
+  static const double controlOutline = 2;
 }
 
 /// 라운딩(corner radius) 토큰. design.md §5 "둥글기".
