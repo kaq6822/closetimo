@@ -1,5 +1,6 @@
 // #46 — 사용자 태그 정규화·집계, ItemFilter 태그 축, 라우트 쿼리 코덱, 필터 요약.
 
+import 'package:characters/characters.dart';
 import 'package:closetimo/app/router.dart';
 import 'package:closetimo/data/models/item.dart';
 import 'package:closetimo/data/models/item_filter.dart';
@@ -35,7 +36,17 @@ void main() {
 
     test('최대 길이를 넘으면 자른다', () {
       final long = '가' * (maxTagLength + 5);
-      expect(normalizeTag(long)!.runes.length, maxTagLength);
+      expect(normalizeTag(long)!.characters.length, maxTagLength);
+    });
+
+    test('길이는 글자 단위라 이모지(서로게이트·ZWJ)를 중간에서 자르지 않는다', () {
+      final emoji = '😀' * maxTagLength;
+      expect(normalizeTag(emoji), emoji);
+      expect(normalizeTag('$emoji😀'), emoji);
+      const family = '👨‍👩‍👧';
+      final families = family * maxTagLength;
+      expect(normalizeTag(families), families);
+      expect(normalizeTag('$families$family'), families);
     });
 
     test('대소문자만 다른 중복은 먼저 나온 표기를 남기고 순서를 유지한다', () {

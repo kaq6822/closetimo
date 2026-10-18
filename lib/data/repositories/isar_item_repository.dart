@@ -12,19 +12,23 @@ import '../models/item_patch.dart';
 import '../models/item_tags.dart';
 import '../models/wear_event.dart';
 import 'item_repository.dart';
+import 'shared_items_watcher.dart';
 
 class IsarItemRepository implements ItemRepository {
   IsarItemRepository({
     required Isar isar,
     required ImageStore imageStore,
     required Clock clock,
+    SharedItemsWatcher? watcher,
   }) : _isar = isar,
        _imageStore = imageStore,
-       _clock = clock;
+       _clock = clock,
+       _watcher = watcher ?? SharedItemsWatcher(isar);
 
   final Isar _isar;
   final ImageStore _imageStore;
   final Clock _clock;
+  final SharedItemsWatcher _watcher;
 
   IsarCollection<int, Item> get _items => _isar.items;
 
@@ -59,7 +63,7 @@ class IsarItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchAll() {
-    return _items.where().sortByCreatedAtDesc().watch(fireImmediately: true);
+    return _watcher.stream;
   }
 
   @override
@@ -94,17 +98,13 @@ class IsarItemRepository implements ItemRepository {
     // 보관한 옷은 홈 최근 착용에서 제외한다(#44).
     // 인덱스 조건 watch는 조건 밖으로 나가는 수정(보관)을 방출하지 않으므로
     // 전체를 구독하고 Dart에서 거른다.
-    return _items
-        .where()
-        .sortByCreatedAtDesc()
-        .watch(fireImmediately: true)
-        .map((all) {
-          final worn = [
-            for (final i in all)
-              if (i.lastWornAt != null && !i.isArchived) i,
-          ]..sort((a, b) => b.lastWornAt!.compareTo(a.lastWornAt!));
-          return worn.take(limit).toList();
-        });
+    return _watcher.stream.map((all) {
+      final worn = [
+        for (final i in all)
+          if (i.lastWornAt != null && !i.isArchived) i,
+      ]..sort((a, b) => b.lastWornAt!.compareTo(a.lastWornAt!));
+      return worn.take(limit).toList();
+    });
   }
 
   @override

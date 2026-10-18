@@ -4,9 +4,12 @@
 // 선택 속성이다. 관리 상태(세탁 필요·바구니·보관)와 관리 방법은 태그가 아니라
 // 시스템 필드로 남긴다.
 
+import 'package:characters/characters.dart';
+
 import 'item.dart';
 
-/// 태그 1개의 최대 길이(정규화 후 문자 수).
+/// 태그 1개의 최대 길이(정규화 후 글자 수). 사용자가 보는 글자(grapheme cluster) 단위라
+/// 이모지·결합 문자도 1글자로 세며, 입력창 `maxLength`와 같은 기준이다.
 const int maxTagLength = 20;
 
 /// 태그 1개를 정규화한다. 앞뒤 공백을 지우고 연속 공백을 하나로 줄이며,
@@ -18,9 +21,9 @@ String? normalizeTag(String raw) {
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
   if (collapsed.isEmpty) return null;
-  final runes = collapsed.runes.toList();
-  if (runes.length <= maxTagLength) return collapsed;
-  return String.fromCharCodes(runes.take(maxTagLength)).trim();
+  final chars = collapsed.characters;
+  if (chars.length <= maxTagLength) return collapsed;
+  return chars.take(maxTagLength).toString().trim();
 }
 
 /// 태그 목록을 정규화한다. 빈 값은 버리고, 대소문자만 다른 중복은 먼저 나온

@@ -143,6 +143,34 @@ void main() {
       return lengths;
     }
 
+    test('#52 마지막 세탁은 id가 아니라 시각이 가장 늦은 wash 기준이다', () async {
+      isar.write((isar) {
+        isar.items.put(_item(1));
+        // id는 작지만 시각이 더 늦은 wash(06-25)가 마지막 세탁이다.
+        isar.wearEvents.put(
+          WearEvent(
+            itemId: 1,
+            kind: EventKind.wash,
+            occurredAt: DateTime(2026, 6, 20),
+          )..id = 9,
+        );
+        isar.wearEvents.put(
+          WearEvent(
+            itemId: 1,
+            kind: EventKind.wash,
+            occurredAt: DateTime(2026, 6, 25),
+          )..id = 2,
+        );
+      });
+      final events = IsarEventRepository(isar: isar, clock: _MutableClock(t0));
+
+      await events.recordWear(1, wornOn: DateTime(2026, 6, 22));
+
+      // 06-22 착용은 마지막 세탁(06-25) 이전이라 현재 주기에 들어가지 않는다.
+      expect(isar.items.get(1)!.wearSinceWash, 0);
+      expect(isar.items.get(1)!.totalWears, 1);
+    });
+
     test('#48 세탁 완료로 바구니에서 나가면 watchBasket이 빈 목록을 방출한다', () async {
       isar.write((isar) => isar.items.put(_item(1)..inLaundry = true));
       final repo = IsarLaundryRepository(isar: isar, clock: _MutableClock(t0));

@@ -211,11 +211,12 @@ abstract final class BackupCodec {
     }
     final archivedAt = o.nullableDateTime('archivedAt');
     final inLaundry = o.boolean('inLaundry');
-    return Item(
+    final item = Item(
       name: name,
       brand: o.nullableString('brand'),
       category: o.enumValue('category', Category.values),
       careMethod: o.enumValue('careMethod', CareMethod.values),
+      // 임시 값. 아래에서 카운터·관리 방식으로 다시 계산한다.
       status: o.enumValue('status', ItemStatus.values),
       washCycle: washCycle,
       wearSinceWash: wearSinceWash,
@@ -228,12 +229,16 @@ abstract final class BackupCodec {
       fallbackColor: fallbackColor,
       createdAt: o.dateTime('createdAt'),
       careMode: o.enumValue('careMode', CareMode.values),
-      purposes: o.enumList('purposes', ItemPurpose.values),
+      // 손으로 편집한 백업의 중복 용도를 정리한다(순서 유지).
+      purposes: o.enumList('purposes', ItemPurpose.values).toSet().toList(),
       archivedAt: archivedAt,
       archiveReason: o.enumValue('archiveReason', ArchiveReason.values),
       // 앱 입력 규칙(공백 정리·20자·대소문자 중복)을 복원 값에도 적용한다.
       tags: normalizeTags(o.stringList('tags')),
     )..id = o.integer('id');
+    // 파생값(status)은 저장된 값을 믿지 않고 앱 규칙(FR-011)으로 다시 계산한다.
+    item.status = item.derivedStatus;
+    return item;
   }
 
   static WearEvent _decodeWearEvent(_Obj o) => WearEvent(
