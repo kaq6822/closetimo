@@ -17,6 +17,12 @@ abstract class ItemPatch with _$ItemPatch {
     required Category category,
     required CareMethod careMethod,
     required int washCycle,
+
+    /// 관리 권장 방식(#45). 수정 화면은 원본 값을 그대로 전달한다.
+    required CareMode careMode,
+
+    /// 용도 전체 교체(#41). 빈 목록이면 용도를 모두 제거한다.
+    required List<ItemPurpose> purposes,
     DateTime? purchasedAt,
 
     /// 새로 선택한 사진. null이 아니면 sandbox 사본을 교체한다([removePhoto]보다 우선).
@@ -24,6 +30,9 @@ abstract class ItemPatch with _$ItemPatch {
 
     /// true면 기존 사진을 제거하고 기본 플레이스홀더로 되돌린다.
     @Default(false) bool removePhoto,
+
+    /// 태그 전체 교체(#46). null이면 기존 태그를 그대로 두고, 빈 목록이면 모두 제거한다.
+    List<String>? tags,
   }) = _ItemPatch;
 
   const ItemPatch._();

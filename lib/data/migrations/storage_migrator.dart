@@ -10,7 +10,14 @@ import '../models/wear_event.dart';
 typedef LegacySnapshotReader =
     Future<LegacySnapshot?> Function(String directory);
 
-enum MigrationSource { fresh, legacyV3, alreadyMigrated }
+enum MigrationSource {
+  fresh,
+  legacyV3,
+  alreadyMigrated,
+
+  /// 이미 이전된 저장소의 데이터 형식을 현재 버전으로 올렸다.
+  upgraded,
+}
 
 class MigrationResult {
   const MigrationResult({
@@ -24,7 +31,8 @@ class MigrationResult {
   final int eventCount;
 }
 
-/// legacy Isar 3 데이터를 새 저장소에 한 번만 원자적으로 이전한다.
+/// legacy Isar 3 데이터를 새 저장소에 한 번만 원자적으로 이전하고,
+/// 이미 이전된 저장소는 [StorageMetadata.currentStorageVersion]까지 올린다.
 class StorageMigrator {
   const StorageMigrator({this.readLegacySnapshot = LegacyStore.readSnapshot});
 
@@ -37,8 +45,11 @@ class StorageMigrator {
   }) async {
     final metadata = newStore.storageMetadatas.get(StorageMetadata.singletonId);
     if (metadata != null) {
+      final upgraded = _upgradeIfNeeded(newStore, metadata);
       return MigrationResult(
-        source: MigrationSource.alreadyMigrated,
+        source: upgraded
+            ? MigrationSource.upgraded
+            : MigrationSource.alreadyMigrated,
         itemCount: newStore.items.count(),
         eventCount: newStore.wearEvents.count(),
       );
@@ -99,6 +110,47 @@ class StorageMigrator {
     );
   }
 
+  /// 저장소 버전을 한 단계씩 올린다. 모든 단계와 버전 갱신은 단일 트랜잭션이라
+  /// 실패하면 아무것도 바뀌지 않고 다음 실행에서 다시 시도한다.
+  static bool _upgradeIfNeeded(Isar store, StorageMetadata metadata) {
+    if (metadata.storageVersion >= StorageMetadata.currentStorageVersion) {
+      return false;
+    }
+    store.write((isar) {
+      var version = metadata.storageVersion;
+      if (version < 2) {
+        _upgradeItemsToV2(isar);
+        version = 2;
+      }
+      metadata.storageVersion = version;
+      isar.storageMetadatas.put(metadata);
+    });
+    return true;
+  }
+
+  /// v1 → v2(#41·#45). 저장된 ordinal은 그대로 두고 의미만 옮긴다.
+  /// - legacy 운동복은 상의/하의로 추정하지 않고 `미분류 + 용도 운동`으로 옮긴다.
+  /// - careMode는 필드가 없던 구 데이터가 기본값 wearCycle로 읽히므로 기존
+  ///   횟수 기반 동작이 유지된다. careMethod·카운터·상태는 바꾸지 않는다.
+  static void _upgradeItemsToV2(Isar isar) {
+    final legacy = isar.items
+        .where()
+        .categoryEqualTo(Category.activewear)
+        .findAll();
+    if (legacy.isEmpty) return;
+    for (final item in legacy) {
+      _normalizeLegacyActivewear(item);
+    }
+    isar.items.putAll(legacy);
+  }
+
+  static void _normalizeLegacyActivewear(Item item) {
+    if (item.category != Category.activewear) return;
+    item
+      ..category = Category.uncategorized
+      ..purposes = {...item.purposes, ItemPurpose.sport}.toList();
+  }
+
   static void _validateSnapshot(LegacySnapshot snapshot) {
     final itemIds = snapshot.items.map((item) => item.id).toSet();
     if (itemIds.length != snapshot.items.length) {
@@ -118,7 +170,7 @@ class StorageMigrator {
   }
 
   static Item _convertItem(LegacyItemData data) {
-    return Item(
+    final item = Item(
       name: data.name,
       brand: data.brand,
       category: _enumAt(Category.values, data.categoryIndex, 'category'),
@@ -139,6 +191,9 @@ class StorageMigrator {
       fallbackColor: data.fallbackColor,
       createdAt: data.createdAt,
     )..id = data.id;
+    // legacy 원본도 v2 의미로 바로 옮긴다(_upgradeItemsToV2와 같은 규칙).
+    _normalizeLegacyActivewear(item);
+    return item;
   }
 
   static WearEvent _convertEvent(LegacyWearEventData data) {

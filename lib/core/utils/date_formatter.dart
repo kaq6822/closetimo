@@ -25,6 +25,16 @@ String formatMonthDay(DateTime when) => _monthDay.format(when);
 
 String formatFullDate(DateTime when) => _fullDate.format(when);
 
+/// 착용 날짜 표기(#39): "오늘" / "어제" / "M/d". 착용 기록 시트 제목과 토스트에 쓴다.
+String formatWearDay(DateTime day, {required DateTime now}) {
+  final today = DateTime(now.year, now.month, now.day);
+  final target = DateTime(day.year, day.month, day.day);
+  final delta = today.difference(target).inDays;
+  if (delta == 0) return '오늘';
+  if (delta == 1) return '어제';
+  return formatMonthDay(day);
+}
+
 /// "—" 폴백 처리. nullable DateTime을 표시할 때 사용한다.
 String formatMonthDayOrDash(DateTime? when) =>
     when == null ? '—' : formatMonthDay(when);

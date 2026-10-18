@@ -8,6 +8,7 @@ import 'package:closetimo/app/theme/app_theme.dart';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/core/widgets/bottom_nav.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/data/models/wear_event.dart';
@@ -36,12 +37,11 @@ class _FakeItemRepository implements ItemRepository {
 
   @override
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query = '',
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   }) => Stream.value([
     for (final i in items)
-      if (category == null || i.category == category) i,
+      if (filter.matches(i)) i,
   ]);
 
   @override
@@ -51,8 +51,8 @@ class _FakeItemRepository implements ItemRepository {
       clean: items.length,
       dirty: 0,
       perBucket: {
-        for (final c in Category.values)
-          c: items.where((i) => i.category.homeBucket == c).length,
+        for (final b in HomeBucket.values)
+          b: items.where((i) => i.category.homeBucket == b).length,
       },
     ),
   );
@@ -82,13 +82,25 @@ class _FakeEventRepository implements EventRepository {
   Stream<List<WearEvent>> watchForItem(int itemId) => Stream.value(const []);
 
   @override
-  Future<void> recordWear(int itemId, {String? note}) async {}
+  Future<int?> recordWear(int itemId, {String? note, DateTime? wornOn}) async =>
+      null;
 
   @override
   Future<void> updateEventNote(int eventId, String? note) async {}
 
   @override
   Future<void> deleteWearEvent(int eventId) async {}
+
+  @override
+  Future<WearBatchResult> recordWearBatch(
+    Iterable<int> itemIds, {
+    DateTime? wornOn,
+    String? note,
+  }) async => const WearBatchResult(eventIds: [], skipped: 0);
+  @override
+  Future<void> updateWearDate(int eventId, DateTime wornOn) async {}
+  @override
+  Future<void> deleteWearEvents(Iterable<int> eventIds) async {}
 }
 
 class _FakeLaundryRepository implements LaundryRepository {
@@ -99,7 +111,7 @@ class _FakeLaundryRepository implements LaundryRepository {
   Future<void> toggle(int itemId) async {}
 
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {}
+  Future<int> completeWashFor(List<int> itemIds) async => 0;
 }
 
 class _FakePreferencesRepository implements PreferencesRepository {
@@ -246,6 +258,29 @@ void main() {
     expect(find.text('셀비지 데님'), findsNothing);
   });
 
+  testWidgets('#33: 검색어가 남은 채 홈 카드로 들어오면 검색어가 초기화되고 카드 범위가 보인다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(items));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '니트');
+    await tester.pumpAndSettle();
+    expect(find.text('셀비지 데님'), findsNothing);
+
+    await _tapTab(tester, BottomNavTab.home);
+    await _tapHomeCard(tester, Category.bottom);
+
+    // 이전 검색어 "니트"가 남아 "검색 결과가 없습니다."가 되던 결함(#33).
+    expect(find.text('셀비지 데님'), findsOneWidget);
+    expect(find.text('검색 결과가 없습니다.'), findsNothing);
+    // 검색창 표시도 함께 비워진다.
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      isEmpty,
+    );
+  });
+
   testWidgets('홈 카드로 필터가 바뀌면 옷장 스크롤이 맨 위로 돌아간다', (tester) async {
     final many = [
       for (var i = 0; i < 12; i++) _item(10 + i, '하의 $i', Category.bottom),
@@ -297,5 +332,103 @@ void main() {
     // 토스트 타이머 소진.
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
+  });
+
+  group('#37 홈 그 외 카드 — 합산 범위와 이동 목록 일치', () {
+    final mixed = [
+      _item(1, '캐시미어 니트', Category.top),
+      _item(2, '러닝화', Category.shoes),
+      _item(3, '토트백', Category.bag),
+      _item(4, '분류 전 셔츠', Category.uncategorized),
+      _item(5, '스카프', Category.etc),
+    ];
+
+    Finder bentoCard(String label) => find.descendant(
+      of: find.byType(CategoryBento),
+      matching: find.text(label),
+    );
+
+    testWidgets('그 외 카드 수와 탭 후 목록 수가 같고, 합산 칩이 선택된다', (tester) async {
+      await tester.pumpWidget(_harness(mixed));
+      await tester.pumpAndSettle();
+      await _tapTab(tester, BottomNavTab.home);
+
+      // 신발·가방·미분류·기타 4점이 '그 외'로 합산된다.
+      final card = find.ancestor(
+        of: bentoCard(HomeBucket.others.label),
+        matching: find.byType(InkWell),
+      );
+      expect(
+        find.descendant(of: card, matching: find.text('4')),
+        findsOneWidget,
+      );
+      // 개별 '기타' 라벨은 홈 카드에 쓰지 않는다.
+      expect(bentoCard(Category.etc.label), findsNothing);
+
+      await tester.ensureVisible(bentoCard(HomeBucket.others.label));
+      await tester.pumpAndSettle();
+      await tester.tap(bentoCard(HomeBucket.others.label));
+      await tester.pumpAndSettle();
+
+      // 그리드는 보이는 타일만 빌드하므로 결과 수는 delegate로 확인한다.
+      final delegate =
+          tester.widget<SliverGrid>(find.byType(SliverGrid)).delegate
+              as SliverChildBuilderDelegate;
+      expect(delegate.childCount, 4);
+      expect(find.text('캐시미어 니트'), findsNothing);
+      expect(
+        tester.getSemantics(find.widgetWithText(InkWell, '그 외 전체')),
+        isSemantics(isButton: true, hasSelectedState: true, isSelected: true),
+      );
+    });
+
+    testWidgets('옷장 기타 칩은 개별 기타만 보여준다', (tester) async {
+      await tester.pumpWidget(_harness(mixed));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(InkWell, Category.etc.label));
+      await tester.pumpAndSettle();
+
+      expect(find.text('스카프'), findsOneWidget);
+      expect(find.text('러닝화'), findsNothing);
+      expect(find.text('토트백'), findsNothing);
+      expect(find.text('분류 전 셔츠'), findsNothing);
+      // 합산 칩은 합산 범위로 들어왔을 때만 보인다.
+      expect(find.text('그 외 전체'), findsNothing);
+    });
+
+    testWidgets('미분류 칩과 용도 칩은 각 축의 조건으로 거른다', (tester) async {
+      final items = [
+        ...mixed,
+        Item(
+          name: '운동용 티셔츠',
+          category: Category.top,
+          purposes: const [ItemPurpose.sport],
+          washCycle: 5,
+          createdAt: DateTime(2026, 9, 1),
+        )..id = 6,
+      ];
+      await tester.pumpWidget(_harness(items));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.widgetWithText(InkWell, Category.uncategorized.label),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('분류 전 셔츠'), findsOneWidget);
+      expect(find.text('스카프'), findsNothing);
+
+      // 종류 '상의' AND 용도 '운동'.
+      await tester.tap(find.widgetWithText(InkWell, Category.top.label));
+      await tester.pumpAndSettle();
+      expect(find.text('캐시미어 니트'), findsOneWidget);
+      final purposeChip = find.widgetWithText(InkWell, '용도: 운동');
+      await tester.ensureVisible(purposeChip);
+      await tester.pumpAndSettle();
+      await tester.tap(purposeChip);
+      await tester.pumpAndSettle();
+      expect(find.text('운동용 티셔츠'), findsOneWidget);
+      expect(find.text('캐시미어 니트'), findsNothing);
+    });
   });
 }

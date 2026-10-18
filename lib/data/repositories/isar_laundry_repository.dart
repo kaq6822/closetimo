@@ -15,11 +15,19 @@ class IsarLaundryRepository implements LaundryRepository {
 
   @override
   Stream<List<Item>> watchBasket() {
+    // Isar Plus는 인덱스 조건 쿼리(inLaundryEqualTo)를 watch할 때 옷이 조건 밖으로
+    // 나가는 수정(세탁 완료·바구니 제외)을 방출하지 않는다. 전체 옷을 구독하고
+    // 조건은 Dart에서 거른다(`isar_item_repository.watchAll`과 같은 방식).
     return _isar.items
         .where()
-        .inLaundryEqualTo(true)
         .sortByCreatedAtDesc()
-        .watch(fireImmediately: true);
+        .watch(fireImmediately: true)
+        .map(
+          (all) => [
+            for (final i in all)
+              if (i.inLaundry && !i.isArchived) i,
+          ],
+        );
   }
 
   @override
@@ -27,19 +35,23 @@ class IsarLaundryRepository implements LaundryRepository {
     _isar.write((isar) {
       final item = isar.items.get(itemId);
       if (item == null) return;
+      // 보관한 옷은 바구니에 담지 않는다(#44). 담겨 있던 값을 빼는 것은 허용.
+      if (item.isArchived && !item.inLaundry) return;
       item.inLaundry = !item.inLaundry;
       isar.items.put(item);
     });
   }
 
   @override
-  Future<void> completeWashFor(List<int> itemIds) async {
-    if (itemIds.isEmpty) return;
+  Future<int> completeWashFor(List<int> itemIds) async {
+    if (itemIds.isEmpty) return 0;
     final now = _clock.now();
-    _isar.write((isar) {
-      for (final id in itemIds) {
+    return _isar.write((isar) {
+      var processed = 0;
+      for (final id in itemIds.toSet()) {
         final item = isar.items.get(id);
-        if (item == null) continue;
+        // 바구니에 없는 옷은 세탁 완료 대상이 아니다.
+        if (item == null || !item.inLaundry) continue;
         item
           ..status = ItemStatus.clean
           ..wearSinceWash = 0
@@ -52,7 +64,9 @@ class IsarLaundryRepository implements LaundryRepository {
           occurredAt: now,
         )..id = isar.wearEvents.autoIncrement();
         isar.wearEvents.put(event);
+        processed++;
       }
+      return processed;
     });
   }
 }

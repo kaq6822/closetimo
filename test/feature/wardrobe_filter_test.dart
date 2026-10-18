@@ -1,6 +1,7 @@
 // US2 acceptance — 카테고리·검색·정렬 분기 단위 테스트.
 
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_filter.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/repositories/item_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,26 +23,11 @@ class _FakeRepo implements ItemRepository {
 
   @override
   Stream<List<Item>> watchFiltered({
-    Category? category,
-    String query = '',
+    ItemFilter filter = const ItemFilter(),
     required WardrobeSort sort,
   }) {
-    final q = query.trim().toLowerCase();
     return watchAll().map((items) {
-      var arr = items;
-      if (category != null) {
-        arr = arr.where((i) => i.category == category).toList();
-      }
-      if (q.isNotEmpty) {
-        arr = arr
-            .where(
-              (i) =>
-                  i.name.toLowerCase().contains(q) ||
-                  (i.brand ?? '').toLowerCase().contains(q),
-            )
-            .toList();
-      }
-      final sorted = [...arr];
+      final sorted = items.where(filter.matches).toList();
       switch (sort) {
         case WardrobeSort.statusCleanFirst:
           sorted.sort((a, b) {
@@ -129,7 +115,7 @@ void main() {
     test('카테고리 필터 — 상의만 남는다', () async {
       final items = await repo
           .watchFiltered(
-            category: Category.top,
+            filter: ItemFilter.category(Category.top),
             sort: WardrobeSort.statusCleanFirst,
           )
           .first;
@@ -138,12 +124,18 @@ void main() {
 
     test('검색 — 대소문자 무시, name/brand 동시 매칭', () async {
       final byName = await repo
-          .watchFiltered(query: '캐시미어', sort: WardrobeSort.mostWorn)
+          .watchFiltered(
+            filter: const ItemFilter(query: '캐시미어'),
+            sort: WardrobeSort.mostWorn,
+          )
           .first;
       expect(byName.map((e) => e.id), [2]);
 
       final byBrand = await repo
-          .watchFiltered(query: 'zara', sort: WardrobeSort.mostWorn)
+          .watchFiltered(
+            filter: const ItemFilter(query: 'zara'),
+            sort: WardrobeSort.mostWorn,
+          )
           .first;
       expect(byBrand.map((e) => e.id), [1]);
     });
@@ -165,7 +157,10 @@ void main() {
 
     test('빈 결과', () async {
       final items = await repo
-          .watchFiltered(query: '없는검색어zzz', sort: WardrobeSort.mostWorn)
+          .watchFiltered(
+            filter: const ItemFilter(query: '없는검색어zzz'),
+            sort: WardrobeSort.mostWorn,
+          )
           .first;
       expect(items, isEmpty);
     });

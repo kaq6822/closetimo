@@ -1,6 +1,9 @@
 // FR-023 — 2초 비차단 토스트. Material SnackBar 대신 Overlay 기반으로
 // 디자인 패키지의 둥근 알약 + 좌측 체크 스타일을 재현한다.
 // 스크린리더가 낭독하도록 live region으로 노출한다(#17).
+// #39 — "실행 취소" 같은 액션 버튼을 하나 붙일 수 있다. 액션이 있으면 약 4초간
+// 보이고, 버튼 영역만 탭을 받는다.
+// #48 — 실패 결과는 [isError]로 오류 아이콘을 써서 성공(체크)과 구분한다(FR-030).
 
 import 'package:flutter/material.dart';
 
@@ -25,11 +28,21 @@ const double _topOffset = ClosetimoSpacing.huge + ClosetimoSpacing.xl;
 /// 탭 높이에 맞춘 레이아웃 값이라 간격 토큰 조합으로 쪼개지 않는다.
 const double _bottomOffset = 100;
 
+const Duration _plainDuration = Duration(milliseconds: 2000);
+const Duration _actionDuration = Duration(milliseconds: 4000);
+
 void showClosetimoToast(
   BuildContext context,
   String message, {
   ToastPlacement placement = ToastPlacement.bottom,
+  String? actionLabel,
+  VoidCallback? onAction,
+  bool isError = false,
 }) {
+  assert(
+    (actionLabel == null) == (onAction == null),
+    'actionLabel and onAction must be given together',
+  );
   final overlay = Overlay.maybeOf(context);
   if (overlay == null) return;
   late final OverlayEntry entry;
@@ -37,6 +50,9 @@ void showClosetimoToast(
     builder: (ctx) => _ToastBubble(
       message: message,
       placement: placement,
+      isError: isError,
+      actionLabel: actionLabel,
+      onAction: onAction,
       onDismissed: () {
         if (entry.mounted) entry.remove();
       },
@@ -50,11 +66,17 @@ class _ToastBubble extends StatefulWidget {
     required this.message,
     required this.placement,
     required this.onDismissed,
+    this.isError = false,
+    this.actionLabel,
+    this.onAction,
   });
 
   final String message;
   final ToastPlacement placement;
   final VoidCallback onDismissed;
+  final bool isError;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   State<_ToastBubble> createState() => _ToastBubbleState();
@@ -76,12 +98,23 @@ class _ToastBubbleState extends State<_ToastBubble>
   void initState() {
     super.initState();
     _ctl.forward();
-    Future<void>.delayed(const Duration(milliseconds: 2000), () async {
+    final duration = widget.onAction == null ? _plainDuration : _actionDuration;
+    Future<void>.delayed(duration, () async {
       if (!mounted) return;
       await _ctl.reverse();
       if (!mounted) return;
       widget.onDismissed();
     });
+  }
+
+  /// 액션은 한 번만 실행하고 토스트를 바로 닫는다.
+  bool _acted = false;
+
+  void _runAction() {
+    if (_acted) return;
+    _acted = true;
+    widget.onAction?.call();
+    widget.onDismissed();
   }
 
   @override
@@ -110,10 +143,14 @@ class _ToastBubbleState extends State<_ToastBubble>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.check_circle_rounded,
+            Icon(
+              widget.isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_rounded,
               size: 16,
-              color: ClosetimoColors.primary,
+              color: widget.isError
+                  ? ClosetimoColors.error
+                  : ClosetimoColors.primary,
             ),
             const SizedBox(width: ClosetimoSpacing.space8),
             Flexible(
@@ -127,6 +164,13 @@ class _ToastBubbleState extends State<_ToastBubble>
                 ),
               ),
             ),
+            if (widget.actionLabel != null) ...[
+              const SizedBox(width: ClosetimoSpacing.space8),
+              TextButton(
+                onPressed: _runAction,
+                child: Text(widget.actionLabel!),
+              ),
+            ],
           ],
         ),
       ),
@@ -138,7 +182,9 @@ class _ToastBubbleState extends State<_ToastBubble>
       right: ClosetimoSpacing.xl,
       // 비차단(FR-023) — 토스트가 버튼 위에 겹쳐도 탭은 아래로 통과한다.
       // IgnorePointer는 포인터만 막고 시맨틱(liveRegion)은 유지한다.
+      // 액션이 있으면 버튼을 눌러야 하므로 토스트 영역만 탭을 받는다(#39).
       child: IgnorePointer(
+        ignoring: widget.onAction == null,
         child: SafeArea(
           top: isTop,
           bottom: !isTop,

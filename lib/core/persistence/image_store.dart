@@ -31,6 +31,24 @@ class ImageStore {
     return p.join('items', '$itemId.jpg');
   }
 
+  /// #40 복원 — 바이트를 `documents/items/{fileName}`에 쓰고 상대 경로
+  /// (`items/{fileName}`)를 돌려준다. 임시 파일에 쓴 뒤 rename하므로 중간에
+  /// 실패해도 반쪽 파일이 대상 이름으로 남지 않는다. 실패 시
+  /// [FileSystemException]을 그대로 던진다(공간 부족 분류는 호출자가 한다).
+  Future<String> writeBytes(String fileName, List<int> bytes) async {
+    final root = await _rootDir();
+    final target = File(p.join(root.path, fileName));
+    final partial = File('${target.path}.part');
+    try {
+      await partial.writeAsBytes(bytes, flush: true);
+      await partial.rename(target.path);
+    } catch (_) {
+      if (partial.existsSync()) await partial.delete();
+      rethrow;
+    }
+    return p.join('items', fileName);
+  }
+
   /// 상대 경로 → sandbox 절대 경로 변환.
   Future<String> absolutePath(String relativePath) async {
     if (_overrideRoot != null) {

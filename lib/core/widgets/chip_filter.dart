@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/tokens.dart';
+import 'min_touch_target.dart';
 
 class ChipFilter extends StatelessWidget {
   const ChipFilter({
@@ -19,30 +20,40 @@ class ChipFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // #17 — 활성 칩이 색으로만 구분돼 TalkBack이 선택 여부를 읽지 못했다.
-    return Semantics(
-      container: true,
-      button: true,
-      selected: active,
-      child: Material(
-        color: active
-            ? ClosetimoColors.primary
-            : ClosetimoColors.secondaryContainer,
-        borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-        child: InkWell(
-          onTap: onTap,
+    // #49 — 칩 높이(약 33)는 유지하고 터치 영역만 최소 48로 넓힌다.
+    return MinTouchTarget(
+      onTap: onTap,
+      child: Semantics(
+        container: true,
+        button: true,
+        selected: active,
+        child: Material(
+          color: active
+              ? ClosetimoColors.primary
+              : ClosetimoColors.secondaryContainer,
           borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: ClosetimoSpacing.md,
-              vertical: ClosetimoSpacing.sm,
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: active ? ClosetimoColors.onPrimary : ClosetimoColors.ink,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ClosetimoSpacing.md,
+                vertical: ClosetimoSpacing.sm,
+              ),
+              // #19 — 큰 글꼴에서도 칩 라벨을 단어 중간에서 줄바꿈하지 않는다.
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: active
+                      ? ClosetimoColors.onPrimary
+                      : ClosetimoColors.ink,
+                ),
               ),
             ),
           ),

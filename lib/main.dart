@@ -3,6 +3,7 @@
 // builder 내부에서 처리한다(중첩 MaterialApp 금지).
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +16,10 @@ import 'data/providers/isar_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 휴대폰 폼팩터 한정 제품이므로 세로로 고정한다(#20).
+  await SystemChrome.setPreferredOrientations(const [
+    DeviceOrientation.portraitUp,
+  ]);
   runApp(const ProviderScope(child: ClosetimoApp()));
 }
 

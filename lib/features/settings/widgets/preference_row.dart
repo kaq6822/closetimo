@@ -1,4 +1,6 @@
 // US5 T073 — 설정 항목 행 (토글 또는 텍스트 값).
+// 텍스트 값 행은 탭 동작이 없으므로 chevron을 그리지 않는다(#16).
+// 이동 행([onTap])만 chevron을 그린다(#44 보관함).
 
 import 'package:flutter/material.dart';
 
@@ -11,6 +13,7 @@ class PreferenceRow extends StatelessWidget {
     this.toggleValue,
     this.onToggle,
     this.textValue,
+    this.onTap,
     super.key,
   });
 
@@ -18,6 +21,9 @@ class PreferenceRow extends StatelessWidget {
   final bool? toggleValue;
   final ValueChanged<bool>? onToggle;
   final String? textValue;
+
+  /// 다른 화면으로 이동하는 행의 탭 동작. 지정하면 우측에 chevron을 그린다.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +38,7 @@ class PreferenceRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(ClosetimoRadius.md),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: toggleable ? () => onToggle!(!toggleValue!) : null,
+          onTap: toggleable ? () => onToggle!(!toggleValue!) : onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: ClosetimoSpacing.space18,
@@ -57,24 +63,25 @@ class PreferenceRow extends StatelessWidget {
                     activeThumbColor: ClosetimoColors.onPrimary,
                     activeTrackColor: ClosetimoColors.primary,
                   )
-                else if (textValue != null)
+                else if (textValue != null || onTap != null)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        textValue!,
-                        style: const TextStyle(
-                          fontFamily: 'Manrope',
-                          fontSize: 13,
+                      if (textValue != null)
+                        Text(
+                          textValue!,
+                          style: const TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 13,
+                            color: ClosetimoColors.muted,
+                          ),
+                        ),
+                      if (onTap != null)
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
                           color: ClosetimoColors.muted,
                         ),
-                      ),
-                      const SizedBox(width: ClosetimoSpacing.space4),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: ClosetimoColors.muted,
-                      ),
                     ],
                   ),
               ],

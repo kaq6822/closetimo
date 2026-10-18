@@ -50,7 +50,8 @@ void main() {
   }
 
   Future<void> tapVisible(WidgetTester tester, Finder f) async {
-    await tester.ensureVisible(f);
+    // 상단 바·하단 CTA 뒤에 걸치지 않도록 뷰포트 가운데로 스크롤한다.
+    await Scrollable.ensureVisible(tester.element(f.first), alignment: 0.5);
     await tester.pumpAndSettle();
     await tester.tap(f);
     await tester.pumpAndSettle();
@@ -92,6 +93,12 @@ void main() {
       expect(find.text('신규 옷 등록'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).at(0), '오프라인 코트');
+      // #42 — 브랜드는 접힌 "추가 정보 (선택)" 안에 있다.
+      // 실기기에서는 명칭 입력 뒤 소프트 키보드가 올라와 헤더가 키보드 뒤에 가려진다.
+      // 포커스를 해제해 키보드를 내린 뒤 탭한다.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('추가 정보 (선택)'));
       await tester.enterText(find.byType(TextField).at(1), 'ZARA');
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('아우터'));
@@ -104,15 +111,15 @@ void main() {
 
       // ── 3. 옷장 탐색 (탐색 + 검색) ───────────────────────
       await tester.tap(find.text('옷장'));
-      await tester.pumpAndSettle();
+      await pumpUntilFound(tester, find.text('오프라인 코트'));
       expect(find.text('오프라인 코트'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).first, '코트');
-      await tester.pumpAndSettle();
+      await pumpUntilFound(tester, find.text('오프라인 코트'));
       expect(find.text('오프라인 코트'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).first, '없는옷');
-      await tester.pumpAndSettle();
+      await pumpUntilFound(tester, find.text('검색 결과가 없습니다.'));
       expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
       await shot(tester, '04_offline_wardrobe_search');
 
@@ -144,7 +151,7 @@ void main() {
       expect(find.text('내 옷장'), findsOneWidget);
 
       await tester.tap(find.text('세탁'));
-      await tester.pumpAndSettle();
+      await pumpUntilFound(tester, find.text('오프라인 코트'));
       expect(find.text('오프라인 코트'), findsOneWidget);
       await shot(tester, '06_offline_laundry_basket');
 
@@ -152,6 +159,11 @@ void main() {
       await tapVisible(tester, find.text('선택 항목 세탁 완료 처리'));
       expect(find.text('1점의 세탁이 완료됐어요'), findsOneWidget);
       await waitToastGone(tester);
+      await pumpUntilFound(
+        tester,
+        find.text('세탁할 옷이 없어요.'),
+        timeout: const Duration(seconds: 8),
+      );
       expect(find.text('세탁할 옷이 없어요.'), findsOneWidget);
       await shot(tester, '07_offline_laundry_completed');
 
