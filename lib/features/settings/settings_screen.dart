@@ -24,7 +24,7 @@ Future<void> _openPrivacyPolicy(BuildContext context, WidgetRef ref) async {
   final opened = await ref.read(linkOpenerProvider).open(privacyPolicyUri);
   if (!opened) {
     messenger.showSnackBar(
-      const SnackBar(content: Text('개인정보처리방침을 열 수 없어요. 인터넷 연결을 확인해 주세요.')),
+      const SnackBar(content: Text('브라우저를 열 수 없어요. 잠시 후 다시 시도해 주세요.')),
     );
   }
 }

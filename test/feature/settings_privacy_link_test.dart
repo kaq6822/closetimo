@@ -95,6 +95,6 @@ void main() {
     await _tapPolicy(tester);
 
     expect(opener.opened, [privacyPolicyUri]);
-    expect(find.textContaining('개인정보처리방침을 열 수 없어요'), findsOneWidget);
+    expect(find.textContaining('브라우저를 열 수 없어요'), findsOneWidget);
   });
 }
