@@ -36,6 +36,6 @@ data/
   `BackupFormat.currentVersion`도 함께 갱신한다(가드 테스트 `test/unit/backup_codec_test.dart`).
 - **watch 쿼리에 인덱스 조건(`where().xxxEqualTo/IsNotNull`)을 쓰지 않는다.** Isar Plus는 옷이 조건 밖으로
   나가는 수정(세탁 완료·보관·복원)을 방출하지 않아 목록이 낡는다(#48 실기기 회귀). 전체를 구독하고
-  Dart에서 거른다. 새 watch 쿼리는 "조건 밖으로 나가는" 변경 테스트를 함께 둔다
+  Dart에서 거른다. 전체 구독은 `SharedItemsWatcher`(공유 구독 1개)를 통해서만 한다(#53). 새 watch 쿼리는 "조건 밖으로 나가는" 변경 테스트를 함께 둔다
   (`test/feature/laundry_basket_sync_test.dart`).
 - 이 레이어는 UI(위젯, BuildContext)를 알지 못한다. Flutter widget import 금지 (`providers/` 제외).

@@ -117,12 +117,9 @@ class IsarEventRepository implements EventRepository {
       .where()
       .itemIdEqualTo(itemId)
       .kindEqualTo(EventKind.wash)
-      .findAll()
-      .fold<WearEvent?>(null, (acc, e) {
-        if (acc == null) return e;
-        final c = e.occurredAt.compareTo(acc.occurredAt);
-        return c > 0 || (c == 0 && e.id > acc.id) ? e : acc;
-      });
+      .sortByOccurredAtDesc()
+      .thenByIdDesc()
+      .findFirst();
 
   /// 현재 세탁 주기 = 가장 최근 wash 이벤트 이후의 기록(FR-010b·010d). 같은 시각이면
   /// id가 큰 이벤트를 이후로 본다. wash 이벤트가 없으면(카운터만 있는 기존 데이터

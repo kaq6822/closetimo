@@ -26,7 +26,8 @@ Item _fullItem() => Item(
   careMethod: CareMethod.dryClean,
   careMode: CareMode.manual,
   purposes: const [ItemPurpose.sport],
-  status: ItemStatus.dirty,
+  // manual 관리 옷의 파생 상태는 항상 clean이다(복원 시 다시 계산된다).
+  status: ItemStatus.clean,
   washCycle: 3,
   wearSinceWash: 4,
   totalWears: 9,
@@ -180,6 +181,32 @@ void main() {
       item(json)['tags'] = [' 여름 ', 'Black', 'black', '', 'x' * 30];
       final tags = BackupCodec.decode(json).items.single.tags;
       expect(tags, ['여름', 'Black', 'x' * 20]);
+    });
+
+    test('status는 저장된 값 대신 카운터·관리 방식으로 다시 계산한다', () {
+      final json = _json(_payload());
+      item(json)['careMode'] = CareMode.wearCycle.name;
+      item(json)['wearSinceWash'] = 3;
+      item(json)['washCycle'] = 3;
+      item(json)['status'] = ItemStatus.clean.name;
+      expect(BackupCodec.decode(json).items.single.status, ItemStatus.dirty);
+
+      item(json)['wearSinceWash'] = 1;
+      item(json)['status'] = ItemStatus.dirty.name;
+      expect(BackupCodec.decode(json).items.single.status, ItemStatus.clean);
+
+      item(json)['careMode'] = CareMode.manual.name;
+      item(json)['wearSinceWash'] = 9;
+      item(json)['status'] = ItemStatus.dirty.name;
+      expect(BackupCodec.decode(json).items.single.status, ItemStatus.clean);
+    });
+
+    test('중복된 용도는 한 번만 복원한다', () {
+      final json = _json(_payload());
+      item(json)['purposes'] = [ItemPurpose.sport.name, ItemPurpose.sport.name];
+      expect(BackupCodec.decode(json).items.single.purposes, [
+        ItemPurpose.sport,
+      ]);
     });
 
     test('보관하지 않은 옷의 바구니 값은 그대로 복원한다', () {

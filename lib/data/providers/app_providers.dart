@@ -20,8 +20,14 @@ import '../repositories/isar_tag_repository.dart';
 import '../repositories/item_repository.dart';
 import '../repositories/laundry_repository.dart';
 import '../repositories/preferences_repository.dart';
+import '../repositories/shared_items_watcher.dart';
 import '../repositories/tag_repository.dart';
 import 'isar_provider.dart';
+
+/// 옷 컬렉션 전체 watch를 공유하는 구독기(#53). 옷 목록을 파생하는 repository가 함께 쓴다.
+final sharedItemsWatcherProvider = Provider<SharedItemsWatcher>((ref) {
+  return SharedItemsWatcher(ref.watch(isarProvider).requireValue);
+});
 
 final itemRepositoryProvider = Provider<ItemRepository>((ref) {
   final isar = ref.watch(isarProvider).requireValue;
@@ -29,6 +35,7 @@ final itemRepositoryProvider = Provider<ItemRepository>((ref) {
     isar: isar,
     imageStore: ref.watch(imageStoreProvider),
     clock: ref.watch(clockProvider),
+    watcher: ref.watch(sharedItemsWatcherProvider),
   );
 });
 
@@ -39,13 +46,21 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
 
 final laundryRepositoryProvider = Provider<LaundryRepository>((ref) {
   final isar = ref.watch(isarProvider).requireValue;
-  return IsarLaundryRepository(isar: isar, clock: ref.watch(clockProvider));
+  return IsarLaundryRepository(
+    isar: isar,
+    clock: ref.watch(clockProvider),
+    watcher: ref.watch(sharedItemsWatcherProvider),
+  );
 });
 
 /// 옷 보관·복원(#44).
 final archiveRepositoryProvider = Provider<ArchiveRepository>((ref) {
   final isar = ref.watch(isarProvider).requireValue;
-  return IsarArchiveRepository(isar: isar, clock: ref.watch(clockProvider));
+  return IsarArchiveRepository(
+    isar: isar,
+    clock: ref.watch(clockProvider),
+    watcher: ref.watch(sharedItemsWatcherProvider),
+  );
 });
 
 /// 사용자 태그 일괄 편집(#46).

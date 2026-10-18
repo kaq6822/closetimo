@@ -4,30 +4,32 @@ import '../../core/utils/clock.dart';
 import '../models/item.dart';
 import '../models/wear_event.dart';
 import 'laundry_repository.dart';
+import 'shared_items_watcher.dart';
 
 class IsarLaundryRepository implements LaundryRepository {
-  IsarLaundryRepository({required Isar isar, required Clock clock})
-    : _isar = isar,
-      _clock = clock;
+  IsarLaundryRepository({
+    required Isar isar,
+    required Clock clock,
+    SharedItemsWatcher? watcher,
+  }) : _isar = isar,
+       _clock = clock,
+       _watcher = watcher ?? SharedItemsWatcher(isar);
 
   final Isar _isar;
   final Clock _clock;
+  final SharedItemsWatcher _watcher;
 
   @override
   Stream<List<Item>> watchBasket() {
     // Isar Plus는 인덱스 조건 쿼리(inLaundryEqualTo)를 watch할 때 옷이 조건 밖으로
     // 나가는 수정(세탁 완료·바구니 제외)을 방출하지 않는다. 전체 옷을 구독하고
     // 조건은 Dart에서 거른다(`isar_item_repository.watchAll`과 같은 방식).
-    return _isar.items
-        .where()
-        .sortByCreatedAtDesc()
-        .watch(fireImmediately: true)
-        .map(
-          (all) => [
-            for (final i in all)
-              if (i.inLaundry && !i.isArchived) i,
-          ],
-        );
+    return _watcher.stream.map(
+      (all) => [
+        for (final i in all)
+          if (i.inLaundry && !i.isArchived) i,
+      ],
+    );
   }
 
   @override
