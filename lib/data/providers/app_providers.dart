@@ -26,7 +26,9 @@ import 'isar_provider.dart';
 
 /// 옷 컬렉션 전체 watch를 공유하는 구독기(#53). 옷 목록을 파생하는 repository가 함께 쓴다.
 final sharedItemsWatcherProvider = Provider<SharedItemsWatcher>((ref) {
-  return SharedItemsWatcher(ref.watch(isarProvider).requireValue);
+  final watcher = SharedItemsWatcher(ref.watch(isarProvider).requireValue);
+  ref.onDispose(watcher.dispose);
+  return watcher;
 });
 
 final itemRepositoryProvider = Provider<ItemRepository>((ref) {

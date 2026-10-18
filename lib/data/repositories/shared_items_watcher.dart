@@ -36,9 +36,11 @@ class SharedItemsWatcher {
   });
 
   void _onData(List<Item> items) {
-    _latest = items;
+    // 구독자가 같은 리스트를 공유하므로 제자리 정렬·수정을 막는다.
+    final shared = List<Item>.unmodifiable(items);
+    _latest = shared;
     for (final l in _listeners.toList()) {
-      l.add(items);
+      l.add(shared);
     }
   }
 
@@ -46,6 +48,15 @@ class SharedItemsWatcher {
     for (final l in _listeners.toList()) {
       l.addError(error, stack);
     }
+  }
+
+  /// provider가 폐기될 때 업스트림 구독과 남은 구독자를 정리한다.
+  void dispose() {
+    for (final l in _listeners.toList()) {
+      l.close();
+    }
+    _listeners.clear();
+    _release();
   }
 
   void _release() {
