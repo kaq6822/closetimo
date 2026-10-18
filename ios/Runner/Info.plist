@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>옷 사진을 촬영해 옷장에 등록하려면 카메라 접근이 필요해요. 촬영한 사진은 이 기기에만 저장돼요.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>옷 사진을 앨범에서 골라 옷장에 등록하려면 사진 접근이 필요해요. 선택한 사진은 이 기기에만 저장돼요.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

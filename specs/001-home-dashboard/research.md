@@ -147,6 +147,7 @@
 | image_picker | ^1.1.2 | |
 | intl | ^0.20.2 | flutter_localizations(3.35 SDK)가 0.20.2를 핀하므로 0.19→0.20.2로 상향 |
 | path_provider | ^2.1.5 | |
+| url_launcher | ^6.3.3 | 설정의 개인정보처리방침 링크를 OS 브라우저로 연다. 앱은 네트워크 요청을 보내지 않으며(분석·동기화 SDK 아님), 핵심 기능은 오프라인 그대로 동작한다. 링크 열기는 `LinkOpener`로 추상화해 테스트에서 대체한다 |
 | freezed | ^3.2.5 | dev_dep |
 | build_runner | 2.15.1 | Flutter SDK의 analyzer/meta 핀과 호환되는 dev_dep |
 

@@ -18,7 +18,7 @@
 | `share_plus` ^13.3.1 | OS 공유 시트(iOS `UIActivityViewController`, Android `ACTION_SEND`) | 사용자가 저장 위치(파일 앱·iCloud Drive·Google Drive)를 직접 고른다. SwiftPM 지원(`ios/share_plus/Package.swift`) |
 | `file_selector` ^1.1.0 | OS 문서 선택기(iOS `UIDocumentPickerViewController`, Android SAF `ACTION_OPEN_DOCUMENT`) | Flutter 팀 1st-party. 권한 없이 사용자 선택 파일만 읽는다. iOS 13 최소 버전·SwiftPM 지원. (`file_picker` 13은 iOS 14 이상을 요구해 iOS 13+ 지원 범위와 맞지 않아 제외) |
 
-`share_plus`가 끌어오는 `url_launcher`는 웹/리눅스 구현용 전이 의존성이며 앱 코드에서 사용하지 않는다.
+`url_launcher`는 백업·복원에서 쓰지 않는다. 설정의 개인정보처리방침 링크(#56)를 위해 직접 의존성으로 추가했으며 근거는 [001 research.md](../001-home-dashboard/research.md)의 의존성 표를 따른다.
 
 **플랫폼 설정**:
 

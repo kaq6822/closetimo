@@ -13,8 +13,21 @@ import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/providers/app_providers.dart';
 import 'backup/backup_flow.dart';
+import 'link_opener.dart';
 import 'widgets/preference_row.dart';
 import 'widgets/profile_card.dart';
+
+/// 개인정보처리방침을 OS 브라우저로 연다. 열지 못하면(오프라인·브라우저 없음 등)
+/// 스낵바로 알린다.
+Future<void> _openPrivacyPolicy(BuildContext context, WidgetRef ref) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final opened = await ref.read(linkOpenerProvider).open(privacyPolicyUri);
+  if (!opened) {
+    messenger.showSnackBar(
+      const SnackBar(content: Text('브라우저를 열 수 없어요. 잠시 후 다시 시도해 주세요.')),
+    );
+  }
+}
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -134,11 +147,14 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: ClosetimoSpacing.space28),
-                    const _Section(
+                    _Section(
                       title: '기타',
                       rows: [
-                        PreferenceRow(label: '개인정보 처리방침', textValue: '준비 중'),
-                        PreferenceRow(label: '앱 정보', textValue: 'v1.0.0'),
+                        PreferenceRow(
+                          label: '개인정보 처리방침',
+                          onTap: () => _openPrivacyPolicy(context, ref),
+                        ),
+                        const PreferenceRow(label: '앱 정보', textValue: 'v1.0.0'),
                       ],
                     ),
                   ],
