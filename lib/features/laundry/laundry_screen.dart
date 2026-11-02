@@ -1,5 +1,7 @@
 // US4 T060 — 세탁 바구니 화면.
 // #48 FR-029·030 — 로딩·읽기 실패 구분, 세탁 완료 처리 중복 입력 차단·실패 안내.
+// 005 FR-512 — 세탁 그룹(손세탁·드라이 / 데님 / 흰옷·밝은색 / 어두운색 / 색상 미지정)으로
+// 나눠 보여 주고 그룹 단위로 고른다. 그룹이 하나뿐이면 나누지 않는다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +15,7 @@ import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
+import '../../data/models/item_attributes.dart';
 import '../../data/providers/app_providers.dart';
 import 'laundry_selection_provider.dart';
 import 'widgets/laundry_tile.dart';
@@ -79,8 +82,8 @@ class _LaundryScreenState extends ConsumerState<LaundryScreen>
                     ),
                     const SizedBox(height: ClosetimoSpacing.sm),
                     const Text(
-                      "'세탁 중' 또는 '오염됨'으로 표시된 아이템들입니다.\n"
-                      '세탁이 완료되면 착용 횟수를 초기화하세요.',
+                      '바구니에 담았거나 관리가 필요한 옷이에요.\n'
+                      '색과 관리 방법별로 나눠 빨고, 끝나면 완료 처리하세요.',
                       style: TextStyle(
                         fontFamily: 'Manrope',
                         fontSize: 14,
@@ -143,19 +146,27 @@ class _LaundryScreenState extends ConsumerState<LaundryScreen>
                         ],
                       ),
                       const SizedBox(height: ClosetimoSpacing.space12),
-                      Column(
-                        children: [
-                          for (final it in items) ...[
-                            LaundryTile(
-                              item: it,
-                              selected: selection.contains(it.id),
-                              onToggleSelection: () =>
-                                  selectionCtl.toggle(it.id),
+                      for (final (group, members) in _groups(items)) ...[
+                        if (group != null)
+                          _GroupHeader(
+                            group: group,
+                            count: members.length,
+                            allSelected: members.every(
+                              (m) => selection.contains(m.id),
                             ),
-                            const SizedBox(height: ClosetimoSpacing.space12),
-                          ],
+                            onToggle: () => selectionCtl.toggleGroup(
+                              members.map((m) => m.id),
+                            ),
+                          ),
+                        for (final it in members) ...[
+                          LaundryTile(
+                            item: it,
+                            selected: selection.contains(it.id),
+                            onToggleSelection: () => selectionCtl.toggle(it.id),
+                          ),
+                          const SizedBox(height: ClosetimoSpacing.space12),
                         ],
-                      ),
+                      ],
                     ],
                   ],
                 ),
@@ -164,6 +175,65 @@ class _LaundryScreenState extends ConsumerState<LaundryScreen>
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 세탁 그룹별 묶음(그룹 순서, 그룹 안은 바구니 순서). 그룹이 하나뿐이면 머리말 없이
+/// (null, 전체) 하나로 돌려준다.
+List<(WashGroup?, List<Item>)> _groups(List<Item> items) {
+  final byGroup = <WashGroup, List<Item>>{};
+  for (final i in items) {
+    byGroup.putIfAbsent(i.washGroup, () => []).add(i);
+  }
+  if (byGroup.length <= 1) return [(null, items)];
+  return [
+    for (final g in WashGroup.values)
+      if (byGroup[g] case final members?) (g, members),
+  ];
+}
+
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({
+    required this.group,
+    required this.count,
+    required this.allSelected,
+    required this.onToggle,
+  });
+
+  final WashGroup group;
+  final int count;
+  final bool allSelected;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: ClosetimoSpacing.sm),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${group.label} $count',
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: ClosetimoColors.ink,
+              ),
+            ),
+          ),
+          Semantics(
+            label: '${group.label} ${allSelected ? '그룹 해제' : '그룹 선택'}',
+            excludeSemantics: true,
+            button: true,
+            child: TextButton(
+              onPressed: onToggle,
+              child: Text(allSelected ? '그룹 해제' : '그룹 선택'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

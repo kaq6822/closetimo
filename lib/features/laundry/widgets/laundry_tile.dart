@@ -1,8 +1,5 @@
 // US4 T059 — 세탁 바구니 리스트 타일.
 
-import '../../../core/widgets/item_placeholder.dart';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,9 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
-import '../../../core/persistence/image_store.dart';
 import '../../../core/widgets/min_touch_target.dart';
 import '../../../core/widgets/progress_bar.dart';
+import '../../../core/widgets/item_photo.dart';
 import '../../../data/models/item.dart';
 
 class LaundryTile extends ConsumerWidget {
@@ -73,9 +70,19 @@ class LaundryTile extends ConsumerWidget {
                 onTap: () => _openDetail(context),
                 child: Row(
                   children: [
-                    _Thumb(
-                      imagePath: item.imagePath,
-                      fallback: Color(item.fallbackColor),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(ClosetimoRadius.md),
+                      child: SizedBox.square(
+                        dimension: ClosetimoSize.tileThumbnail,
+                        child: ItemPhoto(
+                          imagePath: item.displayImagePath,
+                          cutout: item.showsCutout,
+                          originalPath: item.imagePath,
+                          fallback: Color(item.fallbackColor),
+                          cacheWidth: 256,
+                          cutoutPadding: ClosetimoSpacing.xs,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: ClosetimoSpacing.space14),
                     Expanded(
@@ -140,39 +147,6 @@ class LaundryTile extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Thumb extends ConsumerWidget {
-  const _Thumb({required this.imagePath, required this.fallback});
-
-  final String? imagePath;
-  final Color fallback;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(ClosetimoRadius.md),
-      child: SizedBox(
-        width: ClosetimoSize.tileThumbnail,
-        height: ClosetimoSize.tileThumbnail,
-        child: _resolve(ref),
-      ),
-    );
-  }
-
-  Widget _resolve(WidgetRef ref) {
-    if (imagePath == null) return ItemPlaceholder(color: fallback);
-    final store = ref.watch(imageStoreProvider);
-    return FutureBuilder<String>(
-      future: store.absolutePath(imagePath!),
-      builder: (ctx, snap) {
-        if (snap.data == null) return Container(color: fallback);
-        final file = File(snap.data!);
-        if (!file.existsSync()) return Container(color: fallback);
-        return Image.file(file, fit: BoxFit.cover, cacheWidth: 256);
-      },
     );
   }
 }

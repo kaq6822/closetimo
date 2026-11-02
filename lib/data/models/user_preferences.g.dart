@@ -26,6 +26,8 @@ final UserPreferencesSchema = IsarGeneratedSchema(
       IsarPropertySchema(name: 'accent', type: IsarType.string),
       IsarPropertySchema(name: 'lastTab', type: IsarType.string),
       IsarPropertySchema(name: 'firstLaunchedAt', type: IsarType.dateTime),
+      IsarPropertySchema(name: 'removeBackground', type: IsarType.bool),
+      IsarPropertySchema(name: 'onDeviceAi', type: IsarType.bool),
     ],
     indexes: [],
   ),
@@ -57,6 +59,8 @@ int serializeUserPreferences(IsarWriter writer, UserPreferences object) {
     object.firstLaunchedAt?.toUtc().microsecondsSinceEpoch ??
         -9223372036854775808,
   );
+  IsarCore.writeBool(writer, 7, value: object.removeBackground);
+  IsarCore.writeBool(writer, 8, value: object.onDeviceAi);
   return object.id;
 }
 
@@ -96,6 +100,16 @@ UserPreferences deserializeUserPreferences(IsarReader reader) {
       ).toLocal();
     }
   }
+  final bool _removeBackground;
+  {
+    if (IsarCore.readNull(reader, 7)) {
+      _removeBackground = true;
+    } else {
+      _removeBackground = IsarCore.readBool(reader, 7);
+    }
+  }
+  final bool _onDeviceAi;
+  _onDeviceAi = IsarCore.readBool(reader, 8);
   final object = UserPreferences(
     notifWash: _notifWash,
     notifWeekly: _notifWeekly,
@@ -103,6 +117,8 @@ UserPreferences deserializeUserPreferences(IsarReader reader) {
     accent: _accent,
     lastTab: _lastTab,
     firstLaunchedAt: _firstLaunchedAt,
+    removeBackground: _removeBackground,
+    onDeviceAi: _onDeviceAi,
   );
   object.id = IsarCore.readId(reader);
   return object;
@@ -147,6 +163,16 @@ dynamic deserializeUserPreferencesProp(IsarReader reader, int property) {
           ).toLocal();
         }
       }
+    case 7:
+      {
+        if (IsarCore.readNull(reader, 7)) {
+          return true;
+        } else {
+          return IsarCore.readBool(reader, 7);
+        }
+      }
+    case 8:
+      return IsarCore.readBool(reader, 8);
     default:
       throw ArgumentError('Unknown property: $property');
   }
@@ -161,6 +187,8 @@ sealed class _UserPreferencesUpdate {
     String? accent,
     String? lastTab,
     DateTime? firstLaunchedAt,
+    bool? removeBackground,
+    bool? onDeviceAi,
   });
 }
 
@@ -178,6 +206,8 @@ class _UserPreferencesUpdateImpl implements _UserPreferencesUpdate {
     Object? accent = ignore,
     Object? lastTab = ignore,
     Object? firstLaunchedAt = ignore,
+    Object? removeBackground = ignore,
+    Object? onDeviceAi = ignore,
   }) {
     return collection.updateProperties(
           [id],
@@ -188,6 +218,8 @@ class _UserPreferencesUpdateImpl implements _UserPreferencesUpdate {
             if (accent != ignore) 4: accent as String?,
             if (lastTab != ignore) 5: lastTab as String?,
             if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
+            if (removeBackground != ignore) 7: removeBackground as bool?,
+            if (onDeviceAi != ignore) 8: onDeviceAi as bool?,
           },
         ) >
         0;
@@ -203,6 +235,8 @@ sealed class _UserPreferencesUpdateAll {
     String? accent,
     String? lastTab,
     DateTime? firstLaunchedAt,
+    bool? removeBackground,
+    bool? onDeviceAi,
   });
 }
 
@@ -220,6 +254,8 @@ class _UserPreferencesUpdateAllImpl implements _UserPreferencesUpdateAll {
     Object? accent = ignore,
     Object? lastTab = ignore,
     Object? firstLaunchedAt = ignore,
+    Object? removeBackground = ignore,
+    Object? onDeviceAi = ignore,
   }) {
     return collection.updateProperties(id, {
       if (notifWash != ignore) 1: notifWash as bool?,
@@ -228,6 +264,8 @@ class _UserPreferencesUpdateAllImpl implements _UserPreferencesUpdateAll {
       if (accent != ignore) 4: accent as String?,
       if (lastTab != ignore) 5: lastTab as String?,
       if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
+      if (removeBackground != ignore) 7: removeBackground as bool?,
+      if (onDeviceAi != ignore) 8: onDeviceAi as bool?,
     });
   }
 }
@@ -247,6 +285,8 @@ sealed class _UserPreferencesQueryUpdate {
     String? accent,
     String? lastTab,
     DateTime? firstLaunchedAt,
+    bool? removeBackground,
+    bool? onDeviceAi,
   });
 }
 
@@ -264,6 +304,8 @@ class _UserPreferencesQueryUpdateImpl implements _UserPreferencesQueryUpdate {
     Object? accent = ignore,
     Object? lastTab = ignore,
     Object? firstLaunchedAt = ignore,
+    Object? removeBackground = ignore,
+    Object? onDeviceAi = ignore,
   }) {
     return query.updateProperties(limit: limit, {
       if (notifWash != ignore) 1: notifWash as bool?,
@@ -272,6 +314,8 @@ class _UserPreferencesQueryUpdateImpl implements _UserPreferencesQueryUpdate {
       if (accent != ignore) 4: accent as String?,
       if (lastTab != ignore) 5: lastTab as String?,
       if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
+      if (removeBackground != ignore) 7: removeBackground as bool?,
+      if (onDeviceAi != ignore) 8: onDeviceAi as bool?,
     });
   }
 }
@@ -299,6 +343,8 @@ class _UserPreferencesQueryBuilderUpdateImpl
     Object? accent = ignore,
     Object? lastTab = ignore,
     Object? firstLaunchedAt = ignore,
+    Object? removeBackground = ignore,
+    Object? onDeviceAi = ignore,
   }) {
     final q = query.build();
     try {
@@ -309,6 +355,8 @@ class _UserPreferencesQueryBuilderUpdateImpl
         if (accent != ignore) 4: accent as String?,
         if (lastTab != ignore) 5: lastTab as String?,
         if (firstLaunchedAt != ignore) 6: firstLaunchedAt as DateTime?,
+        if (removeBackground != ignore) 7: removeBackground as bool?,
+        if (onDeviceAi != ignore) 8: onDeviceAi as bool?,
       });
     } finally {
       q.close();
@@ -767,6 +815,24 @@ extension UserPreferencesQueryFilter
       );
     });
   }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  removeBackgroundEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 7, value: value),
+      );
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterFilterCondition>
+  onDeviceAiEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 8, value: value),
+      );
+    });
+  }
 }
 
 extension UserPreferencesQueryObject
@@ -871,6 +937,34 @@ extension UserPreferencesQuerySortBy
       return query.addSortBy(6, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  sortByRemoveBackground() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  sortByRemoveBackgroundDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  sortByOnDeviceAi() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(8);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  sortByOnDeviceAiDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(8, sort: Sort.desc);
+    });
+  }
 }
 
 extension UserPreferencesQuerySortThenBy
@@ -972,6 +1066,34 @@ extension UserPreferencesQuerySortThenBy
       return query.addSortBy(6, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  thenByRemoveBackground() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  thenByRemoveBackgroundDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  thenByOnDeviceAi() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(8);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterSortBy>
+  thenByOnDeviceAiDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(8, sort: Sort.desc);
+    });
+  }
 }
 
 extension UserPreferencesQueryWhereDistinct
@@ -1015,6 +1137,20 @@ extension UserPreferencesQueryWhereDistinct
   distinctByFirstLaunchedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(6);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByRemoveBackground() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(7);
+    });
+  }
+
+  QueryBuilder<UserPreferences, UserPreferences, QAfterDistinct>
+  distinctByOnDeviceAi() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(8);
     });
   }
 }
@@ -1061,6 +1197,19 @@ extension UserPreferencesQueryProperty1
   firstLaunchedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(6);
+    });
+  }
+
+  QueryBuilder<UserPreferences, bool, QAfterProperty>
+  removeBackgroundProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(7);
+    });
+  }
+
+  QueryBuilder<UserPreferences, bool, QAfterProperty> onDeviceAiProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(8);
     });
   }
 }
@@ -1112,6 +1261,20 @@ extension UserPreferencesQueryProperty2<R>
       return query.addProperty(6);
     });
   }
+
+  QueryBuilder<UserPreferences, (R, bool), QAfterProperty>
+  removeBackgroundProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(7);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R, bool), QAfterProperty>
+  onDeviceAiProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(8);
+    });
+  }
 }
 
 extension UserPreferencesQueryProperty3<R1, R2>
@@ -1161,6 +1324,20 @@ extension UserPreferencesQueryProperty3<R1, R2>
   firstLaunchedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(6);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, bool), QOperations>
+  removeBackgroundProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(7);
+    });
+  }
+
+  QueryBuilder<UserPreferences, (R1, R2, bool), QOperations>
+  onDeviceAiProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(8);
     });
   }
 }

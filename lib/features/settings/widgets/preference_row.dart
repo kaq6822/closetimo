@@ -64,25 +64,34 @@ class PreferenceRow extends StatelessWidget {
                     activeTrackColor: ClosetimoColors.primary,
                   )
                 else if (textValue != null || onTap != null)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (textValue != null)
-                        Text(
-                          textValue!,
-                          style: const TextStyle(
-                            fontFamily: 'Manrope',
-                            fontSize: 13,
-                            color: ClosetimoColors.muted,
-                          ),
-                        ),
-                      if (onTap != null)
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          size: 20,
-                          color: ClosetimoColors.muted,
-                        ),
-                    ],
+                  // 005 — 긴 안내 값(예: Apple Intelligence 안내)은 넘치지 않고 줄바꿈한다.
+                  Flexible(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (textValue != null)
+                            Flexible(
+                              child: Text(
+                                textValue!,
+                                textAlign: TextAlign.end,
+                                style: const TextStyle(
+                                  fontFamily: 'Manrope',
+                                  fontSize: 13,
+                                  color: ClosetimoColors.muted,
+                                ),
+                              ),
+                            ),
+                          if (onTap != null)
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 20,
+                              color: ClosetimoColors.muted,
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
               ],
             ),

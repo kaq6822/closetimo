@@ -52,7 +52,7 @@ class PurposePicker extends StatelessWidget {
       spacing: ClosetimoSpacing.sm,
       runSpacing: ClosetimoSpacing.sm,
       children: [
-        for (final p in ItemPurpose.values)
+        for (final p in ItemPurpose.selectable)
           ChipFilter(
             label: p.label,
             active: value.contains(p),

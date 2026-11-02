@@ -10,10 +10,12 @@ import 'dart:io';
 import 'package:closetimo/core/persistence/image_store.dart';
 import 'package:closetimo/core/utils/clock.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/models/item_attributes.dart';
 import 'package:closetimo/data/models/item_patch.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/data/models/wear_event.dart';
 import 'package:closetimo/data/repositories/isar_item_repository.dart';
+import 'package:closetimo/features/add_item/new_item_draft.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_plus/isar_plus.dart';
 
@@ -201,6 +203,163 @@ void main() {
       await repo.update(id, _basePatch(washCycle: 0));
 
       expect(isar.items.get(id)!.washCycle, 1);
+    });
+  });
+
+  group('005 구조화 속성·배경 제거본 (real Isar)', () {
+    File photo(String name) =>
+        File('${tmpDir.path}/src_$name')..writeAsBytesSync([1, 2, 3, 4]);
+
+    test('등록 시 속성을 정규화하고 이름을 비우면 자동 이름을 쓴다', () async {
+      final id = await repo.create(
+        const NewItemDraft(
+          category: Category.top,
+          subType: 'knit',
+          colors: ['black', 'black', 'nope', 'white'],
+          seasons: [Season.winter, Season.autumn],
+          material: 'wool',
+          pattern: 'zebra',
+        ).forCreate(),
+      );
+      final item = isar.items.get(id)!;
+      expect(item.name, '검정 니트');
+      expect(item.subType, 'knit');
+      expect(item.colors, ['black', 'white']);
+      expect(item.seasons, [Season.autumn, Season.winter]);
+      expect(item.material, 'wool');
+      expect(item.pattern, isNull);
+    });
+
+    test('배경 제거본은 원본 사진이 있을 때만 저장한다', () async {
+      final withPhoto = await repo.create(
+        NewItemDraft(
+          name: 'a',
+          tempPhoto: photo('a.jpg'),
+          tempCutout: photo('a.png'),
+        ),
+      );
+      expect(
+        isar.items.get(withPhoto)!.cutoutPath,
+        'items/${withPhoto}_cutout.png',
+      );
+      expect(
+        File('${tmpDir.path}/${withPhoto}_cutout.png').existsSync(),
+        isTrue,
+      );
+
+      final noPhoto = await repo.create(
+        NewItemDraft(name: 'b', tempCutout: photo('b.png')),
+      );
+      expect(isar.items.get(noPhoto)!.cutoutPath, isNull);
+    });
+
+    test('배경 제거본 임시 파일이 사라졌어도 등록·수정은 원본만으로 성공한다', () async {
+      final missing = File('${tmpDir.path}/gone_cutout.png');
+      final id = await repo.create(
+        NewItemDraft(name: 'm', tempPhoto: photo('m.jpg'), tempCutout: missing),
+      );
+      final item = isar.items.get(id)!;
+      expect(item.imagePath, 'items/$id.jpg');
+      expect(item.cutoutPath, isNull);
+
+      // 기존 제거본이 있는 옷에 새 사진 + 사라진 제거본 → 원본만 바뀌고 옛 제거본은 지운다.
+      final other = await repo.create(
+        NewItemDraft(
+          name: 'n',
+          tempPhoto: photo('n.jpg'),
+          tempCutout: photo('n.png'),
+        ),
+      );
+      await repo.update(
+        other,
+        _basePatch(newPhoto: photo('n2.jpg')).copyWith(newCutout: missing),
+      );
+      expect(isar.items.get(other)!.cutoutPath, isNull);
+      expect(File('${tmpDir.path}/${other}_cutout.png').existsSync(), isFalse);
+    });
+
+    test('종류를 바꾸면 맞지 않는 세부 종류가 지워진다(속성 미전달)', () async {
+      final id = await repo.create(
+        const NewItemDraft(name: '니트', category: Category.top, subType: 'knit'),
+      );
+      await repo.update(id, _basePatch(category: Category.bottom));
+      expect(isar.items.get(id)!.subType, isNull);
+    });
+
+    test('속성 전체 교체와 유지', () async {
+      final id = await repo.create(
+        const NewItemDraft(
+          name: '셔츠',
+          category: Category.top,
+          subType: 'shirt',
+          colors: ['white'],
+        ),
+      );
+      await repo.update(id, _basePatch(category: Category.top));
+      expect(isar.items.get(id)!.colors, ['white'], reason: 'null이면 유지');
+
+      await repo.update(
+        id,
+        _basePatch(
+          category: Category.top,
+        ).copyWith(attributes: const ItemAttributeValues(colors: ['navy'])),
+      );
+      final item = isar.items.get(id)!;
+      expect(item.colors, ['navy']);
+      expect(item.subType, isNull, reason: '전체 교체');
+    });
+
+    test('배경 제거본만 지우기·사진 교체·사진 제거·옷 삭제 시 파일을 정리한다', () async {
+      final id = await repo.create(
+        NewItemDraft(
+          name: 'c',
+          tempPhoto: photo('c.jpg'),
+          tempCutout: photo('c.png'),
+        ),
+      );
+      final cutoutFile = File('${tmpDir.path}/${id}_cutout.png');
+
+      await repo.update(id, _basePatch().copyWith(removeCutout: true));
+      expect(isar.items.get(id)!.cutoutPath, isNull);
+      expect(isar.items.get(id)!.imagePath, isNotNull);
+      expect(cutoutFile.existsSync(), isFalse);
+
+      // 기존 사진에 배경 제거본만 새로 붙인다.
+      await repo.update(id, _basePatch().copyWith(newCutout: photo('c2.png')));
+      expect(isar.items.get(id)!.cutoutPath, 'items/${id}_cutout.png');
+      expect(cutoutFile.existsSync(), isTrue);
+
+      // 새 사진 + 새 제거본은 함께 바뀐다.
+      await repo.update(
+        id,
+        _basePatch(
+          newPhoto: photo('d.jpg'),
+        ).copyWith(newCutout: photo('d.png')),
+      );
+      expect(isar.items.get(id)!.cutoutPath, 'items/${id}_cutout.png');
+
+      // 새 사진만 오면 이전 제거본은 맞지 않으므로 지운다.
+      await repo.update(id, _basePatch(newPhoto: photo('e.jpg')));
+      expect(isar.items.get(id)!.cutoutPath, isNull);
+      expect(cutoutFile.existsSync(), isFalse);
+
+      // 사진을 지우면 제거본을 붙일 수 없다.
+      await repo.update(
+        id,
+        _basePatch(removePhoto: true).copyWith(newCutout: photo('f.png')),
+      );
+      expect(isar.items.get(id)!.cutoutPath, isNull);
+      expect(isar.items.get(id)!.imagePath, isNull);
+
+      final other = await repo.create(
+        NewItemDraft(
+          name: 'g',
+          tempPhoto: photo('g.jpg'),
+          tempCutout: photo('g.png'),
+        ),
+      );
+      await repo.delete(other);
+      expect(File('${tmpDir.path}/${other}_cutout.png').existsSync(), isFalse);
     });
   });
 

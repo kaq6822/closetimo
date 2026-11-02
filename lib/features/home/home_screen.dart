@@ -1,5 +1,7 @@
 // US5 T071 — 홈 대시보드.
 // #48 FR-029 — 통계 로딩·읽기 실패를 0점과 구분한다.
+// 005 FR-507·508 — 매일 하는 일(오늘 입은 옷 기록·정리 대기·세탁)을 위에, 통계를 아래에 둔다.
+// "최근 입은 옷"은 "오늘 입은 옷" 후보 순서(최근 입은 순)가 대신한다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,8 +17,9 @@ import '../../data/providers/app_providers.dart';
 import '../../data/repositories/item_repository.dart';
 import 'widgets/category_bento.dart';
 import 'widgets/laundry_preview.dart';
-import 'widgets/recently_worn_list.dart';
+import 'widgets/sort_pending_card.dart';
 import 'widgets/stats_row.dart';
+import 'widgets/today_wear_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -59,24 +62,25 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: ClosetimoSpacing.sm),
                     const Text(
-                      '기분 좋은 옷장 관리',
+                      '오늘의 옷장',
                       style: TextStyle(
                         fontFamily: 'Manrope',
-                        fontSize: 32,
+                        fontSize: 28,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.6,
                         color: ClosetimoColors.ink,
                         height: 1.15,
                       ),
                     ),
+                    const SizedBox(height: ClosetimoSpacing.lg),
+                    const TodayWearCard(),
+                    const SortPendingCard(),
                     const SizedBox(height: ClosetimoSpacing.xl),
+                    const LaundryPreview(),
+                    const SizedBox(height: ClosetimoSpacing.xxl),
                     StatsRow(stats: s),
                     const SizedBox(height: ClosetimoSpacing.xl),
                     CategoryBento(perBucket: s.perBucket),
-                    const SizedBox(height: ClosetimoSpacing.xxl),
-                    const RecentlyWornList(),
-                    const SizedBox(height: ClosetimoSpacing.xxl),
-                    const LaundryPreview(),
                   ],
                 ),
               );

@@ -1,4 +1,4 @@
-# Data Model: 백업 파일 형식 (formatVersion 1)
+# Data Model: 백업 파일 형식 (formatVersion 2)
 
 백업은 zip 아카이브 하나다. 파일 이름 예: `closetimo-backup-20261017-0930.zip`.
 Isar 스키마의 단일 진실 원천은 [001 data-model.md](../001-home-dashboard/data-model.md)이며, 본 문서는 그 모델을
@@ -11,6 +11,7 @@ closetimo-backup-YYYYMMDD-HHmm.zip
 ├── backup.json          # 메타 + 옷·기록·설정 (UTF-8 JSON)
 └── images/
     ├── 12.jpg           # Item.id = 12의 사진
+    ├── 12_cutout.png    # (v2) Item.id = 12의 배경 제거본
     └── 15.jpg
 ```
 
@@ -68,6 +69,12 @@ closetimo-backup-YYYYMMDD-HHmm.zip
 | `archivedAt` | datetime? | |
 | `archiveReason` | enum name | `ArchiveReason` |
 | `tags` | string[] | 사용자 태그(#46). 정규화는 `item_tags.dart` 규칙 |
+| `subType` | string? | (v2, 005) 세부 종류 코드. 종류와 맞지 않거나 알 수 없으면 null로 정리 |
+| `colors` | string[] | (v2) 색상 코드 최대 3개. 알 수 없는 코드·중복은 버린다 |
+| `seasons` | enum name[] | (v2) `Season` |
+| `material` | string? | (v2) 소재 코드. 알 수 없으면 null |
+| `pattern` | string? | (v2) 패턴 코드. 알 수 없으면 null |
+| `cutoutImage` | string? | (v2) 배경 제거본 참조 `images/{id}_cutout.png`. 원본 사진(`image`)이 없으면 버린다 |
 
 ### 2.2 `wearEvents[]` (WearEvent 전 필드)
 
@@ -89,6 +96,8 @@ closetimo-backup-YYYYMMDD-HHmm.zip
 | `accent` | string |
 | `lastTab` | string? |
 | `firstLaunchedAt` | datetime? |
+| `removeBackground` | bool (v2) |
+| `onDeviceAi` | bool (v2) |
 
 ## 3. 복원 시 sandbox 매핑
 
@@ -110,3 +119,4 @@ closetimo-backup-YYYYMMDD-HHmm.zip
 | formatVersion | 변경 | 출처 |
 |---|---|---|
 | 1 | 최초 형식(Item·WearEvent·UserPreferences, 저장소 v2 + 보관 필드 + 태그). 배포 전이라 #46 `tags`는 버전을 올리지 않고 v1에 포함 | #40, #46 |
+| 2 | 옷 구조화 속성(`subType`·`colors`·`seasons`·`material`·`pattern`)·배경 제거본(`cutoutImage`), 설정 `removeBackground`·`onDeviceAi`. v1은 새 필드를 기본값으로 읽는다 | 005 |

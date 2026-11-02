@@ -7,13 +7,14 @@
 
 ```text
 features/
-├── home/         # 홈 대시보드 (통계, 카테고리 벤토, 최근 착용, 세탁 미리보기)
+├── home/         # 홈 (오늘 입은 옷 빠른 기록·정리 대기·세탁 미리보기·통계, 005)
 ├── wardrobe/     # 옷장 그리드 (필터 바, 의류 타일, selection/ 다중 선택 인프라)
 ├── item_detail/  # 옷 상세 (히어로 이미지, 착용 기록, 히스토리 타임라인)
 ├── add_item/     # 옷 등록 (사진, 카테고리, 세탁 방법, freezed draft 폼 state)
 ├── laundry/      # 세탁 바구니 (선택 provider, 세탁 완료 처리)
 ├── settings/     # 설정 (프로필, 환경설정, 옷 관리 > 보관함·태그 관리 진입, backup/ 백업·복원 흐름 #40)
 ├── archive/      # 보관함 (보관한 옷 확인·복원, #44)
+│                 # add_item/에는 정리하기(sort_items_screen, 005)와 속성 칩(widgets/attribute_pickers)도 있다
 └── tags/         # 태그 관리 (이름 변경·병합·삭제, #46)
 ```
 
@@ -67,5 +68,17 @@ features/
 
 - 태그 정규화·집계는 `lib/data/models/item_tags.dart`(`normalizeTags`, `parseTagInput`, `summarizeTags`)만 쓴다.
 - 태그 목록·사용 수는 `tagUsageProvider`(전체 옷 스트림 집계)로 읽고, 여러 옷 쓰기는 `tagRepositoryProvider`로 한다.
-- 기본 노출은 사용성 평가 전까지 접힘이다(폼 "추가 정보 (선택)" 안, 옷장 `태그` 칩 1개).
-  노출을 늘리려면 docs/product/2026-10-17-attribute-usability-evaluation-plan.md 결과를 근거로 spec을 먼저 갱신한다.
+- 자유 태그는 기본 접힘을 유지한다(폼 "추가 정보 (선택)" 안, 옷장 `태그` 칩 1개). 색상·계절·세부 종류처럼 자주 쓰는
+  단서는 005 구조화 속성(프리셋 칩)으로 노출한다(spec 005가 10-17 평가 계획의 접힘 결정을 갱신).
+
+## 구조화 속성·사진 분석 (005)
+
+- 값 목록·정규화·자동 이름·이름 추론·세탁 그룹은 `lib/data/models/item_attributes.dart`만 쓴다. 화면에서 코드 문자열을 직접 쓰지 않는다.
+- 속성 칩은 `add_item/widgets/attribute_pickers.dart`(세부 종류·색상·계절·소재/패턴)와 `category_picker.dart`(종류·용도)를 재사용한다.
+  정리하기(`add_item/sort_items_screen.dart`, `/sort-items`)도 같은 위젯을 쓴다.
+- 사진 분석은 `attributeSuggesterProvider`(`AttributeSuggester.analyzePhoto`)로만 부른다. 결과는 **제안**이며
+  사용자가 고른 축을 덮어쓰지 않는다(등록 화면의 축별 출처 순위: 사용자 > 이름 > 사진). 실패해도 등록을 막지 않는다.
+- 사진 표시는 `core/widgets/item_photo.dart`의 `ItemPhoto(imagePath: item.displayImagePath, cutout: item.showsCutout)`를 쓴다
+  (배경 제거본은 contain + 여백, 원본은 cover).
+- 옷장 상세 필터(`wardrobe/widgets/detail_filter_sheet.dart`)의 세부 종류·색상·계절·용도는 라우트 쿼리(`sub`·`color`·`season`·`purpose`)로
+  왕복한다. '이번 계절'은 '입을 수 있음'처럼 화면 State다.

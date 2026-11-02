@@ -10,6 +10,7 @@ import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/utils/clock.dart';
 import '../../core/widgets/async_state_view.dart';
+import '../../core/vision/native_vision.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/providers/app_providers.dart';
 import 'backup/backup_flow.dart';
@@ -128,6 +129,9 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: ClosetimoSpacing.space28),
+                    // 005 FR-513·515 — 기기 안에서만 하는 사진 분석 설정.
+                    const _PhotoAnalysisSection(),
+                    const SizedBox(height: ClosetimoSpacing.space28),
                     // #40 — 사용자 실행형 백업·복원. 저장 위치는 OS 공유 시트·
                     // 문서 선택기에서 사용자가 고른다.
                     _Section(
@@ -232,6 +236,52 @@ class _Section extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// 005 — 사진 분석 설정. 지원하는 기능만 보인다(Android는 색상 추천 안내만).
+class _PhotoAnalysisSection extends ConsumerWidget {
+  const _PhotoAnalysisSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final caps =
+        ref.watch(visionCapabilitiesProvider).valueOrNull ??
+        VisionCapabilities.none;
+    final prefs = ref.watch(preferencesStreamProvider).valueOrNull;
+    final repo = ref.read(preferencesRepositoryProvider);
+    if (prefs == null) return const SizedBox.shrink();
+    return _Section(
+      title: '사진 분석',
+      caption:
+          '사진은 이 기기 안에서만 분석하고 어디에도 보내지 않아요. '
+          '분석 결과는 제안일 뿐이라 언제든 바꿀 수 있어요.',
+      rows: [
+        const PreferenceRow(label: '사진 색상 추천', textValue: '항상 켜짐'),
+        if (caps.backgroundRemoval)
+          PreferenceRow(
+            label: '사진 배경 자동 제거',
+            toggleValue: prefs.removeBackground,
+            onToggle: repo.setRemoveBackground,
+          ),
+        if (caps.onDeviceAi != OnDeviceAiStatus.unsupported)
+          switch (caps.onDeviceAi) {
+            OnDeviceAiStatus.available => PreferenceRow(
+              label: '기기 내 AI로 자세히 분석',
+              toggleValue: prefs.onDeviceAi,
+              onToggle: repo.setOnDeviceAi,
+            ),
+            OnDeviceAiStatus.notEnabled => const PreferenceRow(
+              label: '기기 내 AI로 자세히 분석',
+              textValue: 'Apple Intelligence를 켜면 쓸 수 있어요',
+            ),
+            _ => const PreferenceRow(
+              label: '기기 내 AI로 자세히 분석',
+              textValue: '모델 준비 중',
+            ),
+          },
       ],
     );
   }

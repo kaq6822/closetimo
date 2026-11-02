@@ -12,7 +12,10 @@ core/
 ├── utils/
 │   ├── clock.dart          # 시간 추상화 (테스트에서 고정 시간 주입용)
 │   └── date_formatter.dart # 한국어 날짜 포맷
-└── widgets/                # 디자인 시스템 공용 위젯 (bottom_nav, chip_filter, toast, …)
+├── vision/
+│   ├── color_extractor.dart # 사진 대표 색상 추출(순수 Dart, 팔레트는 호출자가 준다) — 005
+│   └── native_vision.dart   # iOS 기기 내 사진 분석 채널 래퍼(closetimo/vision). Android는 미지원 응답
+└── widgets/                # 디자인 시스템 공용 위젯 (bottom_nav, chip_filter, toast, item_photo, color_swatch_chip …)
 ```
 
 ## 이 레이어의 규칙

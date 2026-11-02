@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/utils/clock.dart';
 import '../../core/widgets/action_guard.dart';
 import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/toast.dart';
@@ -22,6 +23,7 @@ import 'selection/bulk_tag_action.dart';
 import 'selection/item_selection.dart';
 import 'selection/selection_action_bar.dart';
 import 'selection/wear_record_action.dart';
+import 'widgets/detail_filter_sheet.dart';
 import 'widgets/filter_result_bar.dart';
 import 'widgets/garment_tile.dart';
 import 'widgets/wardrobe_filter_bar.dart';
@@ -44,6 +46,9 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
 
   /// '입을 수 있음'(#43). 검색어처럼 URL에 싣지 않는 화면 State다.
   bool _readyToWear = false;
+
+  /// '이번 계절'(005 FR-510). URL에 싣지 않는 화면 State다.
+  bool _seasonOnly = false;
   WardrobeSort _sort = WardrobeSort.statusCleanFirst;
 
   /// 검색창 텍스트. 홈 카드 진입으로 검색어를 비울 때 화면 표시도 맞춘다(#33).
@@ -71,6 +76,7 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
       // 보인다. 카드 집계와 같은 범위가 되도록 함께 초기화한다(FR-006a).
       _query = '';
       _readyToWear = false;
+      _seasonOnly = false;
       _searchController.clear();
       // 탭 전환 중 build 단계에서 호출되므로 레이아웃이 끝난 뒤 이동한다.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -152,8 +158,23 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
     setState(() {
       _query = '';
       _readyToWear = false;
+      _seasonOnly = false;
     });
     _onScopeChanged(const ItemFilter());
+  }
+
+  /// 005 FR-509 — 상세 필터 시트. 결과 수는 지금 화면의 모든 조건으로 센다.
+  Future<void> _openDetailFilter(ItemFilter current) async {
+    final picked = await showDetailFilterSheet(context, filter: current);
+    if (picked == null || !mounted) return;
+    _onScopeChanged(
+      _scope.copyWith(
+        subTypes: picked.subTypes,
+        colors: picked.colors,
+        seasons: picked.seasons,
+        purposes: picked.purposes,
+      ),
+    );
   }
 
   /// 결과 목록 sliver. 비어 있으면 옷장이 빈 경우와 검색 무결과를 구분한다.
@@ -212,7 +233,12 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = ref.watch(itemRepositoryProvider);
-    final filter = _scope.copyWith(query: _query, readyToWear: _readyToWear);
+    final currentSeason = Season.ofMonth(ref.watch(clockProvider).now().month);
+    final filter = _scope.copyWith(
+      query: _query,
+      readyToWear: _readyToWear,
+      season: _seasonOnly ? currentSeason : null,
+    );
     final selection = ref.watch(wardrobeSelectionProvider);
     // 선택 모드에서 시스템 뒤로 가기는 앱을 닫지 않고 선택만 끝낸다.
     return PopScope(
@@ -275,6 +301,11 @@ class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
                         onReadyToWearChanged: (v) =>
                             setState(() => _readyToWear = v),
                         onSortChanged: (s) => setState(() => _sort = s),
+                        currentSeason: currentSeason,
+                        seasonOnly: _seasonOnly,
+                        onSeasonOnlyChanged: (v) =>
+                            setState(() => _seasonOnly = v),
+                        onOpenDetail: () => _openDetailFilter(filter),
                         tagUsages:
                             ref.watch(tagUsageProvider).valueOrNull ?? const [],
                       ),

@@ -2,8 +2,6 @@
 // 진입: 설정 > 옷 관리 > 보관함 (contracts/routes.md `/archive`).
 // #48 FR-029·030 — 읽기 실패·재시도, 꺼내기 중복 입력 차단·실패 안내.
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,13 +9,12 @@ import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
-import '../../core/persistence/image_store.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/action_guard.dart';
 import '../../core/widgets/async_state_view.dart';
-import '../../core/widgets/item_placeholder.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
+import '../../core/widgets/item_photo.dart';
 import '../../data/models/item.dart';
 import '../../data/providers/app_providers.dart';
 
@@ -199,31 +196,25 @@ class _ArchivedTile extends ConsumerWidget {
   );
 }
 
-class _Thumb extends ConsumerWidget {
+class _Thumb extends StatelessWidget {
   const _Thumb({required this.item});
 
   final Item item;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final fallback = Color(item.fallbackColor);
-    final path = item.imagePath;
+  Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(ClosetimoRadius.md),
-      child: SizedBox(
-        width: ClosetimoSize.tileThumbnail,
-        height: ClosetimoSize.tileThumbnail,
-        child: path == null
-            ? ItemPlaceholder(color: fallback)
-            : FutureBuilder<String>(
-                future: ref.watch(imageStoreProvider).absolutePath(path),
-                builder: (ctx, snap) {
-                  if (snap.data == null) return Container(color: fallback);
-                  final file = File(snap.data!);
-                  if (!file.existsSync()) return Container(color: fallback);
-                  return Image.file(file, fit: BoxFit.cover, cacheWidth: 256);
-                },
-              ),
+      child: SizedBox.square(
+        dimension: ClosetimoSize.tileThumbnail,
+        child: ItemPhoto(
+          imagePath: item.displayImagePath,
+          cutout: item.showsCutout,
+          originalPath: item.imagePath,
+          fallback: Color(item.fallbackColor),
+          cacheWidth: 256,
+          cutoutPadding: ClosetimoSpacing.xs,
+        ),
       ),
     );
   }

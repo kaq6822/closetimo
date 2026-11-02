@@ -14,6 +14,7 @@ import '../../core/widgets/action_guard.dart';
 import '../../core/widgets/async_state_view.dart';
 import '../../core/widgets/bottom_nav.dart';
 import '../../core/widgets/chip_filter.dart';
+import '../../core/widgets/color_swatch_chip.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/soft_button.dart';
 import '../../core/widgets/status_label.dart';
@@ -21,6 +22,7 @@ import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../core/widgets/wear_record_sheet.dart';
 import '../../data/models/item.dart';
+import '../../data/models/item_attributes.dart';
 import '../../data/models/wear_event.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/repositories/event_repository.dart';
@@ -383,6 +385,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen>
                         ),
                       ],
                     ),
+                    // 005 — 세부 종류·색상·계절·용도·소재·패턴 요약.
+                    _AttributeSummary(item: item),
                     // FR-009a(#47) — 주요 기록 액션을 통계 카드보다 먼저 둬
                     // 첫 화면 안에서 닿게 한다. 통계는 액션 아래로 내린다.
                     const SizedBox(height: ClosetimoSpacing.xl),
@@ -486,6 +490,56 @@ class _ArchivedNotice extends StatelessWidget {
               color: ClosetimoColors.muted,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 005 — 옷의 구조화 속성 한 줄 요약. 값이 하나도 없으면 그리지 않는다.
+class _AttributeSummary extends StatelessWidget {
+  const _AttributeSummary({required this.item});
+
+  final Item item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = [
+      for (final code in item.colors) ?ItemAttributes.color(code),
+    ];
+    final texts = [
+      ?ItemAttributes.subType(item.subType)?.label,
+      if (item.seasons.isNotEmpty)
+        item.seasons.length == Season.values.length
+            ? '사계절'
+            : item.seasons.map((s) => s.label).join('·'),
+      for (final p in item.purposes) p.label,
+      ?ItemAttributes.material(item.material)?.label,
+      ?ItemAttributes.pattern(item.pattern)?.label,
+    ];
+    if (colors.isEmpty && texts.isEmpty) return const SizedBox.shrink();
+    const style = TextStyle(
+      fontFamily: 'Manrope',
+      fontSize: 13,
+      color: ClosetimoColors.muted,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: ClosetimoSpacing.space12),
+      child: Wrap(
+        spacing: ClosetimoSpacing.space12,
+        runSpacing: ClosetimoSpacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final c in colors)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ColorDot(color: Color(c.argb)),
+                const SizedBox(width: ClosetimoSpacing.xs),
+                Text(c.label, style: style),
+              ],
+            ),
+          for (final t in texts) Text(t, style: style),
         ],
       ),
     );

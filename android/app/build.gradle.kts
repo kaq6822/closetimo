@@ -67,6 +67,20 @@ android {
     }
 }
 
+// 005 — Android 기기 내 사진 분석(ML Kit). 사용자 승인(2026-11-02)으로 헌법 III 예외:
+// ML Kit은 기능 진단 정보(기기 모델·성능 지표 등)를 Google에 보낸다. 사진은 보내지 않는다.
+// - subject-segmentation: 배경 제거(Play 서비스 모듈, beta)
+// - image-labeling: 종류·소재 힌트(Play 서비스 모듈)
+// - genai-prompt: Gemini Nano 이미지 분석(AICore 지원 기기, API 26+. minSdk 24는 manifest overrideLibrary + 런타임 확인)
+dependencies {
+    implementation("com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1")
+    implementation("com.google.android.gms:play-services-mlkit-image-labeling:16.0.8")
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
+}
+
 // 업로드 키 없이 만든 release 산출물이 스토어로 나가지 않게 한다(#11).
 gradle.taskGraph.whenReady {
     if (hasUploadKey) return@whenReady

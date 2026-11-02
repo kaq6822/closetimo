@@ -2,6 +2,7 @@
 // data-model.md §1.4 / contracts/repositories.md §1 참조.
 
 import 'item.dart';
+import 'item_attributes.dart';
 import 'item_tags.dart';
 
 /// 옷장 목록·홈 카드 이동이 공유하는 필터.
@@ -20,6 +21,10 @@ class ItemFilter {
     this.archive = ArchiveScope.active,
     this.readyToWear = false,
     this.tags = const {},
+    this.subTypes = const {},
+    this.colors = const {},
+    this.seasons = const {},
+    this.season,
   });
 
   /// 개별 종류 1개만 보는 필터(옷장 종류 칩).
@@ -50,13 +55,35 @@ class ItemFilter {
   /// 하나라도 붙은 옷), 다른 축과는 AND다. 태그는 정규화된 표기로 비교한다.
   final Set<String> tags;
 
-  /// 검색어를 제외한 조건(종류·용도·보관·입을 수 있음·태그)이 하나라도 걸려 있는지.
+  /// 세부 종류 축(005 FR-509). 코드 집합, 비어 있으면 전체.
+  final Set<String> subTypes;
+
+  /// 색상 축(005 FR-509). 옷의 색상 중 하나라도 포함되면 통과.
+  final Set<String> colors;
+
+  /// 계절 축(005 FR-509). 옷의 계절 중 하나라도 포함되면 통과. 계절을 정하지 않은
+  /// 옷은 이 축을 통과하지 못한다(명시적으로 고른 계절만 찾는다).
+  final Set<Season> seasons;
+
+  /// '이번 계절' 빠른 조건(005 FR-510). 이 계절을 포함하거나 계절을 정하지 않은 옷.
+  /// 화면 State 조건이며 라우트 쿼리에 싣지 않는다.
+  final Season? season;
+
+  /// 상세 필터 시트가 다루는 축(세부 종류·색상·계절·용도) 조건 수. 태그는 별도 칩이다.
+  int get detailCount =>
+      subTypes.length + colors.length + seasons.length + purposes.length;
+
+  /// 검색어를 제외한 조건(종류·용도·보관·입을 수 있음·태그·속성)이 하나라도 걸려 있는지.
   bool get hasScope =>
       categories.isNotEmpty ||
       purposes.isNotEmpty ||
       archive != ArchiveScope.active ||
       readyToWear ||
-      tags.isNotEmpty;
+      tags.isNotEmpty ||
+      subTypes.isNotEmpty ||
+      colors.isNotEmpty ||
+      seasons.isNotEmpty ||
+      season != null;
 
   /// 조건이 하나라도 걸려 있는지(검색어 포함).
   bool get isActive => hasScope || query.trim().isNotEmpty;
@@ -89,14 +116,25 @@ class ItemFilter {
       return false;
     }
     if (tags.isNotEmpty && !_hasAnyTag(item)) return false;
+    if (subTypes.isNotEmpty && !subTypes.contains(item.subType)) return false;
+    if (colors.isNotEmpty && !item.colors.any(colors.contains)) return false;
+    if (seasons.isNotEmpty && !item.seasons.any(seasons.contains)) {
+      return false;
+    }
+    if (season case final s?
+        when item.seasons.isNotEmpty && !item.seasons.contains(s)) {
+      return false;
+    }
     final q = query.trim().toLowerCase();
     if (q.isNotEmpty) {
       final name = item.name.toLowerCase();
       final brand = (item.brand ?? '').toLowerCase();
       // #46 — 태그도 검색어로 찾는다(이름·브랜드·태그 중 하나라도 포함).
+      // 005 FR-511 — 세부 종류·색상·소재·패턴·계절 라벨도 찾는다.
       if (!name.contains(q) &&
           !brand.contains(q) &&
-          !item.tags.any((t) => t.toLowerCase().contains(q))) {
+          !item.tags.any((t) => t.toLowerCase().contains(q)) &&
+          !attributeSearchLabels(item).any((l) => l.contains(q))) {
         return false;
       }
     }
@@ -110,6 +148,11 @@ class ItemFilter {
     ArchiveScope? archive,
     bool? readyToWear,
     Set<String>? tags,
+    Set<String>? subTypes,
+    Set<String>? colors,
+    Set<Season>? seasons,
+    Season? season,
+    bool clearSeason = false,
   }) => ItemFilter(
     categories: categories ?? this.categories,
     purposes: purposes ?? this.purposes,
@@ -117,6 +160,10 @@ class ItemFilter {
     archive: archive ?? this.archive,
     readyToWear: readyToWear ?? this.readyToWear,
     tags: tags ?? this.tags,
+    subTypes: subTypes ?? this.subTypes,
+    colors: colors ?? this.colors,
+    seasons: seasons ?? this.seasons,
+    season: clearSeason ? null : (season ?? this.season),
   );
 
   @override
@@ -125,9 +172,13 @@ class ItemFilter {
       other.query == query &&
       other.archive == archive &&
       other.readyToWear == readyToWear &&
+      other.season == season &&
       _sameSet(other.categories, categories) &&
       _sameSet(other.purposes, purposes) &&
-      _sameSet(other.tags, tags);
+      _sameSet(other.tags, tags) &&
+      _sameSet(other.subTypes, subTypes) &&
+      _sameSet(other.colors, colors) &&
+      _sameSet(other.seasons, seasons);
 
   @override
   int get hashCode => Object.hash(
@@ -137,6 +188,10 @@ class ItemFilter {
     Object.hashAllUnordered(purposes),
     readyToWear,
     Object.hashAllUnordered(tags),
+    Object.hashAllUnordered(subTypes),
+    Object.hashAllUnordered(colors),
+    Object.hashAllUnordered(seasons),
+    season,
   );
 
   static bool _sameSet<T>(Set<T> a, Set<T> b) =>

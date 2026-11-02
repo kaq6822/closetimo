@@ -31,6 +31,18 @@ class ImageStore {
     return p.join('items', '$itemId.jpg');
   }
 
+  /// 005 FR-513 — 배경 제거본(투명 PNG)을 `documents/items/{itemId}_cutout.png`로 복사한다.
+  /// 반환값은 상대 경로(`items/{itemId}_cutout.png`).
+  Future<String> copyCutoutTo(File source, String itemId) async {
+    final root = await _rootDir();
+    final name = cutoutFileName(itemId);
+    await source.copy(p.join(root.path, name));
+    return p.join('items', name);
+  }
+
+  /// 옷 [itemId]의 배경 제거본 파일 이름.
+  static String cutoutFileName(String itemId) => '${itemId}_cutout.png';
+
   /// #40 복원 — 바이트를 `documents/items/{fileName}`에 쓰고 상대 경로
   /// (`items/{fileName}`)를 돌려준다. 임시 파일에 쓴 뒤 rename하므로 중간에
   /// 실패해도 반쪽 파일이 대상 이름으로 남지 않는다. 실패 시

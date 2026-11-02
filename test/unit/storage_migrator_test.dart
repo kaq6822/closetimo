@@ -479,6 +479,16 @@ void main() {
         isTrue,
       );
       expect(const ItemFilter(tags: {'여름'}).matches(shirt), isFalse);
+      // 005 — 구조화 속성·배경 제거본이 없던 구 데이터는 빈 값으로 읽힌다(SC-505).
+      expect(shirt.subType, isNull);
+      expect(shirt.colors, isEmpty);
+      expect(shirt.seasons, isEmpty);
+      expect(shirt.material, isNull);
+      expect(shirt.pattern, isNull);
+      expect(shirt.cutoutPath, isNull);
+      expect(shirt.displayImagePath, shirt.imagePath);
+      // 이번 계절 조건에는 계절을 정하지 않은 옷으로 포함된다.
+      expect(const ItemFilter(season: Season.summer).matches(shirt), isTrue);
       expect(shirt.isArchived, isFalse);
       expect(shirt.inLaundry, isTrue);
       expect(shirt.totalWears, 6);

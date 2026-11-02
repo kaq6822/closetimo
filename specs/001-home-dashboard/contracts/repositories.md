@@ -59,6 +59,11 @@ enum WardrobeSort { statusCleanFirst, recentlyWorn, mostWorn }
 - `create`: `draft.name.trim().isEmpty`이면 `ArgumentError`. 검증 통과 시 `imagePath`는 `ImageStore.copy(draft.tempPhoto)` 결과를 저장. 생성 시 `Item` 기본값(`status=clean`, counts=0, `createdAt=now`).
 - `create`: draft의 `category`(기본 미분류)·`careMethod`(기본 미지정)·`careMode`·`purposes`를 저장한다. `purposes`는 중복 제거 후 enum 순서로 정규화.
 - `update`: `ItemPatch`의 편집 필드 전체(`careMode`·`purposes` 포함, 둘 다 required)를 교체하고 `status = item.derivedStatus`로 재평가한다(#45).
+- 005 구조화 속성: `create`는 `NewItemDraft`의 `subType`·`colors`·`seasons`·`material`·`pattern`을 카탈로그 규칙
+  (`ItemAttributeValues.applyTo`)으로 정규화해 저장한다. `update`는 `ItemPatch.attributes`가 null이면 기존 속성을 유지하되
+  종류가 바뀌어 맞지 않게 된 세부 종류는 지우고, null이 아니면 전체 교체한다.
+- 005 배경 제거본(`cutoutPath`): 원본 사진이 있을 때만 저장한다(`NewItemDraft.tempCutout`, `ItemPatch.newCutout`).
+  새 사진만 오거나 사진을 지우거나 `removeCutout`이면 이전 배경 제거본 파일을 지운다. `delete`는 배경 제거본도 지운다.
 - `create`·`update`의 태그(#46): `draft.tags`(기본 빈 목록)·`patch.tags`를 `normalizeTags`로 정규화해 저장한다.
   `patch.tags == null`이면 기존 태그를 유지하고, 빈 목록이면 모두 제거한다.
 - `watchFiltered`: `filter.matches(item)`을 만족하는 옷만 내보낸다. 검색 매칭은 `name.toLowerCase().contains(q) || (brand ?? '').toLowerCase().contains(q) || tags.any((t) => t.toLowerCase().contains(q))` (FR-006, #46).
@@ -308,6 +313,8 @@ abstract interface class PreferencesRepository {
   Future<void> setNotifUnworn(bool v);
   Future<void> setAccent(String accentKey);
   Future<void> setLastTab(String tab);                // FR-022
+  Future<void> setRemoveBackground(bool v);           // 005 FR-513
+  Future<void> setOnDeviceAi(bool v);                 // 005 FR-515
 }
 ```
 

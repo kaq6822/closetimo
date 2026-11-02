@@ -366,6 +366,14 @@ legacy Isar 3 이전 경로도 같은 규칙을 적용해 곧바로 v2로 기록
 `test/unit/storage_migrator_test.dart`(v1 스키마 고정본 `test/support/storage_v1_item_fixture.dart`로
 구 디스크 데이터를 재현)에 있다.
 
+### 구조화 속성·배경 제거본 추가 (005, 저장소 버전 변경 없음)
+
+`subType`·`colors`·`seasons`·`material`·`pattern`·`cutoutPath`와 `UserPreferences.removeBackground`·`onDeviceAi`는
+클래스 끝에 추가한 **추가식 필드**다. 구 데이터는 null·빈 목록·constructor 기본값(`removeBackground = true`)으로 읽히므로
+`currentStorageVersion`은 2를 유지한다. 값 목록과 규칙은 [005 data-model.md](../005-attributes-quick-capture/data-model.md)를
+따른다. `ItemPurpose`에는 `sport` 뒤에 `daily·work·outing·formal·travel·home`을 추가했다(ordinal 유지).
+회귀 테스트는 `test/unit/storage_migrator_test.dart`(v1 고정본 읽기)에 있다.
+
 ### 백업 형식과의 관계 (#40)
 
 `Item`·`WearEvent`·`UserPreferences`에 필드를 추가하면 백업 codec(`lib/data/backup/backup_codec.dart`)과

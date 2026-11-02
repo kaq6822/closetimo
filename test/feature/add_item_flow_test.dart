@@ -534,7 +534,8 @@ void main() {
       await openAdd(tester);
 
       expect(find.text('추가 정보 (선택)'), findsOneWidget);
-      expect(find.text('선택'), findsOneWidget);
+      // 종류·계절·용도는 선택 입력임을 표기한다(005).
+      expect(find.text('선택'), findsWidgets);
       expect(find.text('이름 또는 사진 중 하나만 있어도 돼요'), findsOneWidget);
       // 접힘 상태에서는 브랜드·구매일 필드를 그리지 않는다.
       expect(find.text('구매일 선택'), findsNothing);
@@ -551,7 +552,8 @@ void main() {
 
     testWidgets('이름만 입력하고 등록하면 기본값(미분류·주기 5)으로 저장된다', (tester) async {
       final repo = await openAdd(tester);
-      await tester.enterText(find.byType(TextField).first, '흰 셔츠');
+      // 카탈로그 키워드가 없는 이름은 속성을 바꾸지 않는다.
+      await tester.enterText(find.byType(TextField).first, '엄마가 준 옷');
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('등록하기'));

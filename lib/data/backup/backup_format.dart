@@ -9,7 +9,8 @@ abstract final class BackupFormat {
   static const String id = 'closetimo-backup';
 
   /// 앱이 쓰고 읽을 수 있는 최대 형식 버전(data-model.md §4).
-  static const int currentVersion = 1;
+  /// v2(005): 옷 구조화 속성·배경 제거본, 사진 분석 설정 추가.
+  static const int currentVersion = 2;
 
   /// 메타·레코드를 담은 JSON 엔트리 이름.
   static const String manifestEntry = 'backup.json';
@@ -19,6 +20,9 @@ abstract final class BackupFormat {
 
   /// 옷 [itemId]의 아카이브 내부 사진 참조.
   static String imageRef(int itemId) => '$imageDir$itemId.jpg';
+
+  /// 옷 [itemId]의 아카이브 내부 배경 제거본 참조(v2, 005 FR-513).
+  static String cutoutRef(int itemId) => '$imageDir${itemId}_cutout.png';
 }
 
 /// 레코드 개수 요약.

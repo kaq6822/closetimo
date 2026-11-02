@@ -1,12 +1,16 @@
 // ItemRepository의 Isar 구현. Phase 3에서는 create만 구현하고,
 // Phase 4·5·7에서 나머지 watch/get을 채워간다.
 
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:isar_plus/isar_plus.dart';
 
 import '../../core/persistence/image_store.dart';
 import '../../core/utils/clock.dart';
 import '../../features/add_item/new_item_draft.dart';
 import '../models/item.dart';
+import '../models/item_attributes.dart';
 import '../models/item_filter.dart';
 import '../models/item_patch.dart';
 import '../models/item_tags.dart';
@@ -51,11 +55,17 @@ class IsarItemRepository implements ItemRepository {
       purchasedAt: draft.purchasedAt,
       tags: normalizeTags(draft.tags),
     );
+    draft.attributes.applyTo(item); // 005 — 카탈로그 기준 정규화
     final id = _items.autoIncrement();
     item.id = id;
     // 사진이 있으면 sandbox로 복사하고 상대 경로를 저장.
     if (draft.tempPhoto != null) {
       item.imagePath = await _imageStore.copyTo(draft.tempPhoto!, '$id');
+      // 005 FR-513 — 배경 제거본은 원본이 있을 때만 붙인다. 선택 기능이라 복사에
+      // 실패해도(예: OS가 임시 파일을 지움) 등록은 원본만으로 계속한다.
+      if (draft.tempCutout case final cutout?) {
+        item.cutoutPath = await _copyCutoutOrNull(cutout, id);
+      }
     }
     _isar.write((isar) => isar.items.put(item));
     return id;
@@ -150,8 +160,16 @@ class IsarItemRepository implements ItemRepository {
     final replacementPath = patch.newPhoto == null
         ? null
         : await _imageStore.copyTo(patch.newPhoto!, '$id');
+    // 005 FR-513 — 새 배경 제거본은 원본이 남는 경우에만 복사한다.
+    final keepsPhoto =
+        replacementPath != null ||
+        (!patch.removePhoto && existing.imagePath != null);
+    final newCutoutPath = patch.newCutout != null && keepsPhoto
+        ? await _copyCutoutOrNull(patch.newCutout!, id)
+        : null;
     // removePhoto 경로에서 txn 밖 파일 삭제를 위해 이전 경로를 보관한다.
     String? pathToDelete;
+    String? cutoutToDelete;
     _isar.write((isar) {
       final item = isar.items.get(id);
       if (item == null) return; // 미존재 no-op(FR: id 미존재 시 무시)
@@ -167,6 +185,8 @@ class IsarItemRepository implements ItemRepository {
         ..washCycle = patch.washCycle <= 0 ? 1 : patch.washCycle
         ..purchasedAt = patch.purchasedAt;
       if (patch.tags case final tags?) item.tags = normalizeTags(tags);
+      // 005 — 종류가 바뀌면 맞지 않는 세부 종류를 지운다(속성을 함께 보내지 않아도).
+      (patch.attributes ?? ItemAttributeValues.of(item)).applyTo(item);
 
       // 사진 3-way 의도(data-model.md §3): 교체 > 제거 > 유지.
       if (replacementPath != null) {
@@ -181,6 +201,19 @@ class IsarItemRepository implements ItemRepository {
         item.imagePath = null;
       }
 
+      // 배경 제거본(005 FR-513): 사진이 바뀌거나 지워지면 이전 제거본은 맞지 않는다.
+      final cutoutStale =
+          replacementPath != null || patch.removePhoto || patch.removeCutout;
+      if (newCutoutPath != null) {
+        if (item.cutoutPath != null && item.cutoutPath != newCutoutPath) {
+          cutoutToDelete = item.cutoutPath;
+        }
+        item.cutoutPath = newCutoutPath;
+      } else if (cutoutStale && item.cutoutPath != null) {
+        cutoutToDelete = item.cutoutPath;
+        item.cutoutPath = null;
+      }
+
       // status 재평가(FR-004, #45) — 주기·관리 방식 변경을 반영한다.
       item.status = item.derivedStatus;
 
@@ -189,15 +222,18 @@ class IsarItemRepository implements ItemRepository {
     if (pathToDelete != null) {
       await _imageStore.delete(pathToDelete!); // best-effort(FR-011)
     }
+    if (cutoutToDelete != null) await _imageStore.delete(cutoutToDelete!);
   }
 
   @override
   Future<void> delete(int id) async {
     String? pathToDelete;
+    String? cutoutToDelete;
     _isar.write((isar) {
       final item = isar.items.get(id);
       if (item == null) return; // 미존재 no-op
       pathToDelete = item.imagePath;
+      cutoutToDelete = item.cutoutPath;
 
       // 연관 WearEvent 전량 제거(kind 무관) — orphan 방지(SC-004, FR-010).
       final eventIds = isar.wearEvents
@@ -211,6 +247,17 @@ class IsarItemRepository implements ItemRepository {
     });
     if (pathToDelete != null) {
       await _imageStore.delete(pathToDelete!); // best-effort(FR-011)
+    }
+    if (cutoutToDelete != null) await _imageStore.delete(cutoutToDelete!);
+  }
+
+  /// 배경 제거본을 sandbox로 복사한다. 실패하면 로그만 남기고 null(원본만 사용).
+  Future<String?> _copyCutoutOrNull(File source, int id) async {
+    try {
+      return await _imageStore.copyCutoutTo(source, '$id');
+    } on FileSystemException catch (e) {
+      debugPrint('Cutout copy failed for item $id: $e');
+      return null;
     }
   }
 

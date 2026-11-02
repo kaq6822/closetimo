@@ -24,6 +24,7 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 - [specs/001-home-dashboard/contracts/repositories.md](specs/001-home-dashboard/contracts/repositories.md) — 데이터 접근 계약
 - [specs/001-home-dashboard/quickstart.md](specs/001-home-dashboard/quickstart.md) — 개발 환경 부트스트랩
 - [specs/004-backup-restore/spec.md](specs/004-backup-restore/spec.md) — 사용자 실행형 백업·복원(#40): 형식·복원 정책·플랫폼 흐름
+- [specs/005-attributes-quick-capture/spec.md](specs/005-attributes-quick-capture/spec.md) — 구조화 속성·빠른 분류 등록·온디바이스 사진 분석(iOS Vision·Foundation Models)
 
 ## 언어 규칙
 
