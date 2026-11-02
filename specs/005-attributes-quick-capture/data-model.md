@@ -61,6 +61,11 @@
 | watch | 액세서리 | watch |
 | necktie, bowtie | 액세서리 | tie |
 
+Android ML Kit 기본 라벨(소문자·밑줄로 바꿔 같은 표를 쓴다): sneakers(신발·운동화), shoe(신발), shorts(하의·반바지),
+leggings(하의·레깅스), dress·gown(원피스·원피스), outerwear(아우터), blazer(아우터·블레이저), jersey(상의), cap·beanie(액세서리·모자),
+tie(액세서리·넥타이), handbag(가방), glasses(액세서리·안경), necklace·bracelet·bangle·jewellery(액세서리·주얼리).
+jeans·jacket·hat·scarf·sunglasses·bag은 위 행과 같다. 소재 라벨 denim·wool·leather·cotton은 같은 이름의 소재 코드로 제안한다.
+
 ## 4. 세탁 그룹 (FR-512, 저장 안 함)
 
 판정 순서: ① `careMethod`가 손세탁·드라이클리닝 → `handCare` ② 세부 종류 `jeans` 또는 대표 색상·소재 `denim` → `denim`

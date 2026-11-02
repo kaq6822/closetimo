@@ -242,6 +242,8 @@ class FakeVision implements NativeVision {
   NativeAnalysis Function(File photo)? analysisFor;
   OnDeviceDescription? description;
   final List<String> analyzed = [];
+  int prewarmCalls = 0;
+  Map<String, List<String>>? lastSchema;
 
   @override
   Future<VisionCapabilities> capabilities() async => caps;
@@ -259,10 +261,13 @@ class FakeVision implements NativeVision {
   Future<OnDeviceDescription> describe(
     File photo, {
     Map<String, List<String>> schema = const {},
-  }) async => description ?? (throw UnsupportedError('no AI'));
+  }) async {
+    lastSchema = schema;
+    return description ?? (throw UnsupportedError('no AI'));
+  }
 
   @override
-  Future<void> prewarm() async {}
+  Future<void> prewarm() async => prewarmCalls++;
 }
 
 /// 사진 경로마다 정한 색을 돌려주는 색상 추출 fake.

@@ -5,6 +5,7 @@ import 'package:closetimo/core/vision/native_vision.dart';
 import 'package:closetimo/data/models/item.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/features/wardrobe/widgets/garment_tile.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -266,6 +267,36 @@ void main() {
       );
       expect(find.text('사진 배경 자동 제거'), findsNothing);
       expect(find.text('기기 내 AI로 자세히 분석'), findsNothing);
+    });
+
+    testWidgets('Android: Google 진단 정보 안내와 모델 준비 중 토글(켜면 내려받기 시작)', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      phoneViewport(tester);
+      final prefs = FakePrefsRepo(UserPreferences());
+      final vision = FakeVision(
+        caps: const VisionCapabilities(
+          backgroundRemoval: true,
+          classification: true,
+          onDeviceAi: OnDeviceAiStatus.notReady,
+        ),
+      );
+      await tester.pumpWidget(
+        testApp(items: FakeItemRepo(), prefs: prefs, vision: vision, now: _now),
+      );
+      await tester.pumpAndSettle();
+      await _go(tester, Routes.settings);
+      await tester.ensureVisible(find.text('사진 분석'));
+      expect(find.textContaining('Google ML Kit가'), findsOneWidget);
+      expect(find.text('사진 배경 자동 제거'), findsOneWidget);
+
+      final before = vision.prewarmCalls;
+      await _tapText(tester, '기기 내 AI로 자세히 분석 (모델 준비 중)');
+      expect(prefs.prefs.onDeviceAi, isTrue);
+      expect(vision.prewarmCalls, greaterThan(before), reason: '켜면 모델 준비를 시작');
+      debugDefaultTargetPlatformOverride = null;
     });
 
     testWidgets('Apple Intelligence가 꺼져 있으면 켜는 방법을 안내한다', (tester) async {

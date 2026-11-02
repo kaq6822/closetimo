@@ -44,12 +44,15 @@ class _FakeVision implements NativeVision {
   @override
   Future<void> prewarm() async => prewarmCalls++;
 
+  Map<String, List<String>>? lastSchema;
+
   @override
   Future<OnDeviceDescription> describe(
     File photo, {
     Map<String, List<String>> schema = const {},
   }) async {
     describedFile = photo;
+    lastSchema = schema;
     await Future<void>.delayed(describeDelay);
     return description ?? (throw UnsupportedError('no'));
   }
@@ -231,6 +234,54 @@ void main() {
     final android = _FakeVision();
     await AttributeSuggester(vision: android).prewarm(useOnDeviceAi: true);
     expect(android.prewarmCalls, 0);
+  });
+
+  test('Android ML Kit 라벨로 종류와 소재를 함께 제안한다', () async {
+    final result = await AttributeSuggester(
+      vision: _FakeVision(
+        caps: const VisionCapabilities(
+          backgroundRemoval: true,
+          classification: true,
+        ),
+        analysis: const NativeAnalysis(
+          labels: [
+            VisionLabel('textile', 0.95),
+            VisionLabel('jeans', 0.88),
+            VisionLabel('denim', 0.81),
+            VisionLabel('leather', 0.4),
+          ],
+        ),
+      ),
+      colorExtractor: _FakeColors(['denim']),
+    ).analyzePhoto(photo, removeBackground: true, useOnDeviceAi: false);
+    expect(result.suggestion.category, Category.bottom);
+    expect(result.suggestion.subType, 'jeans');
+    expect(result.suggestion.material, 'denim');
+  });
+
+  test('기기 내 AI에 카탈로그 허용 값 목록을 넘긴다', () async {
+    final vision = _FakeVision(
+      caps: iosCaps,
+      description: const OnDeviceDescription(category: 'top'),
+    );
+    await AttributeSuggester(
+      vision: vision,
+      colorExtractor: _FakeColors(const []),
+    ).analyzePhoto(photo, removeBackground: false, useOnDeviceAi: true);
+    final schema = vision.lastSchema!;
+    expect(schema['category'], isNot(contains('uncategorized')));
+    expect(schema['category'], contains('outer'));
+    expect(schema['subType'], contains('knit'));
+    expect(schema['colors'], hasLength(19));
+    expect(schema['seasons'], ['spring', 'summer', 'autumn', 'winter']);
+  });
+
+  test('모델 준비 중이면 prewarm으로 내려받기를 시작한다', () async {
+    final vision = _FakeVision(
+      caps: const VisionCapabilities(onDeviceAi: OnDeviceAiStatus.notReady),
+    );
+    await AttributeSuggester(vision: vision).prewarm(useOnDeviceAi: true);
+    expect(vision.prewarmCalls, 1);
   });
 
   group('AI 응답 검증', () {

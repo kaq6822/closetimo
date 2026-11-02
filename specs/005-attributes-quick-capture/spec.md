@@ -8,7 +8,8 @@
 
 **Input**: 사용자 요청(2026-11-02) — "실사용에 불편하다. 태그가 더 많고, 옷을 입력·관리하기 더 간편해야 한다.
 오프라인·서버 없음·유료 AI 없음. 삼성·애플 온디바이스 AI가 가능하면 녹이고, 안 되면 포기하거나 사용자 선택으로 둔다."
-범위 결정: 제안서 1~4단계 전부, Android 온디바이스 AI는 별도 검토(이번 범위 제외).
+범위 결정: 제안서 1~4단계 전부. 2026-11-02 사용자가 Google 진단 정보 전송을 허용해 Android 온디바이스 분석
+(ML Kit)도 범위에 넣었다(헌법 1.1.0 원칙 III 예외, User Story 8·FR-518~520).
 
 관련 문서: [제안서](../../docs/product/2026-11-02-ux-redesign-and-on-device-ai.md), [data-model.md](./data-model.md), [plan.md](./plan.md), [tasks.md](./tasks.md)
 
@@ -78,7 +79,7 @@
 1. **Given** iOS 17 이상, 설정 `사진 배경 자동 제거` 켜짐(기본), **When** 사진을 고르면, **Then** 배경을 지운 사진이 미리보기·옷장·상세에
    쓰이고 원본은 함께 보관된다. 색상 추출은 배경 제거본으로 한다.
 2. **Given** 수정 화면, **When** `원본 사진 사용`을 누르면, **Then** 배경 제거본이 지워지고 원본이 쓰인다.
-3. **Given** iOS 17 미만 또는 Android, **Then** 배경 제거 설정은 보이지 않고 원본만 쓴다.
+3. **Given** iOS 17 미만, **Then** 배경 제거 설정은 보이지 않고 원본만 쓴다(Android는 User Story 8).
 4. **Given** iOS, 종류를 아직 고르지 않은 등록 화면, **When** 신발 사진을 고르면, **Then** 종류 `신발`(가능하면 세부 종류 `운동화`)이 제안된다.
    제안 라벨은 신뢰도 0.6 이상이고 정해진 매핑에 있는 경우만 쓴다.
 
@@ -87,10 +88,24 @@
 **Acceptance Scenarios**:
 
 1. **Given** Apple Intelligence가 켜진 iOS 27 기기, **When** 설정을 열면, **Then** `기기 내 AI로 자세히 분석`(기본 꺼짐)이 보인다.
-   미지원 기기·OS·Android에서는 보이지 않는다.
+   미지원 기기·OS에서는 보이지 않는다(Android Gemini Nano는 User Story 8).
 2. **Given** 켜짐, **When** 사진을 고르면, **Then** 기기 내 모델이 종류·세부 종류·색상·소재·패턴·계절을 제안하고 비어 있는 축만 채운다.
    분석 중에는 진행 표시가 보이며, 실패·시간 초과(20초)면 조용히 기존 제안만 쓴다.
 3. 어떤 경우에도 네트워크·서버 모델(Private Cloud Compute)을 쓰지 않는다.
+
+### User Story 8 — Android 기기 내 사진 분석 (Priority: P2)
+
+**Acceptance Scenarios**:
+
+1. **Given** Google Play 서비스가 있는 Android 기기, 설정 `사진 배경 자동 제거` 켜짐(기본), **When** 사진을 고르면, **Then**
+   ML Kit Subject Segmentation으로 배경을 지운 사진이 iOS와 같은 규칙(FR-513)으로 쓰인다. 모델을 처음 내려받는 동안에는
+   제안 없이 진행한다.
+2. **Given** Android, **When** 사진을 고르면, **Then** ML Kit 이미지 라벨 중 data-model.md §3 매핑에 있는 라벨(신뢰도 0.6 이상)이
+   종류·세부 종류를, 소재 라벨(denim·wool·leather·cotton)이 소재를 제안한다.
+3. **Given** Gemini Nano를 지원하는 Android 기기(API 26+, AICore), **When** 설정을 열면, **Then** `기기 내 AI로 자세히 분석`(기본 꺼짐)이
+   보인다. 모델을 받을 수 있는 상태면 `(모델 준비 중)`과 함께 보이고, 켜면 내려받기를 시작한다. 미지원 기기에서는 보이지 않는다.
+4. **Given** Android, **When** 설정의 사진 분석을 보면, **Then** "사진은 기기 밖으로 보내지 않지만 Google ML Kit가 기능 진단 정보를
+   Google에 보낼 수 있다"는 안내가 보인다.
 
 ### Edge Cases
 
@@ -126,8 +141,14 @@
 - **FR-514**: iOS에서 사진 분류 라벨 중 data-model.md §3 매핑에 있고 신뢰도 0.6 이상인 라벨만 종류·세부 종류 제안에 쓴다.
 - **FR-515**: Apple Intelligence가 사용 가능한 iOS 27 이상에서만 설정 `기기 내 AI로 자세히 분석`(기본 꺼짐)을 노출한다.
   켜면 사진을 기기 내 모델에 넣어 카탈로그 코드로 제한된 구조화 응답을 받고, 비어 있는 축만 제안한다. 20초 안에 끝나지 않으면 버린다(맥 실측 첫 호출 15.4초, 진입 시 prewarm).
-- **FR-516**: 모든 분석은 기기 안에서만 수행한다. 네트워크·서버 모델·외부 분석 SDK를 쓰지 않는다(헌법 III).
+- **FR-516**: 모든 분석은 기기 안에서만 수행하고 사진을 기기 밖으로 보내지 않는다. 서버 모델은 쓰지 않는다. Android ML Kit의
+  진단 정보 전송과 모델 다운로드만 헌법 1.1.0 예외로 허용한다.
 - **FR-517**: 제안은 사용자가 확인·수정할 수 있는 선택 상태로만 표시하고, 저장 시 화면에 보이는 값만 저장한다.
+- **FR-518**: Android는 Google ML Kit(Play 서비스 Subject Segmentation·Image Labeling)으로 FR-513·514와 같은 배경 제거·라벨 힌트를
+  제공하고, 라벨의 소재 힌트(denim·wool·leather·cotton)도 제안한다.
+- **FR-519**: Android에서 Gemini Nano(ML Kit GenAI Prompt API)가 사용 가능하거나 내려받을 수 있으면 FR-515와 같은 선택 기능을 노출한다.
+  지시문에 카탈로그 허용 값 목록을 넣고 JSON 응답을 Dart가 다시 검증한다. API 26 미만에서는 호출하지 않는다.
+- **FR-520**: Android 설정은 ML Kit의 기능 진단 정보 전송을 알리고, 개인정보처리방침에도 같은 내용을 둔다(헌법 1.1.0).
 
 ### Key Entities
 
@@ -145,6 +166,4 @@
 
 ## Out of Scope
 
-- Android 온디바이스 AI(ML Kit GenAI·Gemini Nano·Subject Segmentation): 진단 데이터 전송이 헌법 III과 충돌한다. 사용자 결정에 따라
-  "사용자가 켜는 실험 기능"으로 **별도 검토**한다(별도 spec, 헌법 예외 승인 필요).
 - 앱 번들 ML 모델, 코디·캘린더, 로컬 알림 발송, 착용당 비용, 홈 위젯(제안서 P1-F·G, P2).

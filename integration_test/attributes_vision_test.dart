@@ -1,6 +1,7 @@
 // 005 — 실제 iOS 런타임에서 사진 분석 채널과 새 화면 흐름을 검증한다(T018 일부).
 //
-// 1) Swift 채널(`closetimo/vision`)을 실제로 호출해 기능 확인·배경 제거·분류 라벨을 받고,
+// 1) 네이티브 채널(`closetimo/vision`, iOS Swift·Android Kotlin)을 실제로 호출해 기능 확인·
+//    배경 제거·분류 라벨을 받고,
 //    배경 제거본으로 대표 색상을 뽑는다(합성 이미지: 흰 배경 위 네이비 티셔츠 모양).
 // 2) 실제 앱에서 칩만으로 옷을 등록하고 홈 "오늘 입은 옷"으로 기록, 옷장 상세 필터, 설정 사진 분석을 촬영한다.
 //
@@ -8,7 +9,8 @@
 //   xcrun simctl uninstall booted com.closetimo.app
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/attributes_vision_test.dart -d <simulator>
-// 실기기에서는 배경 제거·색상까지 엄격히 확인한다(시뮬레이터는 Vision 신경망 미지원):
+// 실기기에서는 배경 제거·색상까지 엄격히 확인한다(iOS 시뮬레이터는 Vision 신경망 미지원).
+// Android 실기기: SHOTS_DIR=build/android_verify_shots flutter drive ... -d <serial>
 //   ... -d <iphone> --dart-define=E2E_VISION_STRICT=true
 
 import 'dart:io';
@@ -73,8 +75,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('iOS 사진 분석 채널: 기능 확인·배경 제거·분류·색상', (tester) async {
-    if (!Platform.isIOS) return; // Android는 채널을 부르지 않는다(spec 005).
+  testWidgets('사진 분석 채널: 기능 확인·배경 제거·분류·색상', (tester) async {
     final vision = MethodChannelNativeVision();
     final caps = await vision.capabilities();
     debugPrint(
@@ -85,7 +86,16 @@ void main() {
     expect(caps.backgroundRemoval, isTrue, reason: 'iOS 17+ 시뮬레이터');
 
     final photo = await _syntheticShirt();
-    final result = await vision.analyze(photo, removeBackground: true);
+    var result = await vision.analyze(photo, removeBackground: true);
+    if (Platform.isAndroid) {
+      // Play 서비스 ML Kit 모듈은 처음에 내려받는다. 준비될 때까지 기다린다(최대 120초).
+      await vision.prewarm();
+      final until = DateTime.now().add(const Duration(seconds: 120));
+      while (result.cutout == null && DateTime.now().isBefore(until)) {
+        await Future<void>.delayed(const Duration(seconds: 3));
+        result = await vision.analyze(photo, removeBackground: true);
+      }
+    }
     debugPrint(
       'E2E vision labels: '
       '${result.labels.map((l) => '${l.identifier}=${l.confidence.toStringAsFixed(2)}').join(' ')}',
@@ -117,11 +127,20 @@ void main() {
     debugPrint('E2E photo colors: $colors');
     expect(colors.first, 'navy');
 
-    // 이 빌드 툴체인(Xcode 26)에서는 기기 내 AI 이미지 입력을 컴파일하지 않는다.
-    await expectLater(
-      vision.describe(photo),
-      throwsA(isA<UnsupportedError>()),
-    );
+    // 기기 내 AI: iOS는 이 툴체인(Xcode 26)에서 컴파일하지 않고, Android는 Gemini Nano
+    // 지원 기기에서만 쓴다. 쓸 수 없으면 UnsupportedError여야 한다.
+    if (caps.onDeviceAi == OnDeviceAiStatus.available) {
+      final d = await vision.describe(
+        photo,
+        schema: AttributeSuggester.describeSchema,
+      );
+      debugPrint('E2E on-device AI: ${d.category}/${d.subType} ${d.colors}');
+    } else {
+      await expectLater(
+        vision.describe(photo),
+        throwsA(isA<UnsupportedError>()),
+      );
+    }
   });
 
   testWidgets('칩만으로 등록 → 오늘 입은 옷 기록 → 상세 필터 → 사진 분석 설정', (tester) async {

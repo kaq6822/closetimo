@@ -1,5 +1,15 @@
 <!--
-SYNC IMPACT REPORT
+SYNC IMPACT REPORT (1.1.0, 2026-11-03)
+==================
+Version change: 1.0.0 → 1.1.0 (MINOR — 원칙 III에 승인된 예외 조항 추가)
+Modified principles: III. 로컬 우선 데이터 소유권 — "기기 내 사진 분석용 Google ML Kit" 예외 명시
+Reason: 사용자(제품 소유자) 승인(2026-11-02). spec 005 FR-518(Android 기기 내 사진 분석)
+Templates requiring updates: 없음(구조 변경 없음). 관련 문서: AGENTS.md 로컬 우선 규칙, specs/005
+Follow-up: 공개 개인정보처리방침에 ML Kit 진단 정보 수집 반영(docs/release/privacy-policy-mlkit-update.md)
+-->
+
+<!--
+SYNC IMPACT REPORT (1.0.0)
 ==================
 Version change: TEMPLATE → 1.0.0 (initial ratification)
 Modified principles: N/A (initial drafting from template)
@@ -43,6 +53,12 @@ Follow-up TODOs: None — `.specify/memory/temp_srd.md` deletion scheduled per P
 백업은 사용자가 명시적으로 트리거하는 iCloud(iOS) 또는 Google Drive(Android)
 경로만 허용한다. 서버 동기화, 계정 시스템, 외부 분석 SDK는 본 헌법의 개정 없이
 도입할 수 없다.
+
+**승인된 예외 (1.1.0)**: Android의 기기 내 사진 분석(배경 제거·이미지 라벨·Gemini Nano)에
+한해 Google ML Kit을 쓸 수 있다. 사진과 옷장 데이터는 기기 밖으로 보내지 않지만, ML Kit은
+기능 진단 정보(기기 모델·OS·앱 버전·성능 지표 등)를 Google에 보내며 모델을 Play 서비스로
+내려받는다. 이 사실은 앱 설정과 개인정보처리방침에 알린다. 다른 용도의 외부 SDK·서버 통신은
+여전히 개정 없이 도입할 수 없다.
 
 **Rationale**: 옷장 데이터는 개인적 생활 기록이다. 기본값을 로컬로 두는 것이
 신뢰와 단순성을 동시에 확보하는 가장 짧은 길이다.
@@ -89,4 +105,4 @@ Spec Kit 산출물은 미래의 자신과 협업자에게 보내는 가장 저�
    점검·갱신한다.
 4. 모든 PR 리뷰는 본 헌법 준수 여부를 명시적으로 확인한다.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-18 | **Last Amended**: 2026-05-18
+**Version**: 1.1.0 | **Ratified**: 2026-05-18 | **Last Amended**: 2026-11-03

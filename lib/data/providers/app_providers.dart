@@ -98,7 +98,7 @@ final preferencesStreamProvider = StreamProvider<UserPreferences>((ref) {
   return ref.watch(preferencesRepositoryProvider).watch();
 });
 
-/// 005 — iOS 기기 내 사진 분석 채널. Android에서는 아무것도 지원하지 않는다고 답한다.
+/// 005 — 기기 내 사진 분석 채널(iOS Vision·Foundation Models, Android ML Kit). 그 밖의 플랫폼은 미지원.
 final nativeVisionProvider = Provider<NativeVision>(
   (ref) => MethodChannelNativeVision(),
 );

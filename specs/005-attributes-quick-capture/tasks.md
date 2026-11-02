@@ -38,9 +38,17 @@
       같은 Vision 코드는 macOS 26.6에서 11/11 피사체 분리를 확인했다.
 - [ ] T019 Xcode 27로 빌드해 iOS 27 Apple Intelligence 실기기에서 기기 내 AI 분석 정확도·지연 측정
       (`Attachment(imageURL:)` 시그니처 확인 포함, 시뮬레이터는 이미지 분석 미지원)
-- [ ] T020 Android 실기기 QA(색상 추천·여러 장 등록·정리하기) — docs/qa/android-qa-runbook.md
+- [ ] T020 Android 실기기 탐색 QA(사진 선택·여러 장 등록·정리하기를 실제 사진으로) — docs/qa/android-qa-runbook.md
 - [ ] T021 소규모 사용성 평가로 SC-501~503 확인(입력 시간·찾기 시간)
 
-## 별도 검토(이번 범위 밖)
+## Android 기기 내 사진 분석 (헌법 1.1.0 예외, 2026-11-02 사용자 승인)
 
-- Android 온디바이스 AI(ML Kit GenAI·Gemini Nano): 사용자가 켜는 실험 기능 여부와 헌법 III 예외 승인.
+- [x] T023 헌법 원칙 III 예외 조항(1.1.0)·AGENTS 로컬 우선 규칙 갱신
+- [x] T024 Kotlin 채널(배경 제거·라벨·Gemini Nano)과 MainActivity 등록, ML Kit 의존성·manifest — Android debug 빌드
+- [x] T025 Dart 채널 Android 지원·허용 값 목록 전달·ML Kit 라벨/소재 힌트 — `native_vision_channel_test`, `attribute_suggester_test`
+- [x] T026 설정의 ML Kit 진단 정보 안내·모델 준비 중 토글 — `daily_flows_005_test`
+- [x] T022 Android 실기기 E2E — 2026-11-03 Galaxy A23(SM-A235N, Android 14), `--dart-define=E2E_VISION_STRICT=true`:
+      기능 확인(배경 제거 true·라벨 true·Gemini Nano unsupported), ML Kit 배경 제거본 생성·색상 `navy`, Gemini Nano 미지원 시
+      UnsupportedError, UI 흐름 통과. 스크린샷 `build/android_verify_shots/005_*.png`(설정 진단 정보 안내 포함).
+      이 기기는 Gemini Nano 미지원이라 기기 내 AI 응답 품질은 지원 기기(Galaxy S26·Z Fold7 등)에서 따로 확인한다.
+- [ ] T027 공개 개인정보처리방침(kaq6822/smulsmul) 반영 — 문안: docs/release/privacy-policy-mlkit-update.md
