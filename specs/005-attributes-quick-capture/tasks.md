@@ -39,6 +39,8 @@
 - [ ] T019 Xcode 27로 빌드해 iOS 27 Apple Intelligence 실기기에서 기기 내 AI 분석 정확도·지연 측정
       (`Attachment(imageURL:)` 시그니처 확인 포함, 시뮬레이터는 이미지 분석 미지원)
 - [ ] T020 Android 실기기 탐색 QA(사진 선택·여러 장 등록·정리하기를 실제 사진으로) — docs/qa/android-qa-runbook.md
+      2026-11-03 Galaxy A23 흐름 QA 통과(결함 0, 크래시 0) — docs/qa/reports/2026-11-03-android-005-exploratory.md.
+      합성 이미지로 진행해 실제 옷 사진의 종류·소재 제안 정확도는 남았다(남색→"파랑" 제안 관찰 포함).
 - [ ] T021 소규모 사용성 평가로 SC-501~503 확인(입력 시간·찾기 시간)
 
 ## Android 기기 내 사진 분석 (헌법 1.1.0 예외, 2026-11-02 사용자 승인)
@@ -51,4 +53,6 @@
       기능 확인(배경 제거 true·라벨 true·Gemini Nano unsupported), ML Kit 배경 제거본 생성·색상 `navy`, Gemini Nano 미지원 시
       UnsupportedError, UI 흐름 통과. 스크린샷 `build/android_verify_shots/005_*.png`(설정 진단 정보 안내 포함).
       이 기기는 Gemini Nano 미지원이라 기기 내 AI 응답 품질은 지원 기기(Galaxy S26·Z Fold7 등)에서 따로 확인한다.
-- [ ] T027 공개 개인정보처리방침(kaq6822/smulsmul) 반영 — 문안: docs/release/privacy-policy-mlkit-update.md
+- [x] T027 공개 개인정보처리방침(kaq6822/smulsmul) 반영 — 2026-11-03 kaq6822/smulsmul#4·#5 병합·배포
+      (국문·영문 3항 "사진 분석" 신설, 제3자 서비스 항목에 ML Kit 명시). 문안: docs/release/privacy-policy-mlkit-update.md
+- [ ] T028 Play Console 데이터 보안 양식에 ML Kit 수집 항목 반영(콘솔 접근 필요, 출시 전) — 확인 항목은 위 문안 문서 참조
