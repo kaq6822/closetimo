@@ -30,12 +30,16 @@
 ## 검증
 
 - [x] T017 `flutter analyze`·전체 `flutter test`·토큰 검사·iOS/Android debug 빌드
-- [ ] T018 iOS 17+ **실기기**에서 배경 제거·분류 힌트 동작 확인
+- [x] T018 iOS 17+ **실기기**에서 배경 제거·분류 힌트 동작 확인
       (`integration_test/attributes_vision_test.dart`를 `--dart-define=E2E_VISION_STRICT=true`로 실행).
       2026-11-02 iPhone 17 Pro 시뮬레이터(iOS 26.5): 채널 왕복·기능 확인(배경 제거 true·분류 true·AI unsupported)·
       엔진 색상 추출(`navy`)·UI 흐름 통과, 스크린샷 `build/ios_verify_shots/005_*.png`. 단, 시뮬레이터는 Vision 신경망
       요청을 실행하지 못해(`Failed to create espresso context`) 배경 제거·분류는 빈 결과로 돌아왔다(오류 내성 경로 확인).
       같은 Vision 코드는 macOS 26.6에서 11/11 피사체 분리를 확인했다.
+      2026-11-03 **iPhone 15 Pro 실기기(iOS 27.0.1)**, Xcode 26.6 profile 빌드, `E2E_VISION_STRICT=true`: 채널 테스트(기능 확인·
+      배경 제거본 생성·배경 제거본/원본 색상 `navy`)와 UI 흐름 2/2 통과. 터미널(Orca)에 로컬 네트워크 권한이 없어 `flutter drive`
+      대신 결과를 앱 Documents에 쓰는 임시 래퍼로 실행했고, 드라이버 없이 찍힌 스크린샷은 실행 화면만 담겨 증거에서 뺐다.
+      Xcode 26.6 빌드라 기기 내 AI는 unsupported(설계대로)이며 T019에서 따로 확인한다.
 - [ ] T019 Xcode 27로 빌드해 iOS 27 Apple Intelligence 실기기에서 기기 내 AI 분석 정확도·지연 측정
       (`Attachment(imageURL:)` 시그니처 확인 포함, 시뮬레이터는 이미지 분석 미지원)
 - [ ] T020 Android 실기기 탐색 QA(사진 선택·여러 장 등록·정리하기를 실제 사진으로) — docs/qa/android-qa-runbook.md
