@@ -6,6 +6,7 @@ import 'package:closetimo/core/vision/color_extractor.dart';
 import 'package:closetimo/core/vision/native_vision.dart';
 import 'package:closetimo/data/suggestions/attribute_suggester.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// [files]를 차례로 분석해 [out]에 기록하고, 단계마다 [onUpdate]를 부른다.
 ///
@@ -24,6 +25,7 @@ Future<void> runAiMeasure({
   final vision = MethodChannelNativeVision();
   var caps = await vision.capabilities();
   out['caps'] = _caps(caps);
+  out['aiDetail'] = await _aiDetail();
   await onUpdate();
 
   final sw = Stopwatch()..start();
@@ -35,6 +37,7 @@ Future<void> runAiMeasure({
       await Future<void>.delayed(const Duration(seconds: 10));
       caps = await vision.capabilities();
       out['caps'] = _caps(caps);
+      out['aiDetail'] = await _aiDetail();
       out['aiWaitSec'] = sw.elapsed.inSeconds;
       await onUpdate();
     }
@@ -130,6 +133,7 @@ Future<void> runAiMeasure({
 String summarizeAiMeasure(Map<String, Object?> out) {
   final b = StringBuffer()
     ..writeln('caps ${out['caps']}  stage ${out['stage']}')
+    ..writeln('aiDetail ${out['aiDetail']}')
     ..writeln('aiWait ${out['aiWaitSec'] ?? 0}s  visionWait ${out['visionWaitSec'] ?? 0}s  prewarm ${out['prewarmMs']}ms');
   for (final r in (out['rows'] as List?) ?? const []) {
     final m = r as Map<String, Object?>;
@@ -155,6 +159,17 @@ Map<String, Object?> _caps(VisionCapabilities c) => {
   'classify': c.classification,
   'ai': c.onDeviceAi.name,
 };
+
+/// 기기 내 AI 원본 상태(Android `onDeviceAiDetail`, 진단용). 없으면 null.
+Future<Object?> _aiDetail() async {
+  try {
+    final raw = await const MethodChannel('closetimo/vision')
+        .invokeMapMethod<String, Object?>('capabilities');
+    return raw?['onDeviceAiDetail'];
+  } catch (e) {
+    return 'error=$e';
+  }
+}
 
 Future<String?> _quiet(Future<void> Function() run) async {
   try {

@@ -88,6 +88,8 @@ class ClosetimoVisionChannel(
                         "backgroundRemoval" to true,
                         "classification" to true,
                         "onDeviceAi" to aiStatus(),
+                        // 진단용(QA 측정 도구가 표시): Gemini Nano 원본 상태 또는 오류. 앱 UI는 쓰지 않는다.
+                        "onDeviceAiDetail" to aiDetail(),
                     ),
                 )
             }
@@ -140,6 +142,15 @@ class ClosetimoVisionChannel(
         } catch (e: Exception) {
             Log.w(TAG, "Gemini Nano status check failed: $e")
             "unsupported"
+        }
+    }
+
+    private suspend fun aiDetail(): String {
+        val model = model ?: return "no model (API ${Build.VERSION.SDK_INT})"
+        return try {
+            "status=${model.checkStatus()}"
+        } catch (e: Exception) {
+            "error=$e"
         }
     }
 

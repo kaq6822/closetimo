@@ -40,3 +40,15 @@ ML Kit GenAI 지원 목록(2026-11 기준): Galaxy S25·S26 시리즈, Z Fold7, 
 
 같은 APK로 확인: `ai: unsupported`, ML Kit 배경 제거 11/11, 사진당 0.7~0.9초. 라벨은 청바지(`denim 0.99`)·운동화·가방은 맞고,
 착용 사진은 다른 옷(티셔츠 사진의 청바지 등)을 잡는다.
+
+## 결과 — Galaxy S26 Ultra 원격 기기 (2026-11-04, 측정 실패)
+
+SM-S948B-PL03(폴란드, Android 16, One UI 8.5). `ai: unsupported`이고, ML Kit 배경 제거·라벨 모듈도 5분 대기 안에 준비되지 않아
+배경 제거 0/11·라벨 없음으로 끝났다. 기기가 Samsung·Google 계정에 로그인되어 있지 않고 "조직 소유 기기"로 관리되며,
+설정 검색에 AICore가 나오지 않는다. 그래서 Play 서비스 모듈과 Gemini Nano(AICore)를 내려받지 못하는 것으로 보인다(추정).
+**Remote Test Lab으로는 Gemini Nano 측정이 어렵다.** 지원 기기 실물(S25 이상 등)에서 이 APK를 돌린다.
+
+- 원격 기기에서 실제 상태를 볼 수 있게 측정 화면 둘째 줄에 `aiDetail`을 띄운다(`onDeviceAiDetail`: `status=<FeatureStatus 값>`
+  또는 `error=<예외>`). 이번 세션에서는 새 APK 재설치가 0%에서 멈춰 이 값을 확인하지 못했다.
+- 웹 클라이언트 주의: 앱 시작(▶) 뒤 화면이 꺼질 수 있다(측면 버튼 → 위로 밀어 잠금 해제). Esc 키는 기기 뒤로 가기로 전달된다.
+  같은 세션에서 APK를 다시 올리면 설치가 0%에서 멈출 수 있다.
