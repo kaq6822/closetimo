@@ -295,6 +295,9 @@ class ClosetimoVisionChannel(
              "seasons": any of [${values("seasons")}],
              "material": one of [${values("material")}, none],
              "pattern": one of [${values("pattern")}, none]}
+            subType hints: knit = any knitted sweater or pullover (British "jumper");
+            jumper = casual zip-up outer jacket such as a bomber or windbreaker, never a sweater;
+            cardigan = knit top that opens at the front; hoodie = hooded sweatshirt.
         """.trimIndent()
     }
 

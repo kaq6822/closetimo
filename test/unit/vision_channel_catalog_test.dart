@@ -13,7 +13,9 @@ final _swift = File(
 
 /// `@Guide(description: "<description 시작>…", .anyOf([...]))`의 문자열 목록.
 Set<String> _anyOf(String descriptionStart) {
-  final at = _swift.indexOf('description: "$descriptionStart');
+  final at = _swift.indexOf(
+    RegExp('description:\\s*"${RegExp.escape(descriptionStart)}'),
+  );
   expect(at, isNonNegative, reason: descriptionStart);
   final open = _swift.indexOf('.anyOf([', at);
   final close = _swift.indexOf('])', open);

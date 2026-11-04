@@ -18,11 +18,12 @@
 | 배경 제거 | Vision `VNGenerateForegroundInstanceMaskRequest` | iOS 17+ | 맥 실측 11/11 분리, 23~30ms |
 | 분류 힌트 | Vision `VNClassifyImageRequest`(라벨 1,303개) | iOS 13+ | 맥 실측: 청바지·운동화·후드 정확, 셔츠·스웨터·스커트 라벨 없음 |
 | 색상 추출 | `dart:ui` 디코딩 + CIELAB k-means | 전 기기 | 단위 테스트 + 맥 실측(제품 사진 정확) |
-| 기기 내 AI | Foundation Models `@Generable` + `Attachment`(이미지) | iOS 27 SDK·Apple Intelligence 기기 | 스키마는 macOS 26에서 텍스트로 실측(코트·울·체크 정확, 1.3~15.4초). 이미지 입력은 미검증 |
+| 기기 내 AI | Foundation Models `@Generable` + `Attachment`(이미지) | iOS 27 SDK·Apple Intelligence 기기 | 스키마는 macOS 26에서 텍스트로 실측(코트·울·체크 정확, 1.3~15.4초). 이미지 입력은 2026-11-04 iPhone 15 Pro(iOS 27) 실측: 종류·세부 종류 9/11, 2.4~4.0초(첫 호출 5.5~7.1초) |
 
-**빌드 조건**: 이미지 입력 코드는 `#if canImport(FoundationModels) && compiler(>=6.4)`로 감싼다. 현재 Xcode 26.6(Swift 6.3.3)
-빌드에서는 컴파일되지 않고 `onDeviceAi = unsupported`를 돌려 설정을 숨긴다. FoundationModels는 약한 링크
-(`LC_LOAD_WEAK_DYLIB`)로 확인해 iOS 13 기기에서도 실행된다.
+**빌드 조건**: 이미지 입력 코드는 `#if canImport(FoundationModels) && compiler(>=6.4)`로 감싼다. Xcode 26.x(Swift 6.3)
+빌드에서는 컴파일되지 않고 `onDeviceAi = unsupported`를 돌려 설정을 숨긴다. 2026-11-04부터 Xcode 27.2(Swift 6.4.2)로 빌드하며
+이 경로가 컴파일된다(`Attachment(imageURL:)` 시그니처 확인). Xcode 27은 최소 배포 버전 iOS 15를 요구해 13→15로 올렸다.
+FoundationModels는 약한 링크(`LC_LOAD_WEAK_DYLIB`)로 확인해 iOS 26 미만 기기에서도 실행된다.
 
 **Android**(헌법 1.1.0 예외): `android/app/src/main/kotlin/com/closetimo/app/ClosetimoVisionChannel.kt`가 같은 채널을 구현한다.
 

@@ -40,8 +40,14 @@
       배경 제거본 생성·배경 제거본/원본 색상 `navy`)와 UI 흐름 2/2 통과. 터미널(Orca)에 로컬 네트워크 권한이 없어 `flutter drive`
       대신 결과를 앱 Documents에 쓰는 임시 래퍼로 실행했고, 드라이버 없이 찍힌 스크린샷은 실행 화면만 담겨 증거에서 뺐다.
       Xcode 26.6 빌드라 기기 내 AI는 unsupported(설계대로)이며 T019에서 따로 확인한다.
-- [ ] T019 Xcode 27로 빌드해 iOS 27 Apple Intelligence 실기기에서 기기 내 AI 분석 정확도·지연 측정
+- [x] T019 Xcode 27로 빌드해 iOS 27 Apple Intelligence 실기기에서 기기 내 AI 분석 정확도·지연 측정
       (`Attachment(imageURL:)` 시그니처 확인 포함, 시뮬레이터는 이미지 분석 미지원)
+      2026-11-04 iPhone 15 Pro(iOS 27.0.1), Xcode 27.2(Swift 6.4.2) profile 빌드, `integration_test/on_device_ai_measure.dart`:
+      이미지 입력 경로 컴파일·`onDeviceAi = available`. 11장(§3.1 세트) 기준 앱 최종 제안(배경 제거본 입력)
+      종류 9/11·세부 종류 9/11(지시문 보강 전 세부 종류 5/11), 지연 첫 호출 5.5~7.1초·이후 2.4~4.0초(20초 제한 안).
+      틀린 2장(후드·스커트)은 모두 착용 사진이다. 결과: docs/product/2026-11-02-ux-redesign-and-on-device-ai.md §3.4.
+      반영: 세부 종류 지시문 보강(knit/jumper/cardigan 구분, iOS·Android), 상의↔아우터 충돌 시 세부 종류 우선(`fromDescription`).
+      Xcode 27 최소 배포 버전에 맞춰 iOS 13→15.
 - [ ] T020 Android 실기기 탐색 QA(사진 선택·여러 장 등록·정리하기를 실제 사진으로) — docs/qa/android-qa-runbook.md
       2026-11-03 Galaxy A23 흐름 QA 통과(결함 0, 크래시 0) — docs/qa/reports/2026-11-03-android-005-exploratory.md.
       합성 이미지로 진행해 실제 옷 사진의 종류·소재 제안 정확도는 남았다(남색→"파랑" 제안 관찰 포함).

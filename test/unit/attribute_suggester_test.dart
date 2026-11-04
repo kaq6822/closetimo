@@ -285,7 +285,21 @@ void main() {
   });
 
   group('AI 응답 검증', () {
-    test('종류가 틀려도 세부 종류가 맞으면 세부 종류의 종류를 쓴다', () {
+    test('상의·아우터 충돌은 세부 종류를 따른다(T019 실측: 카디건을 상의로 답함)', () {
+      final s = AttributeSuggester.fromDescription(
+        const OnDeviceDescription(category: 'top', subType: 'cardigan'),
+      );
+      expect(s.category, Category.outer);
+      expect(s.subType, 'cardigan');
+
+      final t = AttributeSuggester.fromDescription(
+        const OnDeviceDescription(category: 'outer', subType: 'knit'),
+      );
+      expect(t.category, Category.top);
+      expect(t.subType, 'knit');
+    });
+
+    test('그 밖의 충돌은 종류를 믿고 세부 종류를 버리며, 종류가 없으면 세부 종류의 종류를 쓴다', () {
       final s = AttributeSuggester.fromDescription(
         const OnDeviceDescription(category: 'shoes', subType: 'jeans'),
       );

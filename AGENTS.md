@@ -7,7 +7,7 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 ## 프로젝트 개요
 
 - **제품**: 옷장이모(Closetimo) — 큐레이팅하는 디지털 옷장 (옷장 관리 + 세탁 워크플로 MVP)
-- **플랫폼**: Flutter 단일 코드베이스, iOS 13+ / Android API 24+ (휴대폰 폼팩터 한정)
+- **플랫폼**: Flutter 단일 코드베이스, iOS 15+ / Android API 24+ (휴대폰 폼팩터 한정, iOS 15는 Xcode 27 최소 배포 버전 — 2026-11-04)
 - **아키텍처**: 로컬 우선(오프라인 동작), 백엔드 없음, 외부 SDK·분석 도구·서버 동기화 금지
   (예외: Android 기기 내 사진 분석용 Google ML Kit, 헌법 1.1.0)
 - **기술 스택**: Dart 3.12+ / Flutter 3.44.x stable (검증 기준 3.44.6; 팀 합의 시 FVM 등으로 고정), Isar Plus 1.3.x(로컬 NoSQL), Riverpod(상태 관리),

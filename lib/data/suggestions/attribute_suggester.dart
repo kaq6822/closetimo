@@ -228,6 +228,9 @@ class AttributeSuggester {
     );
   }
 
+  /// 기기 내 AI가 자주 헷갈리는 종류 쌍. 충돌하면 세부 종류를 따른다.
+  static const _topOuter = {Category.top, Category.outer};
+
   /// 기기 내 AI 응답을 카탈로그로 검증한다. 알 수 없는 값은 버린다.
   @visibleForTesting
   static AttributeSuggestion fromDescription(OnDeviceDescription d) {
@@ -235,9 +238,13 @@ class AttributeSuggester {
     for (final c in Category.selectable) {
       if (c.name == d.category && c != Category.uncategorized) category = c;
     }
-    // 종류가 없거나 틀려도 세부 종류가 맞으면 그 종류를 쓴다.
+    // 종류가 없으면 세부 종류의 종류를 쓴다. 상의·아우터는 모델이 자주 헷갈리므로(카디건을 상의로 답함,
+    // T019 실측) 둘 사이 충돌은 더 구체적인 세부 종류를 따른다. 그 밖의 충돌은 종류를 믿고 세부 종류를 버린다.
     final subDef = ItemAttributes.subType(d.subType);
-    if (subDef != null && (category == null || category == subDef.category)) {
+    if (subDef != null &&
+        (category == null ||
+            category == subDef.category ||
+            _topOuter.containsAll({category, subDef.category}))) {
       category = subDef.category;
     }
     return AttributeSuggestion(

@@ -263,7 +263,8 @@ final class ClosetimoVisionChannel {
     var category: String
 
     @Guide(
-      description: "Specific garment type, or none if unsure",
+      description:
+        "Specific garment type, or none if unsure. knit = any knitted sweater or pullover (British jumper). jumper = casual zip-up outer jacket such as a bomber or windbreaker, never a sweater. cardigan = knit top that opens at the front. hoodie = hooded sweatshirt. skirt and dress are not outerwear.",
       .anyOf([
         "tshirt", "shirt", "knit", "sweatshirt", "hoodie", "sleeveless", "polo",
         "jeans", "slacks", "cotton_pants", "shorts", "skirt", "jogger", "leggings",

@@ -26,7 +26,7 @@
 
 **Testing**: `flutter_test` (unit/widget), `integration_test` (e2e on emulator/simulator). Isar는 in-memory 인스턴스로 격리된 단위 테스트 가능.
 
-**Target Platform**: iOS 13+ (iPhone), Android API 24+ / Android 7.0 Nougat+ (휴대폰 폼팩터 한정). 태블릿 레이아웃은 v1 범위 밖.
+**Target Platform**: iOS 15+ (iPhone, 2026-11-04 Xcode 27 최소 배포 버전에 맞춰 13→15), Android API 24+ / Android 7.0 Nougat+ (휴대폰 폼팩터 한정). 태블릿 레이아웃은 v1 범위 밖.
 
 **Project Type**: 모바일 단일 앱 (Flutter cross-platform, 백엔드 없음).
 
