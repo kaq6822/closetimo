@@ -16,7 +16,9 @@ python3 tool/qa/build_ai_measure_apk.py <사진 폴더(*.jpg)>   # 기본 모델
 ## 2. 원격 기기 고르기
 
 [Remote Test Lab](https://developer.samsung.com/remote-test-lab)에 삼성 계정으로 로그인해 Gemini Nano 지원 기기를 예약한다.
-ML Kit GenAI 지원 목록(2026-11 기준): Galaxy S25·S26 시리즈, Z Fold7, Z Flip8·Z Fold8 등.
+앱은 Prompt API(`GenerativeModel`)를 쓴다. Prompt API 지원 기기(2026-11 기준, developers.google.com/ml-kit/genai): Galaxy S26·S26+·S26 Ultra,
+Z Fold7·Z TriFold, Z Flip8·Z Fold8·Z Fold8 Ultra, Pixel 9·10·11 등. **Galaxy S25 시리즈는 요약·이미지 설명 같은 작업 API만 지원하고
+Prompt API는 지원하지 않는다**(앱에서는 `unsupported`).
 기기 화면 상단의 Android 버전과 모델명을 결과와 함께 기록한다.
 
 ## 3. 실행과 결과 읽기
@@ -46,7 +48,7 @@ ML Kit GenAI 지원 목록(2026-11 기준): Galaxy S25·S26 시리즈, Z Fold7, 
 SM-S948B-PL03(폴란드, Android 16, One UI 8.5). `ai: unsupported`이고, ML Kit 배경 제거·라벨 모듈도 5분 대기 안에 준비되지 않아
 배경 제거 0/11·라벨 없음으로 끝났다. 기기가 Samsung·Google 계정에 로그인되어 있지 않고 "조직 소유 기기"로 관리되며,
 설정 검색에 AICore가 나오지 않는다. 그래서 Play 서비스 모듈과 Gemini Nano(AICore)를 내려받지 못하는 것으로 보인다(추정).
-**Remote Test Lab으로는 Gemini Nano 측정이 어렵다.** 지원 기기 실물(S25 이상 등)에서 이 APK를 돌린다.
+**Remote Test Lab으로는 Gemini Nano 측정이 어렵다.** Prompt API 지원 기기 실물(S26 시리즈·Z Fold7 등)에서 이 APK를 돌린다.
 
 - 원격 기기에서 실제 상태를 볼 수 있게 측정 화면 둘째 줄에 `aiDetail`을 띄운다(`onDeviceAiDetail`: `status=<FeatureStatus 값>`
   또는 `error=<예외>`). 이번 세션에서는 새 APK 재설치가 0%에서 멈춰 이 값을 확인하지 못했다.
