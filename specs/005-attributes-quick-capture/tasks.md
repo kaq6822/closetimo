@@ -51,9 +51,11 @@
       Android Gemini Nano는 미측정: 2026-11-04 Samsung Remote Test Lab Galaxy S26 Ultra(SM-S948B, Android 16)에서
       `ai: unsupported`, ML Kit 배경 제거·라벨 모듈도 5분 안에 내려받지 못함(배경 제거 0/11). 원격 기기는 계정 미로그인·관리 기기라
       Play 서비스·AICore 내려받기가 막힌 것으로 보인다(추정). 지원 기기 실물로 다시 잰다 — docs/qa/remote-test-lab-ai-measure.md.
-- [ ] T020 Android 실기기 탐색 QA(사진 선택·여러 장 등록·정리하기를 실제 사진으로) — docs/qa/android-qa-runbook.md
+- [x] T020 Android 실기기 탐색 QA(사진 선택·여러 장 등록·정리하기를 실제 사진으로) — docs/qa/android-qa-runbook.md
       2026-11-03 Galaxy A23 흐름 QA 통과(결함 0, 크래시 0) — docs/qa/reports/2026-11-03-android-005-exploratory.md.
-      합성 이미지로 진행해 실제 옷 사진의 종류·소재 제안 정확도는 남았다(남색→"파랑" 제안 관찰 포함).
+      2026-11-05 실제 옷 사진 4장으로 회귀 QA: 물건 사진은 종류·세부 종류가 맞고, 착용 사진은 함께 찍힌 옷으로 분류되는
+      한계(O-8) 확인. 여러 장 등록이 제안 종류를 그대로 저장하던 D-01 수정·재확인 — docs/qa/reports/2026-11-05-android-005-regression.md.
+      같은 날 iPhone 15 Pro E2E 6종 통과 — docs/qa/reports/2026-11-05-ios-005-regression.md.
 - [ ] T021 소규모 사용성 평가로 SC-501~503 확인(입력 시간·찾기 시간)
 
 ## Android 기기 내 사진 분석 (헌법 1.1.0 예외, 2026-11-02 사용자 승인)
