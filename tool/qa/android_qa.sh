@@ -57,7 +57,22 @@ guard() {
 }
 
 # ── 관찰 ──────────────────────────────────────────────────
-ui() { android layout --device="$ANDROID_SERIAL" 2>/dev/null; }
+# Android CLI 1.1+는 창별 묶음(`[{window-title, type, content:[…]}]`, 대문자 CLICKABLE)을 내보낸다.
+# 앱 창 요소만 평탄화하고 interactions/state를 소문자로 맞춰 예전 평탄 형식과 같게 만든다(시스템 바 제외).
+ui() {
+  android layout --flat --device="$ANDROID_SERIAL" 2>/dev/null | python3 -c '
+import json,sys
+d=json.load(sys.stdin); out=[]
+for w in d:
+    if "content" in w:
+        if w.get("type")=="SYSTEM": continue
+        out+=w["content"]
+    else: out.append(w)
+for e in out:
+    for k in ("interactions","state"):
+        if k in e: e[k]=[s.lower() for s in e[k]]
+json.dump(out,sys.stdout,ensure_ascii=False)'
+}
 # 텍스트/설명이 있거나 클릭 가능한 요소를 한 줄씩: 'desc' [x,y] interactions state
 descs() { ui | python3 -c 'import json,sys;[print(repr(e.get("content-desc") or e.get("text") or ""), e["center"], ",".join(e.get("interactions",[])), ",".join(e.get("state",[]))) for e in json.load(sys.stdin) if e.get("content-desc") or e.get("text") or "clickable" in e.get("interactions",[])]'; }
 # find_el <pattern> [exact|contains] [index] → "x y"

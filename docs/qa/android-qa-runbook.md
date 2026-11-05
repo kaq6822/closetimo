@@ -189,6 +189,15 @@ adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings p
     전환과 겹친 탭 1회가 외부 앱에 들어갔을 가능성을 배제할 수 없었다.
     → 기기 사용 전·레이어 사이마다 `fg_pkg`와 `adb logcat -d | grep "ActivityTaskManager: START"`에서
     이 QA가 보내지 않은 `from uid 2000` START를 확인한다. 발견하면 입력을 멈추고 보고한다.
+20. **Android CLI 첫 `android layout`은 기기에 보조 앱을 설치하는데, 삼성 자동 차단·Play 프로텍트가 막을 수 있다.**
+    "Could not install instrumentation APK"가 나오고 폰에 "Android CLI Instrumentation Server" 차단 알림이 뜬다.
+    사용자가 기기에서 허용해야 하며, 끝나면 `adb uninstall com.android.cli.interact.instrumentation`으로 지운다.
+    CLI가 없으면 `~/.local/bin/android`로 설치한다(공식 install.sh, 2026-11-05 1.1.16717390).
+21. **`android install`의 crash 버퍼 잡음.** 기기 측 설치 도우미(`com.android.cli.installer.device.DeviceInstaller`)가
+    `ClassNotFoundException`으로 abort해 `logcat -b crash`에 네이티브 크래시가 남는다. CLI는 "Standard Install"로 넘어가 설치는 성공한다.
+    `crashcheck`에서 Cmdline이 `app_process / com.android.cli...`인 항목은 앱 크래시가 아니다.
+22. **Android CLI 1.1의 `android layout` 출력은 창별 묶음이다**(`[{window-title, type, content:[…]}]`, `CLICKABLE` 대문자).
+    헬퍼 `ui()`가 앱 창만 평탄화하고 소문자로 맞춘다. 시스템 창(내비게이션 바의 "홈"·"뒤로가기")은 빼서 탭 라벨과 겹치지 않게 했다.
 
 ## 7. 결함 등급
 

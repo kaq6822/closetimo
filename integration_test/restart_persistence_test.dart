@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:closetimo/core/widgets/top_bar.dart';
 import 'package:closetimo/main.dart' as app;
 
 import 'support/e2e_helpers.dart';
@@ -23,7 +24,7 @@ void main() {
     await app.main();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.byType(TopBarPlusAction));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).at(0), '재시작 검증용 코트');
     await tester.pumpAndSettle();

@@ -21,7 +21,9 @@ import 'package:closetimo/data/models/item.dart';
 import 'package:closetimo/data/models/user_preferences.dart';
 import 'package:closetimo/data/models/wear_event.dart';
 import 'package:closetimo/features/item_detail/widgets/stats_grid.dart';
+import 'package:closetimo/features/add_item/widgets/wash_cycle_stepper.dart';
 
+import 'package:closetimo/core/widgets/top_bar.dart';
 import 'package:closetimo/main.dart' as app;
 
 import 'support/e2e_helpers.dart';
@@ -63,12 +65,12 @@ void main() {
       final isar = await container.read(isarProvider.future);
       if (!verifyRestart) {
         // ── 1. 홈 (빈 상태) ────────────────────────────────
-        expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
+        expect(find.text('오늘의 옷장'), findsOneWidget);
         expect(find.text('전체 아이템'), findsOneWidget);
         await shot(tester, '01_home_empty');
 
         // ── 2. 신규 옷 등록 ────────────────────────────────
-        await tapVisible(tester, find.byIcon(Icons.add_rounded));
+        await tapVisible(tester, find.byType(TopBarPlusAction));
         expect(find.text('신규 옷 등록'), findsOneWidget);
         await shot(tester, '02_add_blank');
 
@@ -83,7 +85,13 @@ void main() {
         await tester.pumpAndSettle();
 
         // 세탁 주기 스테퍼 + 1회 (기본 5 → 6)
-        await tapVisible(tester, find.byIcon(Icons.add_rounded));
+        await tapVisible(
+          tester,
+          find.descendant(
+            of: find.byType(WashCycleStepper),
+            matching: find.byIcon(Icons.add_rounded),
+          ),
+        );
         expect(find.text('6'), findsOneWidget);
 
         // 종류: 기본 미분류 → 상의로 변경(#41)
@@ -107,7 +115,7 @@ void main() {
         await waitToastGone(tester);
 
         // 홈 통계 반영 확인
-        expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
+        expect(find.text('오늘의 옷장'), findsOneWidget);
         await shot(tester, '06_home_with_data');
 
         // ── 3. 옷장 탭: 그리드·검색 ─────────────────────────
