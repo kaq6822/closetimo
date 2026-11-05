@@ -60,6 +60,7 @@ class IsarBackupRepository implements BackupRepository {
     );
 
     final imageFiles = <int, File>{};
+    final cutoutFiles = <int, File>{};
     var missing = 0;
     for (final item in items) {
       final path = item.imagePath;
@@ -70,6 +71,16 @@ class IsarBackupRepository implements BackupRepository {
       } else {
         missing++;
         debugPrint('Backup: image file missing for item ${item.id}');
+        continue;
+      }
+      // 005 — 배경 제거본은 원본이 있을 때만 싣는다. 없으면 복원 후 원본만 쓴다.
+      final cutout = item.cutoutPath;
+      if (cutout == null) continue;
+      final cutoutFile = File(await _imageStore.absolutePath(cutout));
+      if (cutoutFile.existsSync()) {
+        cutoutFiles[item.id] = cutoutFile;
+      } else {
+        debugPrint('Backup: cutout file missing for item ${item.id}');
       }
     }
 
@@ -78,6 +89,9 @@ class IsarBackupRepository implements BackupRepository {
       items: items,
       imageRefs: {
         for (final id in imageFiles.keys) id: BackupFormat.imageRef(id),
+      },
+      cutoutRefs: {
+        for (final id in cutoutFiles.keys) id: BackupFormat.cutoutRef(id),
       },
       wearEvents: events,
       preferences: prefs,
@@ -97,6 +111,9 @@ class IsarBackupRepository implements BackupRepository {
         );
         for (final MapEntry(key: id, value: file) in imageFiles.entries) {
           await encoder.addFile(file, BackupFormat.imageRef(id));
+        }
+        for (final MapEntry(key: id, value: file) in cutoutFiles.entries) {
+          await encoder.addFile(file, BackupFormat.cutoutRef(id));
         }
       } finally {
         await encoder.close();
@@ -131,7 +148,10 @@ class IsarBackupRepository implements BackupRepository {
     return _withArchive(archive, (zip, payload) {
       // 사진 엔트리 존재·CRC까지 확인해야 확인 안내 뒤 적용 단계에서
       // 손상이 드러나지 않는다.
-      for (final ref in payload.imageRefs.values) {
+      for (final ref in [
+        ...payload.imageRefs.values,
+        ...payload.cutoutRefs.values,
+      ]) {
         _readVerified(zip, ref);
       }
       return ValidatedBackup(
@@ -149,12 +169,14 @@ class IsarBackupRepository implements BackupRepository {
   Future<RestoreResult> restore(ValidatedBackup backup) async {
     // 1) 검증 + 2) 사진 staging. 파일이 확인 이후 바뀌었을 수 있으므로 다시 검증한다.
     final written = <String>[];
-    final (payload, newPaths) = await _withArchiveAsync(backup.file, (
-      zip,
+    final (
       payload,
-    ) async {
+      newPaths,
+      newCutouts,
+    ) = await _withArchiveAsync(backup.file, (zip, payload) async {
       final token = await _uniqueToken(payload.imageRefs.keys);
       final paths = <int, String>{};
+      final cutouts = <int, String>{};
       try {
         for (final MapEntry(key: id, value: ref) in payload.imageRefs.entries) {
           final bytes = _readVerified(zip, ref);
@@ -165,6 +187,16 @@ class IsarBackupRepository implements BackupRepository {
           written.add(rel);
           paths[id] = rel;
         }
+        for (final MapEntry(key: id, value: ref)
+            in payload.cutoutRefs.entries) {
+          final bytes = _readVerified(zip, ref);
+          final rel = await _imageStore.writeBytes(
+            _restoredCutoutName(id, token),
+            bytes,
+          );
+          written.add(rel);
+          cutouts[id] = rel;
+        }
       } on FileSystemException catch (e) {
         await _deleteAll(written);
         debugPrint('Restore staging failed: $e');
@@ -173,25 +205,25 @@ class IsarBackupRepository implements BackupRepository {
         await _deleteAll(written);
         rethrow;
       }
-      return (payload, paths);
+      return (payload, paths, cutouts);
     });
 
     // 3) 커밋: 단일 쓰기 트랜잭션으로 전체 교체. 실패하면 Isar가 롤백한다.
     final List<String> oldPaths;
     try {
       oldPaths = _isar.write((isar) {
-        final previous = isar.items
-            .where()
-            .imagePathIsNotNull()
-            .imagePathProperty()
-            .findAll()
-            .whereType<String>()
-            .toList();
+        final previous = [
+          for (final item in isar.items.where().findAll()) ...[
+            ?item.imagePath,
+            ?item.cutoutPath,
+          ],
+        ];
         isar.items.clear();
         isar.wearEvents.clear();
         isar.userPreferences.clear();
         for (final item in payload.items) {
           item.imagePath = newPaths[item.id];
+          item.cutoutPath = newCutouts[item.id];
         }
         isar.items.putAll(payload.items);
         isar.wearEvents.putAll(payload.wearEvents);
@@ -296,19 +328,24 @@ class IsarBackupRepository implements BackupRepository {
   static String _restoredName(int itemId, String token) =>
       '${itemId}_r$token.jpg';
 
+  static String _restoredCutoutName(int itemId, String token) =>
+      '${itemId}_cutout_r$token.png';
+
   /// 기존 파일과 겹치지 않는 복원 토큰을 만든다(커밋 전 기존 사진 보호).
   Future<String> _uniqueToken(Iterable<int> itemIds) async {
     while (true) {
       final token = _random.nextInt(1 << 32).toRadixString(16).padLeft(8, '0');
       var clash = false;
       for (final id in itemIds) {
-        final abs = await _imageStore.absolutePath(
-          p.join('items', _restoredName(id, token)),
-        );
-        if (File(abs).existsSync()) {
-          clash = true;
-          break;
+        // 사진과 배경 제거본(005) 이름 모두 기존 파일과 겹치지 않아야 한다.
+        for (final name in [
+          _restoredName(id, token),
+          _restoredCutoutName(id, token),
+        ]) {
+          final abs = await _imageStore.absolutePath(p.join('items', name));
+          if (File(abs).existsSync()) clash = true;
         }
+        if (clash) break;
       }
       if (!clash) return token;
     }

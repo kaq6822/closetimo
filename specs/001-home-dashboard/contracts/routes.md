@@ -16,6 +16,9 @@
 │            ?group=<HomeBucket.name>    ← 합산 범위 (홈 '그 외' 카드: group=others)
 │            ?purpose=<ItemPurpose.name>[,…] ← 용도 축(OR), 종류와 AND
 │            ?tag=<태그>[,…]              ← 사용자 태그 축(OR), 다른 축과 AND (#46)
+│            ?sub=<세부 종류 코드>[,…]      ← 세부 종류 축(OR) (005)
+│            ?color=<색상 코드>[,…]         ← 색상 축(OR) (005)
+│            ?season=<Season.name>[,…]    ← 계절 축(OR) (005). '이번 계절' 칩은 화면 State라 싣지 않는다
 ├── /laundry       (LaundryScreen, tab=laundry)      US4
 └── /settings      (SettingsScreen, tab=settings)    US5
 
@@ -25,6 +28,8 @@
 /item/:id/edit    (AddItemScreen(editId), 모달)      002
 /archive          (ArchiveScreen, 보관함)            #44
 /tags             (TagManageScreen, 태그 관리)       #46
+/sort-items       (SortItemsScreen, 정리하기)        005
+      query: ?ids=<Item.id>[,…]  ← 정리할 옷(여러 장 등록 직후). 없으면 활성 미분류 옷 전체
 ```
 
 ## 2. 진입점 & 초기 경로
@@ -40,6 +45,9 @@
 | `/add-item` "등록하기" 성공 | 자동 | pop → 직전 화면 | Toast: "새 옷이 옷장에 등록됐어요" |
 | `/add-item` "저장하고 다음 옷 등록" 성공 | 탭 | 같은 화면 유지 | 폼 초기화(직전 종류 유지) + 상단 Toast: "저장했어요. 다음 옷을 등록해 주세요" (FR-001a) |
 | `/add-item` 저장 실패 | 자동 | 같은 화면 유지 | 입력 유지 + Toast: "등록에 실패했어요" (Item 미생성, FR-001b) |
+| `/add-item` "여러 장 한 번에 등록" 완료(005 FR-505) | 자동 | `/sort-items?ids=…` (현재 화면 교체) | Toast: "N벌을 만들었어요" |
+| 홈 "정리 대기 N벌" 카드(005 FR-508) | 탭 | `/sort-items` | push |
+| `/sort-items` 마지막 카드 저장·"끝내기" | 탭 | pop → 직전 화면 | Toast: "N벌을 정리했어요" |
 | `/home` 세탁 바구니 "세탁 화면으로" | 탭 | `/laundry` (`goNamed`) | 탭 전환(FR-021) |
 | `/wardrobe` 그리드 타일 | 탭 | `/item/:id` | hero-image transition(선택) |
 | `/home` 최근 옷 카드 | 탭 | `/item/:id` | 동일 |
@@ -98,6 +106,7 @@ abstract final class Routes {
   static const editItem = 'editItem';
   static const archive = 'archive';     // #44
   static const tags = 'tags';           // #46
+  static const sortItems = 'sortItems'; // 005
 }
 ```
 

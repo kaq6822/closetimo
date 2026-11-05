@@ -7,6 +7,7 @@
 //   4. specs/004-backup-restore/data-model.md 표를 갱신한다.
 
 import '../models/item.dart';
+import '../models/item_attributes.dart';
 import '../models/item_tags.dart';
 import '../models/user_preferences.dart';
 import '../models/wear_event.dart';
@@ -20,6 +21,7 @@ class BackupPayload {
     required this.imageRefs,
     required this.wearEvents,
     required this.preferences,
+    this.cutoutRefs = const {},
     this.formatVersion = BackupFormat.currentVersion,
   });
 
@@ -31,6 +33,10 @@ class BackupPayload {
 
   /// Item.id → 아카이브 내부 사진 참조(`images/{id}.jpg`). 사진 없는 옷은 키가 없다.
   final Map<int, String> imageRefs;
+
+  /// Item.id → 아카이브 내부 배경 제거본 참조(`images/{id}_cutout.png`, v2). 원본 사진이
+  /// 있는 옷만 키를 가진다.
+  final Map<int, String> cutoutRefs;
 
   final List<WearEvent> wearEvents;
 
@@ -62,6 +68,12 @@ abstract final class BackupCodec {
     'archivedAt',
     'archiveReason',
     'tags',
+    'subType',
+    'colors',
+    'seasons',
+    'material',
+    'pattern',
+    'cutoutPath', // JSON 키 'cutoutImage'(아카이브 상대 참조)로 옮긴다.
   };
 
   /// codec이 다루는 WearEvent의 Isar 속성(+ id).
@@ -82,6 +94,8 @@ abstract final class BackupCodec {
     'accent',
     'lastTab',
     'firstLaunchedAt',
+    'removeBackground',
+    'onDeviceAi',
   };
 
   // ── 인코딩 ──
@@ -96,7 +110,11 @@ abstract final class BackupCodec {
     'createdAt': _iso(payload.createdAt),
     'items': [
       for (final item in payload.items)
-        encodeItem(item, imageRef: payload.imageRefs[item.id]),
+        encodeItem(
+          item,
+          imageRef: payload.imageRefs[item.id],
+          cutoutRef: payload.cutoutRefs[item.id],
+        ),
     ],
     'wearEvents': [for (final e in payload.wearEvents) encodeWearEvent(e)],
     'preferences': payload.preferences == null
@@ -104,7 +122,11 @@ abstract final class BackupCodec {
         : encodePreferences(payload.preferences!),
   };
 
-  static Map<String, Object?> encodeItem(Item item, {String? imageRef}) => {
+  static Map<String, Object?> encodeItem(
+    Item item, {
+    String? imageRef,
+    String? cutoutRef,
+  }) => {
     'id': item.id,
     'name': item.name,
     'brand': item.brand,
@@ -126,6 +148,12 @@ abstract final class BackupCodec {
     'archivedAt': _iso(item.archivedAt),
     'archiveReason': item.archiveReason.name,
     'tags': item.tags,
+    'subType': item.subType,
+    'colors': item.colors,
+    'seasons': [for (final s in item.seasons) s.name],
+    'material': item.material,
+    'pattern': item.pattern,
+    'cutoutImage': cutoutRef,
   };
 
   static Map<String, Object?> encodeWearEvent(WearEvent e) => {
@@ -143,6 +171,8 @@ abstract final class BackupCodec {
     'accent': p.accent,
     'lastTab': p.lastTab,
     'firstLaunchedAt': _iso(p.firstLaunchedAt),
+    'removeBackground': p.removeBackground,
+    'onDeviceAi': p.onDeviceAi,
   };
 
   // ── 디코딩 ──
@@ -161,22 +191,27 @@ abstract final class BackupCodec {
         supported: BackupFormat.currentVersion,
       );
     }
-    // 버전별 디코더. 새 버전을 추가하면 `switch (version)`으로 분기하고 이전
-    // 버전 분기는 없는 필드를 모델 기본값으로 채운다.
-    final payload = _decodeV1(root, version);
+    // 버전별 디코더. v2(005)는 v1에 키를 더한 형식이라 같은 디코더에서 버전으로
+    // 분기하고, v1은 새 필드를 모델 기본값으로 채운다.
+    final payload = _decode(root, version);
     _validateReferences(payload);
     return payload;
   }
 
-  static BackupPayload _decodeV1(_Obj root, int version) {
+  static BackupPayload _decode(_Obj root, int version) {
+    final v2 = version >= 2;
     final items = <Item>[];
     final imageRefs = <int, String>{};
+    final cutoutRefs = <int, String>{};
     for (final (i, raw) in root.list('items').indexed) {
       final o = _Obj.from(raw, 'items[$i]');
-      final item = _decodeItem(o);
+      final item = _decodeItem(o, v2: v2);
       items.add(item);
       final ref = o.nullableString('image');
       if (ref != null) imageRefs[item.id] = ref;
+      // 원본 사진 없는 배경 제거본은 앱 규칙(data-model §1)에 맞지 않아 버린다.
+      final cutout = v2 ? o.nullableString('cutoutImage') : null;
+      if (cutout != null && ref != null) cutoutRefs[item.id] = cutout;
     }
     final events = [
       for (final (i, raw) in root.list('wearEvents').indexed)
@@ -188,14 +223,15 @@ abstract final class BackupCodec {
       createdAt: root.dateTime('createdAt'),
       items: items,
       imageRefs: imageRefs,
+      cutoutRefs: cutoutRefs,
       wearEvents: events,
       preferences: prefsRaw == null
           ? null
-          : _decodePreferences(_Obj.from(prefsRaw, 'preferences')),
+          : _decodePreferences(_Obj.from(prefsRaw, 'preferences'), v2: v2),
     );
   }
 
-  static Item _decodeItem(_Obj o) {
+  static Item _decodeItem(_Obj o, {required bool v2}) {
     final name = o.string('name');
     if (name.trim().isEmpty) o.fail('name', 'must be non-empty');
     final washCycle = o.integer('washCycle');
@@ -236,6 +272,16 @@ abstract final class BackupCodec {
       // 앱 입력 규칙(공백 정리·20자·대소문자 중복)을 복원 값에도 적용한다.
       tags: normalizeTags(o.stringList('tags')),
     )..id = o.integer('id');
+    if (v2) {
+      // 손으로 편집한 백업 방어: 알 수 없는 코드·종류와 맞지 않는 세부 종류를 정리한다.
+      ItemAttributeValues(
+        subType: o.nullableString('subType'),
+        colors: o.stringList('colors'),
+        seasons: o.enumList('seasons', Season.values),
+        material: o.nullableString('material'),
+        pattern: o.nullableString('pattern'),
+      ).applyTo(item);
+    }
     // 파생값(status)은 저장된 값을 믿지 않고 앱 규칙(FR-011)으로 다시 계산한다.
     item.status = item.derivedStatus;
     return item;
@@ -248,14 +294,17 @@ abstract final class BackupCodec {
     note: o.nullableString('note'),
   )..id = o.integer('id');
 
-  static UserPreferences _decodePreferences(_Obj o) => UserPreferences(
-    notifWash: o.boolean('notifWash'),
-    notifWeekly: o.boolean('notifWeekly'),
-    notifUnworn: o.boolean('notifUnworn'),
-    accent: o.string('accent'),
-    lastTab: o.nullableString('lastTab'),
-    firstLaunchedAt: o.nullableDateTime('firstLaunchedAt'),
-  );
+  static UserPreferences _decodePreferences(_Obj o, {required bool v2}) =>
+      UserPreferences(
+        notifWash: o.boolean('notifWash'),
+        notifWeekly: o.boolean('notifWeekly'),
+        notifUnworn: o.boolean('notifUnworn'),
+        accent: o.string('accent'),
+        lastTab: o.nullableString('lastTab'),
+        firstLaunchedAt: o.nullableDateTime('firstLaunchedAt'),
+        removeBackground: v2 ? o.boolean('removeBackground') : true,
+        onDeviceAi: v2 ? o.boolean('onDeviceAi') : false,
+      );
 
   static void _validateReferences(BackupPayload p) {
     final itemIds = <int>{};
@@ -278,6 +327,11 @@ abstract final class BackupCodec {
     for (final MapEntry(key: id, value: ref) in p.imageRefs.entries) {
       if (ref != BackupFormat.imageRef(id)) {
         throw BackupFormatException('item $id has invalid image ref "$ref"');
+      }
+    }
+    for (final MapEntry(key: id, value: ref) in p.cutoutRefs.entries) {
+      if (ref != BackupFormat.cutoutRef(id)) {
+        throw BackupFormatException('item $id has invalid cutout ref "$ref"');
       }
     }
   }

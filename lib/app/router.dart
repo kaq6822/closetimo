@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../core/widgets/bottom_nav.dart';
 import '../core/widgets/top_bar.dart';
 import '../data/models/item.dart';
+import '../data/models/item_attributes.dart';
 import '../data/models/item_filter.dart';
 import '../data/models/item_tags.dart';
 import '../features/add_item/add_item_screen.dart';
@@ -17,6 +18,7 @@ import '../features/archive/archive_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/item_detail/item_detail_screen.dart';
 import '../features/laundry/laundry_screen.dart';
+import '../features/add_item/sort_items_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/tags/tag_manage_screen.dart';
 import '../features/wardrobe/wardrobe_screen.dart';
@@ -37,6 +39,9 @@ abstract final class Routes {
 
   /// 태그 관리(#46). 설정 > 옷 관리에서 push로 진입한다.
   static const tags = 'tags';
+
+  /// 정리하기(005 FR-506). `ids` 쿼리가 없으면 활성 미분류 옷 전체를 정리한다.
+  static const sortItems = 'sortItems';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -143,6 +148,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (ctx, st) => const TagManageScreen(),
       ),
+      GoRoute(
+        path: '/sort-items',
+        name: Routes.sortItems,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (ctx, st) => SortItemsScreen(
+          ids: parseSortItemIds(st.uri.queryParameters['ids']),
+        ),
+      ),
     ],
   );
 });
@@ -155,6 +168,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 ///   `category`와 함께 오면 `group`이 우선한다.
 /// - `purpose=<ItemPurpose.name>[,…]`: 용도 축(OR).
 /// - `tag=<태그>[,…]`: 사용자 태그 축(OR, #46). 태그에는 쉼표가 없다(정규화 규칙).
+/// - `sub=`·`color=`·`season=`: 세부 종류·색상·계절 축(OR, 005 FR-509).
 /// 알 수 없는 값은 무시한다(전체).
 ItemFilter wardrobeFilterFromQuery(Map<String, String> query) {
   var categories = <Category>{};
@@ -178,7 +192,22 @@ ItemFilter wardrobeFilterFromQuery(Map<String, String> query) {
         if (p.name == raw) p,
   };
   final tags = normalizeTags((query['tag'] ?? '').split(',')).toSet();
-  return ItemFilter(categories: categories, purposes: purposes, tags: tags);
+  Set<String> codes(String key, bool Function(String) known) => {
+    for (final raw in (query[key] ?? '').split(','))
+      if (known(raw)) raw,
+  };
+  return ItemFilter(
+    categories: categories,
+    purposes: purposes,
+    tags: tags,
+    subTypes: codes('sub', (c) => ItemAttributes.subType(c) != null),
+    colors: codes('color', (c) => ItemAttributes.color(c) != null),
+    seasons: {
+      for (final raw in (query['season'] ?? '').split(','))
+        for (final s in Season.values)
+          if (s.name == raw) s,
+    },
+  );
 }
 
 /// 옷장 필터 → `/wardrobe` 쿼리. [wardrobeFilterFromQuery]의 역방향이며
@@ -198,6 +227,17 @@ Map<String, String> wardrobeQueryParameters(ItemFilter filter) {
   }
   if (filter.tags.isNotEmpty) {
     params['tag'] = (filter.tags.toList()..sort()).join(',');
+  }
+  if (filter.subTypes.isNotEmpty) {
+    params['sub'] = (filter.subTypes.toList()..sort()).join(',');
+  }
+  if (filter.colors.isNotEmpty) {
+    params['color'] = (filter.colors.toList()..sort()).join(',');
+  }
+  if (filter.seasons.isNotEmpty) {
+    final seasons = filter.seasons.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    params['season'] = seasons.map((s) => s.name).join(',');
   }
   return params;
 }

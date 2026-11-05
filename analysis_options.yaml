@@ -10,6 +10,8 @@ analyzer:
     - "**/*.freezed.dart"
     - "lib/generated/**"
     - "packages/**"
+    # 빌드 산출물·과거 진단 스크립트(git 무시 대상)는 분석하지 않는다.
+    - "build/**"
 
 linter:
   rules:

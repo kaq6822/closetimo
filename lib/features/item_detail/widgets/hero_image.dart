@@ -2,7 +2,6 @@
 // FR-009a(#47) — 사진이 없으면 3:4 빈 영역 대신 짧은 헤더를, 사진이 있으면
 // 화면 높이의 일정 비율 이내로 제한해 주요 액션이 첫 화면에 들어오게 한다.
 
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -10,8 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
-import '../../../core/persistence/image_store.dart';
-import '../../../core/widgets/item_placeholder.dart';
+import '../../../core/widgets/item_photo.dart';
 import '../../../data/models/item.dart';
 
 class HeroImage extends ConsumerWidget {
@@ -58,10 +56,13 @@ class HeroImage extends ConsumerWidget {
               return SizedBox(
                 width: constraints.maxWidth,
                 height: height,
-                child: _Image(
-                  imagePath: item.imagePath,
+                child: ItemPhoto(
+                  imagePath: item.displayImagePath,
+                  cutout: item.showsCutout,
+                  originalPath: item.imagePath,
                   fallback: Color(item.fallbackColor),
-                  container: surfaces.container,
+                  cacheWidth: 1200,
+                  cutoutPadding: ClosetimoSpacing.xl,
                 ),
               );
             },
@@ -154,35 +155,6 @@ class _CompactHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Image extends ConsumerWidget {
-  const _Image({
-    required this.imagePath,
-    required this.fallback,
-    required this.container,
-  });
-
-  final String? imagePath;
-  final Color fallback;
-  final Color container;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (imagePath == null) {
-      return ItemPlaceholder(color: fallback);
-    }
-    final store = ref.watch(imageStoreProvider);
-    return FutureBuilder<String>(
-      future: store.absolutePath(imagePath!),
-      builder: (ctx, snap) {
-        if (snap.data == null) return Container(color: container);
-        final file = File(snap.data!);
-        if (!file.existsSync()) return Container(color: fallback);
-        return Image.file(file, fit: BoxFit.cover, cacheWidth: 1200);
-      },
     );
   }
 }

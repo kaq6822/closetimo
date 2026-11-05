@@ -7,8 +7,9 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 ## 프로젝트 개요
 
 - **제품**: 옷장이모(Closetimo) — 큐레이팅하는 디지털 옷장 (옷장 관리 + 세탁 워크플로 MVP)
-- **플랫폼**: Flutter 단일 코드베이스, iOS 13+ / Android API 24+ (휴대폰 폼팩터 한정)
+- **플랫폼**: Flutter 단일 코드베이스, iOS 15+ / Android API 24+ (휴대폰 폼팩터 한정, iOS 15는 Xcode 27 최소 배포 버전 — 2026-11-04)
 - **아키텍처**: 로컬 우선(오프라인 동작), 백엔드 없음, 외부 SDK·분석 도구·서버 동기화 금지
+  (예외: Android 기기 내 사진 분석용 Google ML Kit, 헌법 1.1.0)
 - **기술 스택**: Dart 3.12+ / Flutter 3.44.x stable (검증 기준 3.44.6; 팀 합의 시 FVM 등으로 고정), Isar Plus 1.3.x(로컬 NoSQL), Riverpod(상태 관리),
   go_router(라우팅), freezed(불변 모델), image_picker + path_provider(이미지), intl(ko 로케일)
 
@@ -24,6 +25,7 @@ AGENTS.md가 별도로 있으므로, 그 디렉토리에서 작업할 때 함께
 - [specs/001-home-dashboard/contracts/repositories.md](specs/001-home-dashboard/contracts/repositories.md) — 데이터 접근 계약
 - [specs/001-home-dashboard/quickstart.md](specs/001-home-dashboard/quickstart.md) — 개발 환경 부트스트랩
 - [specs/004-backup-restore/spec.md](specs/004-backup-restore/spec.md) — 사용자 실행형 백업·복원(#40): 형식·복원 정책·플랫폼 흐름
+- [specs/005-attributes-quick-capture/spec.md](specs/005-attributes-quick-capture/spec.md) — 구조화 속성·빠른 분류 등록·온디바이스 사진 분석(iOS Vision·Foundation Models)
 
 ## 언어 규칙
 
@@ -124,4 +126,6 @@ tool/                  # 개발 보조 스크립트 (tool/qa/: Android QA 하네
 - **레이어 의존 방향**: `features → data → core`, `features → core`, `app → features`.
   역방향 의존(예: `core`가 `features`를 import) 금지.
 - **로컬 우선**: 네트워크 호출, 외부 분석 SDK, 서버 동기화 코드를 추가하지 않는다 (프로젝트 헌법 III).
+  예외(헌법 1.1.0): Android 기기 내 사진 분석용 Google ML Kit(`ClosetimoVisionChannel.kt`)만 허용한다.
+  ML Kit은 기능 진단 정보를 Google에 보내므로 설정 화면 안내와 개인정보처리방침을 함께 유지한다.
 - 생성 파일(`*.g.dart`, `*.freezed.dart`)은 직접 수정하지 않는다. 원본 수정 후 build_runner를 실행한다.

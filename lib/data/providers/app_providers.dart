@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/persistence/image_store.dart';
 import '../../core/utils/clock.dart';
+import '../../core/vision/native_vision.dart';
 import '../models/item_tags.dart';
 import '../models/user_preferences.dart';
 import '../repositories/archive_repository.dart';
@@ -22,6 +23,7 @@ import '../repositories/laundry_repository.dart';
 import '../repositories/preferences_repository.dart';
 import '../repositories/shared_items_watcher.dart';
 import '../repositories/tag_repository.dart';
+import '../suggestions/attribute_suggester.dart';
 import 'isar_provider.dart';
 
 /// 옷 컬렉션 전체 watch를 공유하는 구독기(#53). 옷 목록을 파생하는 repository가 함께 쓴다.
@@ -95,3 +97,18 @@ final preferencesRepositoryProvider = Provider<PreferencesRepository>((ref) {
 final preferencesStreamProvider = StreamProvider<UserPreferences>((ref) {
   return ref.watch(preferencesRepositoryProvider).watch();
 });
+
+/// 005 — 기기 내 사진 분석 채널(iOS Vision·Foundation Models, Android ML Kit). 그 밖의 플랫폼은 미지원.
+final nativeVisionProvider = Provider<NativeVision>(
+  (ref) => MethodChannelNativeVision(),
+);
+
+/// 005 — 사진·이름 속성 제안기(FR-503·504·513~515).
+final attributeSuggesterProvider = Provider<AttributeSuggester>(
+  (ref) => AttributeSuggester(vision: ref.watch(nativeVisionProvider)),
+);
+
+/// 005 — 이 기기의 사진 분석 기능(설정 노출·분석 단계 결정).
+final visionCapabilitiesProvider = FutureProvider<VisionCapabilities>(
+  (ref) => ref.watch(nativeVisionProvider).capabilities(),
+);

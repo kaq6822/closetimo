@@ -3,7 +3,6 @@
 // #48 FR-029 — 로딩·읽기 실패를 빈 바구니와 구분한다.
 
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -14,10 +13,11 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
-import '../../../core/persistence/image_store.dart';
 import '../../../core/widgets/async_state_view.dart';
 import '../../../core/widgets/progress_bar.dart';
+import '../../../core/widgets/item_photo.dart';
 import '../../../data/models/item.dart';
+import '../../../data/models/item_attributes.dart';
 import '../../../data/providers/app_providers.dart';
 
 final _laundryTipsProvider = FutureProvider<List<String>>((ref) async {
@@ -91,6 +91,19 @@ class LaundryPreview extends ConsumerWidget {
                   ],
                 ],
               ),
+              // 005 FR-512 — 색을 나눠 빨 수 있게 세탁 그룹 요약을 보여 준다.
+              if (all.isNotEmpty) ...[
+                const SizedBox(height: ClosetimoSpacing.xs),
+                Text(
+                  washGroupSummary(all),
+                  key: const ValueKey('laundry-group-summary'),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: ClosetimoColors.muted,
+                  ),
+                ),
+              ],
               const SizedBox(height: ClosetimoSpacing.space12),
               if (items.isEmpty)
                 const _EmptyBasket()
@@ -166,7 +179,7 @@ class _EmptyBasket extends StatelessWidget {
         SizedBox(width: ClosetimoSpacing.sm),
         Expanded(
           child: Text(
-            '바구니가 비어 있어요. 상세에서 "세탁 바구니"를 누르면 여기에 모여요.',
+            '바구니가 비어 있어요. 옷장에서 옷을 길게 눌러 담거나 상세에서 "세탁 바구니"를 누르면 여기에 모여요.',
             style: TextStyle(
               fontFamily: 'Manrope',
               fontSize: 13,
@@ -198,9 +211,14 @@ class _Row extends StatelessWidget {
             width: 42,
             height: 54,
             color: Color(item.fallbackColor),
-            child: _Thumbnail(
-              imagePath: item.imagePath,
+            child: ItemPhoto(
+              imagePath: item.displayImagePath,
+              cutout: item.showsCutout,
+              originalPath: item.imagePath,
               fallback: Color(item.fallbackColor),
+              cacheWidth: 256,
+              cutoutPadding: ClosetimoSpacing.space2,
+              imageKey: const ValueKey('laundry-preview-photo'),
             ),
           ),
         ),
@@ -248,30 +266,3 @@ class _Row extends StatelessWidget {
 }
 
 /// 실제 사진 썸네일. 사진이 없거나 파일이 사라졌으면 대표 색상으로 폴백한다.
-class _Thumbnail extends ConsumerWidget {
-  const _Thumbnail({required this.imagePath, required this.fallback});
-
-  final String? imagePath;
-  final Color fallback;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final placeholder = Container(color: fallback);
-    if (imagePath == null) return placeholder;
-    final store = ref.watch(imageStoreProvider);
-    return FutureBuilder<String>(
-      future: store.absolutePath(imagePath!),
-      builder: (ctx, snap) {
-        if (snap.data == null) return placeholder;
-        final file = File(snap.data!);
-        if (!file.existsSync()) return placeholder;
-        return Image.file(
-          file,
-          key: const ValueKey('laundry-preview-photo'),
-          fit: BoxFit.cover,
-          cacheWidth: 256,
-        );
-      },
-    );
-  }
-}

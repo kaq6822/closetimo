@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:closetimo/core/widgets/top_bar.dart';
 import 'package:closetimo/main.dart' as app;
 
 import 'support/e2e_helpers.dart';
@@ -84,12 +85,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // ── 1. 홈 조회 ──────────────────────────────────────
-      expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
+      expect(find.text('오늘의 옷장'), findsOneWidget);
       expect(find.text('전체 아이템'), findsOneWidget);
       await shot(tester, '01_offline_home_empty');
 
       // ── 2. 옷 등록 ──────────────────────────────────────
-      await tapVisible(tester, find.byIcon(Icons.add_rounded));
+      await tapVisible(tester, find.byType(TopBarPlusAction));
       expect(find.text('신규 옷 등록'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).at(0), '오프라인 코트');
@@ -171,7 +172,7 @@ void main() {
       // 세탁 탭은 bottom nav가 살아 있는 유일한 탭이므로 여기서 바로 이동한다.
       await tester.tap(find.text('홈'));
       await tester.pumpAndSettle();
-      expect(find.text('기분 좋은 옷장 관리'), findsOneWidget);
+      expect(find.text('오늘의 옷장'), findsOneWidget);
       await shot(tester, '08_offline_home_after_flow');
 
       // 핵심 흐름에서 HTTP 클라이언트 생성 시도가 없었는지 검증한다.

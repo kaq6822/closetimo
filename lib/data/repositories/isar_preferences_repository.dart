@@ -43,4 +43,11 @@ class IsarPreferencesRepository implements PreferencesRepository {
 
   @override
   Future<void> setLastTab(String tab) => _mutate((p) => p.lastTab = tab);
+
+  @override
+  Future<void> setRemoveBackground(bool v) =>
+      _mutate((p) => p.removeBackground = v);
+
+  @override
+  Future<void> setOnDeviceAi(bool v) => _mutate((p) => p.onDeviceAi = v);
 }

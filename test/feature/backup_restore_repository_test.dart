@@ -124,6 +124,15 @@ class _Device {
         ).readAsBytes(),
   };
 
+  /// 옷 id → 배경 제거본 바이트(005).
+  Future<Map<int, List<int>>> cutoutBytes() async => {
+    for (final i in isar.items.where().findAll())
+      if (i.cutoutPath != null)
+        i.id: await File(
+          await imageStore.absolutePath(i.cutoutPath!),
+        ).readAsBytes(),
+  };
+
   Set<String> imageFileNames() => {
     for (final f in imagesDir.listSync()) p.basename(f.path),
   };
@@ -155,6 +164,8 @@ void main() {
   Future<void> seed(_Device d) async {
     final photoA = File(p.join(tmp.path, 'a.jpg'))..writeAsBytesSync(_photo(1));
     final photoB = File(p.join(tmp.path, 'b.jpg'))..writeAsBytesSync(_photo(2));
+    final cutoutA = File(p.join(tmp.path, 'a_cut.png'))
+      ..writeAsBytesSync(_photo(3));
     final coat = await d.items.create(
       NewItemDraft(
         name: '울 코트',
@@ -164,6 +175,13 @@ void main() {
         washCycle: 2,
         purchasedAt: DateTime(2025, 11, 3),
         tempPhoto: photoA,
+        // 005 — 구조화 속성과 배경 제거본도 백업·복원된다.
+        tempCutout: cutoutA,
+        subType: 'coat',
+        colors: const ['camel', 'black'],
+        seasons: const [Season.autumn, Season.winter],
+        material: 'wool',
+        pattern: 'solid',
       ),
     );
     final shirt = await d.items.create(
@@ -233,8 +251,15 @@ void main() {
 
     expect(target.snapshot(), source.snapshot());
     expect(await target.photoBytes(), await source.photoBytes());
+    expect(await target.cutoutBytes(), await source.cutoutBytes());
+    expect((await target.cutoutBytes()).length, 1);
     // 기록 → 옷 참조가 그대로 이어진다.
     final coat = target.isar.items.where().nameEqualTo('울 코트').findFirst()!;
+    expect(coat.subType, 'coat');
+    expect(coat.colors, ['camel', 'black']);
+    expect(coat.seasons, [Season.autumn, Season.winter]);
+    expect(coat.material, 'wool');
+    expect(coat.cutoutPath, endsWith('.png'));
     final coatEvents = target.isar.wearEvents
         .where()
         .itemIdEqualTo(coat.id)
@@ -277,8 +302,9 @@ void main() {
     expect(target.snapshot(), first);
     expect(target.snapshot(), source.snapshot());
     expect(target.isar.items.count(), 3);
-    // 사진 파일은 현재 옷이 참조하는 2장뿐이다(기존·1차 복원 사진 정리).
-    expect(target.imageFileNames(), hasLength(2));
+    // 사진 파일은 현재 옷이 참조하는 사진 2장 + 배경 제거본 1장뿐이다
+    // (기존·1차 복원 사진 정리).
+    expect(target.imageFileNames(), hasLength(3));
     expect(await target.photoBytes(), await source.photoBytes());
   });
 
@@ -289,6 +315,7 @@ void main() {
     );
     final coat = target.isar.items.where().nameEqualTo('울 코트').findFirst()!;
     final restoredPath = coat.imagePath!;
+    final restoredCutout = coat.cutoutPath!;
     expect(restoredPath, contains('_r'));
 
     await target.items.update(
@@ -306,6 +333,12 @@ void main() {
     expect(target.isar.items.get(coat.id)!.imagePath, 'items/${coat.id}.jpg');
     expect(
       File(await target.imageStore.absolutePath(restoredPath)).existsSync(),
+      isFalse,
+    );
+    // 005 — 사진이 바뀌면 이전 사진의 배경 제거본도 맞지 않으므로 지운다.
+    expect(target.isar.items.get(coat.id)!.cutoutPath, isNull);
+    expect(
+      File(await target.imageStore.absolutePath(restoredCutout)).existsSync(),
       isFalse,
     );
   });

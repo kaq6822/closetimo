@@ -21,6 +21,12 @@ class _FixedClock implements Clock {
 
 class _FakePrefsRepo implements PreferencesRepository {
   @override
+  Future<void> setRemoveBackground(bool v) async {}
+
+  @override
+  Future<void> setOnDeviceAi(bool v) async {}
+
+  @override
   Stream<UserPreferences> watch() =>
       Stream.value(UserPreferences.defaults()..firstLaunchedAt = _now);
   @override

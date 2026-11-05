@@ -116,6 +116,12 @@ class _FakeLaundryRepository implements LaundryRepository {
 
 class _FakePreferencesRepository implements PreferencesRepository {
   @override
+  Future<void> setRemoveBackground(bool v) async {}
+
+  @override
+  Future<void> setOnDeviceAi(bool v) async {}
+
+  @override
   Stream<UserPreferences> watch() => Stream.value(UserPreferences.defaults());
 
   @override
@@ -397,7 +403,7 @@ void main() {
       expect(find.text('그 외 전체'), findsNothing);
     });
 
-    testWidgets('미분류 칩과 용도 칩은 각 축의 조건으로 거른다', (tester) async {
+    testWidgets('미분류 칩과 용도(상세 필터)는 각 축의 조건으로 거른다', (tester) async {
       final items = [
         ...mixed,
         Item(
@@ -422,10 +428,15 @@ void main() {
       await tester.tap(find.widgetWithText(InkWell, Category.top.label));
       await tester.pumpAndSettle();
       expect(find.text('캐시미어 니트'), findsOneWidget);
-      final purposeChip = find.widgetWithText(InkWell, '용도: 운동');
+      // 005 — 용도는 상세 필터 시트에서 고른다(검색창 옆 필터 버튼).
+      await tester.tap(find.byTooltip('상세 필터'));
+      await tester.pumpAndSettle();
+      final purposeChip = find.widgetWithText(InkWell, ItemPurpose.sport.label);
       await tester.ensureVisible(purposeChip);
       await tester.pumpAndSettle();
       await tester.tap(purposeChip);
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('벌 보기'));
       await tester.pumpAndSettle();
       expect(find.text('운동용 티셔츠'), findsOneWidget);
       expect(find.text('캐시미어 니트'), findsNothing);

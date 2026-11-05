@@ -1,5 +1,6 @@
 // US5 T074 — 설정 탭.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/utils/clock.dart';
 import '../../core/widgets/async_state_view.dart';
+import '../../core/vision/native_vision.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/providers/app_providers.dart';
 import 'backup/backup_flow.dart';
@@ -128,6 +130,9 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: ClosetimoSpacing.space28),
+                    // 005 FR-513·515 — 기기 안에서만 하는 사진 분석 설정.
+                    const _PhotoAnalysisSection(),
+                    const SizedBox(height: ClosetimoSpacing.space28),
                     // #40 — 사용자 실행형 백업·복원. 저장 위치는 OS 공유 시트·
                     // 문서 선택기에서 사용자가 고른다.
                     _Section(
@@ -233,6 +238,67 @@ class _Section extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 005 — 사진 분석 설정. 이 기기가 지원하는 기능만 보인다(미지원 플랫폼은 색상 추천 안내만).
+class _PhotoAnalysisSection extends ConsumerWidget {
+  const _PhotoAnalysisSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final caps =
+        ref.watch(visionCapabilitiesProvider).valueOrNull ??
+        VisionCapabilities.none;
+    final prefs = ref.watch(preferencesStreamProvider).valueOrNull;
+    final repo = ref.read(preferencesRepositoryProvider);
+    if (prefs == null) return const SizedBox.shrink();
+    // 005 — 기기 내 AI를 켜면 모델을 미리 깨우고, 준비 중이면 내려받기를 시작한다.
+    Future<void> setAi(bool on) async {
+      await repo.setOnDeviceAi(on);
+      if (on) {
+        await ref.read(attributeSuggesterProvider).prewarm(useOnDeviceAi: true);
+      }
+    }
+
+    // Android ML Kit은 기능 진단 정보를 Google에 보낸다(헌법 III 예외, 사용자 승인 2026-11-02).
+    final android = defaultTargetPlatform == TargetPlatform.android;
+    return _Section(
+      title: '사진 분석',
+      caption: android
+          ? '사진은 이 기기 안에서만 분석하고 밖으로 보내지 않아요. 다만 Google ML Kit가 '
+                '기능 진단 정보(기기 모델·성능 지표 등)를 Google에 보낼 수 있어요. '
+                '분석 결과는 제안일 뿐이라 언제든 바꿀 수 있어요.'
+          : '사진은 이 기기 안에서만 분석하고 어디에도 보내지 않아요. '
+                '분석 결과는 제안일 뿐이라 언제든 바꿀 수 있어요.',
+      rows: [
+        const PreferenceRow(label: '사진 색상 추천', textValue: '항상 켜짐'),
+        if (caps.backgroundRemoval)
+          PreferenceRow(
+            label: '사진 배경 자동 제거',
+            toggleValue: prefs.removeBackground,
+            onToggle: repo.setRemoveBackground,
+          ),
+        switch (caps.onDeviceAi) {
+          OnDeviceAiStatus.available => PreferenceRow(
+            label: '기기 내 AI로 자세히 분석',
+            toggleValue: prefs.onDeviceAi,
+            onToggle: setAi,
+          ),
+          // 모델을 내려받는 중이거나 받을 수 있다. 켜 두면 준비되는 대로 쓴다.
+          OnDeviceAiStatus.notReady => PreferenceRow(
+            label: '기기 내 AI로 자세히 분석 (모델 준비 중)',
+            toggleValue: prefs.onDeviceAi,
+            onToggle: setAi,
+          ),
+          OnDeviceAiStatus.notEnabled => const PreferenceRow(
+            label: '기기 내 AI로 자세히 분석',
+            textValue: 'Apple Intelligence를 켜면 쓸 수 있어요',
+          ),
+          OnDeviceAiStatus.unsupported => null,
+        },
+      ].nonNulls.toList(),
     );
   }
 }

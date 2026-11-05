@@ -1,8 +1,6 @@
 // US2 T043 — 옷장 그리드 단일 타일.
 // #43 — 빠른 동작 메뉴(착용 기록·바구니 담기/빼기, FR-008a)와 다중 선택(FR-008b).
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,13 +8,14 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/tokens.dart';
-import '../../../core/persistence/image_store.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/action_guard.dart';
-import '../../../core/widgets/item_placeholder.dart';
+import '../../../core/widgets/color_swatch_chip.dart';
 import '../../../core/widgets/status_label.dart';
 import '../../../core/widgets/toast.dart';
+import '../../../core/widgets/item_photo.dart';
 import '../../../data/models/item.dart';
+import '../../../data/models/item_attributes.dart';
 import '../../../data/providers/app_providers.dart';
 import '../selection/item_selection.dart';
 
@@ -66,9 +65,14 @@ class GarmentTile extends ConsumerWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      _ItemImage(
-                        imagePath: item.imagePath,
+                      ItemPhoto(
+                        imagePath: item.displayImagePath,
+                        cutout: item.showsCutout,
+                        originalPath: item.imagePath,
                         fallback: Color(item.fallbackColor),
+                        // 2x retina 기준 240lp 그리드 타일에 충분하며 1600px 원본을
+                        // 매 스크롤 디코딩하지 않도록 막는다(SC-004 가드).
+                        cacheWidth: 480,
                       ),
                       if (showCleanBadge || showDirtyBadge)
                         Positioned(
@@ -101,16 +105,33 @@ class GarmentTile extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Manrope',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: ClosetimoColors.ink,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: ClosetimoColors.ink,
+                            ),
+                          ),
+                        ),
+                        // 005 — 색상 점(장식). 색 이름은 상세·검색에서 확인한다.
+                        for (final code in item.colors)
+                          if (ItemAttributes.color(code) case final c?)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: ClosetimoSpacing.space2,
+                              ),
+                              child: ExcludeSemantics(
+                                child: ColorDot(color: Color(c.argb)),
+                              ),
+                            ),
+                      ],
                     ),
                     const SizedBox(height: ClosetimoSpacing.space10),
                     // #19 — 큰 글꼴에서 "마지막 세/탁"처럼 단어 중간에서 줄바꿈하지 않도록
@@ -278,32 +299,6 @@ class _QuickActionMenu extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ItemImage extends ConsumerWidget {
-  const _ItemImage({required this.imagePath, required this.fallback});
-
-  final String? imagePath;
-  final Color fallback;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (imagePath == null) {
-      return ItemPlaceholder(color: fallback);
-    }
-    final store = ref.watch(imageStoreProvider);
-    return FutureBuilder<String>(
-      future: store.absolutePath(imagePath!),
-      builder: (ctx, snap) {
-        if (snap.data == null) return Container(color: fallback);
-        final file = File(snap.data!);
-        if (!file.existsSync()) return Container(color: fallback);
-        // cacheWidth=480은 2x retina 기준 240lp 그리드 타일에 충분하며
-        // 1600px 원본을 매 스크롤 디코딩하지 않도록 막는다(SC-004 가드).
-        return Image.file(file, fit: BoxFit.cover, cacheWidth: 480);
-      },
     );
   }
 }

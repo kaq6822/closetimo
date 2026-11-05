@@ -11,7 +11,8 @@ data/
 ├── migrations/        # Isar 3 → Isar Plus 이전 + 저장소 버전 업그레이드(StorageMetadata.storageVersion)
 ├── models/            # Isar Plus @collection 모델 + *.g.dart
 ├── repositories/      # 추상 인터페이스(item_repository.dart) + Isar 구현(isar_item_repository.dart)
-└── providers/         # Isar 인스턴스와 repository Riverpod 배선
+├── providers/         # Isar 인스턴스와 repository Riverpod 배선
+└── suggestions/       # 005 사진·이름 속성 제안(AttributeSuggester). 저장하지 않는 제안만 만든다
 ```
 
 ## 이 레이어의 규칙

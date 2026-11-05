@@ -108,6 +108,21 @@ abstract final class ClosetimoSize {
 
   /// #49 — 비선택 체크 컨트롤의 윤곽선·선택된 세탁 방법 타일의 테두리 두께.
   static const double controlOutline = 2;
+
+  /// 005 — 색상 칩 안의 원형 스와치 지름.
+  static const double colorSwatch = 18;
+
+  /// 005 — 옷장 타일·상세의 작은 색상 점 지름.
+  static const double colorDot = 10;
+
+  /// 005 — 홈 "오늘 입은 옷" 썸네일 한 변.
+  static const double todayWearThumb = 76;
+
+  /// 005 — 등록 화면 사진 카드 높이. 첫 화면에서 이름·종류까지 보이도록 낮게 둔다.
+  static const double photoCardHeight = 240;
+
+  /// 005 — 정리하기 카드의 사진 높이.
+  static const double triagePhotoHeight = 280;
 }
 
 /// 라운딩(corner radius) 토큰. design.md §5 "둥글기".

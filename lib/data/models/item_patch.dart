@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'item.dart';
+import 'item_attributes.dart';
 
 part 'item_patch.freezed.dart';
 
@@ -33,6 +34,16 @@ abstract class ItemPatch with _$ItemPatch {
 
     /// 태그 전체 교체(#46). null이면 기존 태그를 그대로 두고, 빈 목록이면 모두 제거한다.
     List<String>? tags,
+
+    /// 구조화 속성 전체 교체(005). null이면 기존 속성을 그대로 둔다.
+    ItemAttributeValues? attributes,
+
+    /// 새 배경 제거본(005 FR-513). [newPhoto]가 있으면 그 사진의 배경 제거본이며,
+    /// [newPhoto] 없이 오면 기존 사진에 배경 제거본을 붙인다.
+    File? newCutout,
+
+    /// true면 배경 제거본만 지우고 원본을 쓴다.
+    @Default(false) bool removeCutout,
   }) = _ItemPatch;
 
   const ItemPatch._();

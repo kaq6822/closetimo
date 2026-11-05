@@ -189,6 +189,23 @@ adb shell settings put system user_rotation "${UR/null/0}"; adb shell settings p
     전환과 겹친 탭 1회가 외부 앱에 들어갔을 가능성을 배제할 수 없었다.
     → 기기 사용 전·레이어 사이마다 `fg_pkg`와 `adb logcat -d | grep "ActivityTaskManager: START"`에서
     이 QA가 보내지 않은 `from uid 2000` START를 확인한다. 발견하면 입력을 멈추고 보고한다.
+20. **Android CLI 첫 `android layout`은 기기에 보조 앱(`com.android.cli.interact.instrumentation`)을 설치하는데,
+    Play 프로텍트가 설치할 때마다 막는다.** 원인은 CLI 번들에 든 보조 APK의 `targetSdkVersion`이 24라서다.
+    Play 프로텍트는 악성 판정 없이도(`VerifyApps ... Verdict: 0`) 이를 "이전 버전용 앱"으로 보고
+    "안전하지 않은 앱 차단됨 — Android CLI Instrumentation Server" 대화상자를 띄운다(2026-11-05, SM-A235N Android 14).
+    CLI는 응답을 기다리다 "Could not install instrumentation APK"로 실패한다.
+    - 대화상자가 뜨면 사용자가 기기에서 "세부정보 더보기" → "그래도 설치"를 누른다. 대기 중인 CLI가 이어서 진행되지만,
+      이미 실패했으면 `android layout`을 다시 실행한다.
+    - **보조 앱은 QA 후에도 지우지 않고 기기에 둔다.** 지우면 다음 회차 설치 때 또 차단된다.
+      CLI 업데이트로 보조 APK가 바뀌었을 때, 그리고 새 기기·초기화한 기기를 쓸 때만 다시 허용하면 된다.
+    - 차단 여부는 `adb shell dumpsys activity activities | grep topResumedActivity`에
+      `com.android.vending/...PlayProtectDialogsActivity`가 보이는지로 확인한다.
+    CLI가 없으면 `~/.local/bin/android`로 설치한다(공식 install.sh, 2026-11-05 1.1.16717390).
+21. **`android install`의 crash 버퍼 잡음.** 기기 측 설치 도우미(`com.android.cli.installer.device.DeviceInstaller`)가
+    `ClassNotFoundException`으로 abort해 `logcat -b crash`에 네이티브 크래시가 남는다. CLI는 "Standard Install"로 넘어가 설치는 성공한다.
+    `crashcheck`에서 Cmdline이 `app_process / com.android.cli...`인 항목은 앱 크래시가 아니다.
+22. **Android CLI 1.1의 `android layout` 출력은 창별 묶음이다**(`[{window-title, type, content:[…]}]`, `CLICKABLE` 대문자).
+    헬퍼 `ui()`가 앱 창만 평탄화하고 소문자로 맞춘다. 시스템 창(내비게이션 바의 "홈"·"뒤로가기")은 빼서 탭 라벨과 겹치지 않게 했다.
 
 ## 7. 결함 등급
 

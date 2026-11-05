@@ -42,12 +42,19 @@ Item _fullItem() => Item(
   archivedAt: DateTime(2026, 10, 12),
   archiveReason: ArchiveReason.seasonal,
   tags: const ['검정', '여름'],
+  subType: 'coat',
+  colors: const ['camel', 'black'],
+  seasons: const [Season.autumn, Season.winter],
+  material: 'wool',
+  pattern: 'solid',
+  cutoutPath: 'items/7_cutout.png',
 )..id = 7;
 
 BackupPayload _payload() => BackupPayload(
   createdAt: DateTime(2026, 10, 17, 9, 30),
   items: [_fullItem()],
   imageRefs: {7: BackupFormat.imageRef(7)},
+  cutoutRefs: {7: BackupFormat.cutoutRef(7)},
   wearEvents: [
     WearEvent(
       itemId: 7,
@@ -65,6 +72,8 @@ BackupPayload _payload() => BackupPayload(
     accent: 'ink',
     lastTab: '/wardrobe',
     firstLaunchedAt: DateTime(2025, 4, 1),
+    removeBackground: false,
+    onDeviceAi: true,
   ),
 );
 
@@ -78,8 +87,9 @@ void main() {
       expect(BackupCodec.itemModelFields, _schemaFields(ItemSchema));
       final keys = BackupCodec.encodeItem(_fullItem()).keys.toSet();
       expect(keys, {
-        ...BackupCodec.itemModelFields.difference({'imagePath'}),
+        ...BackupCodec.itemModelFields.difference({'imagePath', 'cutoutPath'}),
         'image',
+        'cutoutImage',
       });
     });
 
@@ -123,9 +133,19 @@ void main() {
     final a = _fullItem();
     final b = decoded.items.single;
     expect(b.imagePath, isNull, reason: '기기 경로는 복원 시 새로 정한다');
+    expect(decoded.cutoutRefs, {7: 'images/7_cutout.png'});
+    expect(b.cutoutPath, isNull, reason: '배경 제거본 경로도 복원 시 새로 정한다');
     expect(
-      BackupCodec.encodeItem(b, imageRef: 'images/7.jpg'),
-      BackupCodec.encodeItem(a, imageRef: 'images/7.jpg'),
+      BackupCodec.encodeItem(
+        b,
+        imageRef: 'images/7.jpg',
+        cutoutRef: 'images/7_cutout.png',
+      ),
+      BackupCodec.encodeItem(
+        a,
+        imageRef: 'images/7.jpg',
+        cutoutRef: 'images/7_cutout.png',
+      ),
     );
 
     expect(decoded.wearEvents.map(BackupCodec.encodeWearEvent).toList(), [
@@ -311,5 +331,80 @@ void main() {
       ),
       isA<BackupIoException>(),
     );
+  });
+
+  group('005 — 형식 v2 속성·배경 제거본', () {
+    test('v1 백업은 새 필드를 기본값으로 읽는다', () {
+      final json = _json(_payload());
+      json['formatVersion'] = 1;
+      final itemJson = (json['items']! as List).single as Map<String, Object?>;
+      for (final key in const [
+        'subType',
+        'colors',
+        'seasons',
+        'material',
+        'pattern',
+        'cutoutImage',
+      ]) {
+        itemJson.remove(key);
+      }
+      final prefs = json['preferences']! as Map<String, Object?>;
+      prefs
+        ..remove('removeBackground')
+        ..remove('onDeviceAi');
+
+      final decoded = BackupCodec.decode(json);
+      final item = decoded.items.single;
+      expect(decoded.formatVersion, 1);
+      expect(item.subType, isNull);
+      expect(item.colors, isEmpty);
+      expect(item.seasons, isEmpty);
+      expect(item.material, isNull);
+      expect(item.pattern, isNull);
+      expect(decoded.cutoutRefs, isEmpty);
+      expect(decoded.preferences!.removeBackground, isTrue);
+      expect(decoded.preferences!.onDeviceAi, isFalse);
+    });
+
+    test('v2에서 키가 빠지면 손상으로 거부한다', () {
+      final json = _json(_payload());
+      ((json['items']! as List).single as Map<String, Object?>).remove(
+        'colors',
+      );
+      expect(
+        () => BackupCodec.decode(json),
+        throwsA(isA<BackupFormatException>()),
+      );
+    });
+
+    test('손으로 편집한 속성은 카탈로그 규칙으로 정리한다', () {
+      final json = _json(_payload());
+      final itemJson = (json['items']! as List).single as Map<String, Object?>;
+      itemJson['subType'] = 'jeans'; // 아우터에 맞지 않는 세부 종류
+      itemJson['colors'] = ['black', 'black', 'neon', 'red', 'navy', 'white'];
+      itemJson['seasons'] = ['winter', 'spring', 'winter'];
+      itemJson['material'] = 'unobtainium';
+      final item = BackupCodec.decode(json).items.single;
+      expect(item.subType, isNull);
+      expect(item.colors, ['black', 'red', 'navy']);
+      expect(item.seasons, [Season.spring, Season.winter]);
+      expect(item.material, isNull);
+      expect(item.pattern, 'solid');
+    });
+
+    test('원본 사진 없는 배경 제거본 참조는 버리고, 잘못된 참조는 거부한다', () {
+      final json = _json(_payload());
+      final itemJson = (json['items']! as List).single as Map<String, Object?>;
+      itemJson['image'] = null;
+      expect(BackupCodec.decode(json).cutoutRefs, isEmpty);
+
+      final bad = _json(_payload());
+      ((bad['items']! as List).single as Map<String, Object?>)['cutoutImage'] =
+          'images/../7.png';
+      expect(
+        () => BackupCodec.decode(bad),
+        throwsA(isA<BackupFormatException>()),
+      );
+    });
   });
 }

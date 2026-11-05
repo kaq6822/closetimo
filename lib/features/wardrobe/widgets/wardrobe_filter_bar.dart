@@ -2,6 +2,8 @@
 // #21 — 첫 줄 타일이 첫 화면에 보이도록 칩을 한 줄 가로 스크롤로 압축하고
 // 검색창에 지우기(✕) 버튼을 둔다. #43 — '입을 수 있음' 칩.
 // #46 — 같은 줄 끝에 '태그' 칩 하나를 두고 태그 선택은 시트로 접어 둔다.
+// 005 — 용도 칩 묶음을 '상세 필터' 시트(세부 종류·색상·계절·용도)로 옮기고,
+// '입을 수 있음' 옆에 '이번 계절'(예: '가을 옷') 칩을 둔다(FR-509·510).
 
 import 'package:flutter/material.dart';
 
@@ -24,6 +26,10 @@ class WardrobeFilterBar extends StatelessWidget {
     required this.onScopeChanged,
     required this.onReadyToWearChanged,
     required this.onSortChanged,
+    required this.currentSeason,
+    required this.seasonOnly,
+    required this.onSeasonOnlyChanged,
+    required this.onOpenDetail,
     this.tagUsages = const [],
     super.key,
   });
@@ -45,6 +51,14 @@ class WardrobeFilterBar extends StatelessWidget {
   /// 이미 쓴 태그(#46). 비어 있고 선택된 태그도 없으면 '태그' 칩을 숨긴다.
   final List<TagUsage> tagUsages;
 
+  /// 005 FR-510 — 오늘 날짜의 계절과 '이번 계절' 칩 상태.
+  final Season currentSeason;
+  final bool seasonOnly;
+  final ValueChanged<bool> onSeasonOnlyChanged;
+
+  /// 005 FR-509 — 상세 필터 시트를 연다(결과 수 계산에 화면의 전체 조건이 필요하다).
+  final VoidCallback onOpenDetail;
+
   String _sortLabel(WardrobeSort s) => switch (s) {
     WardrobeSort.statusCleanFirst => '정렬: 상태순 (깨끗한 옷 먼저)',
     WardrobeSort.recentlyWorn => '정렬: 최근 착용순',
@@ -57,49 +71,36 @@ class WardrobeFilterBar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 검색
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: searchController,
-          builder: (context, value, _) => TextField(
-            controller: searchController,
-            onChanged: onQueryChanged,
-            // #14 — 모바일 TextField는 바깥을 눌러도 포커스를 유지한다. 포커스를 둔 채
-            // 타일·+로 화면을 push하면 pop 시 Navigator가 포커스를 복원해 키보드가
-            // 다시 올라오므로, 바깥 탭에서 포커스를 해제한다.
-            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-            decoration: InputDecoration(
-              hintText: '옷 이름·브랜드·태그 검색',
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                color: ClosetimoColors.muted,
-              ),
-              // #21 — 입력이 있을 때만 지우기 버튼을 보인다.
-              suffixIcon: value.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: '검색어 지우기',
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        color: ClosetimoColors.muted,
-                      ),
-                      onPressed: () {
-                        searchController.clear();
-                        onQueryChanged('');
-                      },
-                    ),
-              filled: true,
-              fillColor: surfaces.containerLow,
-              isDense: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
-                borderSide: BorderSide.none,
+        // 검색 + 상세 필터(005 FR-509: 세부 종류·색상·계절·용도는 시트로 접어 둔다)
+        Row(
+          children: [
+            Expanded(child: _searchField(surfaces)),
+            const SizedBox(width: ClosetimoSpacing.sm),
+            Material(
+              color: scope.detailCount > 0
+                  ? ClosetimoColors.primary
+                  : surfaces.containerLow,
+              borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+              child: IconButton(
+                tooltip: scope.detailCount == 0
+                    ? '상세 필터'
+                    : '상세 필터 ${scope.detailCount}개 적용됨',
+                onPressed: onOpenDetail,
+                icon: Badge(
+                  isLabelVisible: scope.detailCount > 0,
+                  backgroundColor: ClosetimoColors.onPrimary,
+                  textColor: ClosetimoColors.primary,
+                  label: Text('${scope.detailCount}'),
+                  child: Icon(
+                    Icons.tune_rounded,
+                    color: scope.detailCount > 0
+                        ? ClosetimoColors.onPrimary
+                        : ClosetimoColors.ink,
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
         const SizedBox(height: ClosetimoSpacing.space12),
         // 종류·용도 칩 — #21 한 줄 가로 스크롤(여러 줄 Wrap이 첫 타일을 밀어냈다).
@@ -123,6 +124,12 @@ class WardrobeFilterBar extends StatelessWidget {
               label: '입을 수 있음',
               active: readyToWear,
               onTap: () => onReadyToWearChanged(!readyToWear),
+            ),
+            const SizedBox(width: ClosetimoSpacing.sm),
+            ChipFilter(
+              label: '${currentSeason.label} 옷',
+              active: seasonOnly,
+              onTap: () => onSeasonOnlyChanged(!seasonOnly),
             ),
             const SizedBox(width: ClosetimoSpacing.sm),
             Expanded(
@@ -169,6 +176,22 @@ class WardrobeFilterBar extends StatelessWidget {
             ),
           ],
         ),
+        if (seasonOnly)
+          Padding(
+            padding: const EdgeInsets.only(
+              top: ClosetimoSpacing.sm,
+              left: ClosetimoSpacing.space4,
+            ),
+            child: Text(
+              '계절에 ${currentSeason.label}이 있거나 계절을 정하지 않은 옷이에요.',
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 12,
+                color: ClosetimoColors.muted,
+                height: 1.4,
+              ),
+            ),
+          ),
         // #43 — 앱은 실제 오염을 감지하지 않는다. 기록된 상태 기준임을 밝힌다.
         if (readyToWear)
           const Padding(
@@ -190,6 +213,51 @@ class WardrobeFilterBar extends StatelessWidget {
       ],
     );
   }
+
+  Widget _searchField(ClosetimoSurfaces surfaces) =>
+      ValueListenableBuilder<TextEditingValue>(
+        valueListenable: searchController,
+        builder: (context, value, _) => TextField(
+          controller: searchController,
+          onChanged: onQueryChanged,
+          // #14 — 모바일 TextField는 바깥을 눌러도 포커스를 유지한다. 포커스를 둔 채
+          // 타일·+로 화면을 push하면 pop 시 Navigator가 포커스를 복원해 키보드가
+          // 다시 올라오므로, 바깥 탭에서 포커스를 해제한다.
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          decoration: InputDecoration(
+            hintText: '옷 이름·색상·브랜드·태그 검색',
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: ClosetimoColors.muted,
+            ),
+            // #21 — 입력이 있을 때만 지우기 버튼을 보인다.
+            suffixIcon: value.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: '검색어 지우기',
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: ClosetimoColors.muted,
+                    ),
+                    onPressed: () {
+                      searchController.clear();
+                      onQueryChanged('');
+                    },
+                  ),
+            filled: true,
+            fillColor: surfaces.containerLow,
+            isDense: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      );
 
   String _tagChipLabel() => switch (scope.tags.length) {
     0 => '태그',
@@ -224,19 +292,6 @@ class WardrobeFilterBar extends StatelessWidget {
         label: c.label,
         active: scope.categories.length == 1 && scope.categories.contains(c),
         onTap: () => onScopeChanged(scope.copyWith(categories: {c})),
-      ),
-    // #41 — 용도는 종류와 독립된 축(AND)이다.
-    for (final p in ItemPurpose.values)
-      ChipFilter(
-        label: '용도: ${p.label}',
-        active: scope.purposes.contains(p),
-        onTap: () => onScopeChanged(
-          scope.copyWith(
-            purposes: scope.purposes.contains(p)
-                ? ({...scope.purposes}..remove(p))
-                : {...scope.purposes, p},
-          ),
-        ),
       ),
     // #46 — 사용자 태그 축(OR). 기본 접힘: 칩 하나로 시트를 연다.
     if (tagUsages.isNotEmpty || scope.tags.isNotEmpty)

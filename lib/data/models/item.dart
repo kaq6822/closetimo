@@ -27,6 +27,12 @@ class Item {
     this.imagePath,
     this.fallbackColor = 0xFFE5E4DC,
     this.tags = const [],
+    this.subType,
+    this.colors = const [],
+    this.seasons = const [],
+    this.material,
+    this.pattern,
+    this.cutoutPath,
   });
 
   int id = 0;
@@ -95,6 +101,54 @@ class Item {
   /// 태그가 아니라 시스템 필드로만 표현한다. `normalizeTags`(item_tags.dart)로
   /// 정규화해 저장하며, 기본값은 불변 목록이므로 새 목록을 대입한다.
   List<String> tags;
+
+  // ── 구조화 속성(005, specs/005-attributes-quick-capture/data-model.md §1) ──
+  // 필드가 없는 구 데이터는 constructor 기본값(null·빈 목록)으로 읽힌다.
+  // 코드 값의 단일 진실 원천은 item_attributes.dart이며 repository가 정규화해 저장한다.
+
+  /// 세부 종류 코드(예: `knit`). [category]에 속하지 않는 코드는 저장하지 않는다.
+  String? subType;
+
+  /// 색상 코드(최대 3개, 첫 값이 대표 색상). 기본값은 불변 목록이므로 새 목록을 대입한다.
+  List<String> colors;
+
+  /// 계절(복수). 비어 있으면 정하지 않은 옷이다.
+  List<Season> seasons;
+
+  /// 소재 코드(예: `wool`).
+  String? material;
+
+  /// 패턴 코드(예: `stripe`).
+  String? pattern;
+
+  /// 배경 제거본 sandbox 상대 경로(`items/{id}_cutout.png`, iOS 17+). 원본([imagePath])과
+  /// 별도로 보관하며 표시에 우선 사용한다. 원본이 없으면 null이다.
+  String? cutoutPath;
+}
+
+/// 계절(005). ordinal 저장이므로 **끝에만 추가**한다.
+enum Season {
+  spring,
+  summer,
+  autumn,
+  winter;
+
+  /// 월(1~12)의 계절. 3~5 봄, 6~8 여름, 9~11 가을, 12~2 겨울(FR-510).
+  static Season ofMonth(int month) => switch (month) {
+    3 || 4 || 5 => Season.spring,
+    6 || 7 || 8 => Season.summer,
+    9 || 10 || 11 => Season.autumn,
+    _ => Season.winter,
+  };
+}
+
+extension SeasonLabel on Season {
+  String get label => switch (this) {
+    Season.spring => '봄',
+    Season.summer => '여름',
+    Season.autumn => '가을',
+    Season.winter => '겨울',
+  };
 }
 
 /// 보관 사유(#44). ordinal 저장이므로 **끝에만 추가**한다.
@@ -111,6 +165,15 @@ extension ArchiveReasonLabel on ArchiveReason {
     ArchiveReason.seasonal => '계절 보관',
     ArchiveReason.noLongerOwned => '더 이상 갖고 있지 않음',
   };
+}
+
+/// 사진 표시 규칙(005 FR-513).
+extension ItemPhotoRules on Item {
+  /// 표시에 쓸 sandbox 상대 경로. 배경 제거본이 있으면 우선한다.
+  String? get displayImagePath => cutoutPath ?? imagePath;
+
+  /// [displayImagePath]가 배경 제거본(투명 PNG)인지.
+  bool get showsCutout => cutoutPath != null;
 }
 
 /// 보관 상태 규칙(#44).
@@ -201,14 +264,38 @@ enum HomeBucket {
   };
 }
 
-/// 선택 용도 축(#41). 종류와 독립이며 여러 개를 가질 수 있다. ordinal 저장이므로
-/// **끝에만 추가**한다. 색상·계절 같은 사용자 단서는 enum이 아니라
-/// [Item.tags](#46)로 표현한다(data-model.md §1.1c).
-enum ItemPurpose { sport }
+/// 선택 용도 축(#41, 005 확장). 종류와 독립이며 여러 개를 가질 수 있다. ordinal
+/// 저장이므로 **끝에만 추가**한다. 화면 표시 순서는 [selectable]을 따른다.
+enum ItemPurpose {
+  sport,
+  daily,
+  work,
+  outing,
+  formal,
+  travel,
+  home;
+
+  /// 등록 폼·필터에 노출하는 표시 순서.
+  static const List<ItemPurpose> selectable = [
+    daily,
+    work,
+    outing,
+    formal,
+    travel,
+    sport,
+    home,
+  ];
+}
 
 extension ItemPurposeLabel on ItemPurpose {
   String get label => switch (this) {
     ItemPurpose.sport => '운동',
+    ItemPurpose.daily => '데일리',
+    ItemPurpose.work => '출근',
+    ItemPurpose.outing => '외출·모임',
+    ItemPurpose.formal => '격식',
+    ItemPurpose.travel => '여행',
+    ItemPurpose.home => '홈웨어',
   };
 }
 

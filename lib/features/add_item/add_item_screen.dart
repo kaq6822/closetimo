@@ -1,12 +1,16 @@
 // US1 T038 — 신규 옷 등록 화면. 002 T009 — editId로 수정 모드 겸용.
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../app/router.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/persistence/image_store.dart';
@@ -17,10 +21,14 @@ import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/toast.dart';
 import '../../core/widgets/top_bar.dart';
 import '../../data/models/item.dart';
+import '../../data/models/item_attributes.dart';
 import '../../data/models/item_patch.dart';
 import '../../data/models/item_tags.dart';
 import '../../data/providers/app_providers.dart';
+import '../../data/suggestions/attribute_suggester.dart';
+import 'batch_suggestions.dart';
 import 'new_item_draft.dart';
+import 'widgets/attribute_pickers.dart';
 import 'widgets/care_method_picker.dart';
 import 'widgets/category_picker.dart';
 import 'widgets/photo_picker_card.dart';
@@ -38,7 +46,21 @@ class AddItemScreen extends ConsumerStatefulWidget {
 }
 
 /// 진행 표시를 그릴 저장 버튼 구분(#48).
-enum _SaveAction { save, saveAndNext }
+enum _SaveAction { save, saveAndNext, batch }
+
+/// 005 — 제안이 채울 수 있는 속성 축.
+enum _Axis { category, subType, colors, seasons, material, pattern }
+
+/// 축 값의 출처 순위. 높은 순위 값은 낮은 순위 제안으로 덮어쓰지 않는다(FR-517).
+abstract final class _Rank {
+  static const none = 0;
+  static const photo = 1;
+  static const name = 2;
+  static const user = 3;
+}
+
+/// 여러 장 등록 최대 장수(FR-505).
+const int maxBatchPhotos = 30;
 
 class _AddItemScreenState extends ConsumerState<AddItemScreen>
     with ActionGuardMixin {
@@ -69,6 +91,34 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
   /// 로딩 완료 여부(수정 모드 진입 시 옷을 fetch하는 동안 false).
   bool _loading = false;
 
+  /// 005 — 축별 값의 출처([_Rank]). 사용자 > 이름 > 사진 순.
+  final Map<_Axis, int> _axisRank = {};
+
+  /// 005 — 사진 분석 중인지(사진 카드 진행 표시).
+  bool _analyzing = false;
+
+  /// 005 — 사진을 바꿀 때마다 올려 이전 사진의 늦은 분석 결과를 버린다.
+  int _photoGeneration = 0;
+
+  /// 005 — 수정 모드의 기존 배경 제거본 절대 경로.
+  String? _existingCutoutPath;
+
+  /// 005 — 수정 모드에서 "원본 사진 사용"을 골랐는지.
+  bool _cutoutCleared = false;
+
+  /// 005 — 이 화면의 분석이 만든 임시 배경 제거본 경로(화면을 떠날 때 지운다).
+  final Set<String> _tempCutouts = {};
+
+  /// 005 — 여러 장 선택기가 열려 있는지.
+  bool _pickingBatch = false;
+
+  /// 005 — 지금 사진의 마지막 분석 제안. 이름에서 채웠던 값을 되돌릴 때 사진 제안을 다시 적용한다.
+  AttributeSuggestion _photoSuggestion = AttributeSuggestion.empty;
+
+  /// 005 — 사진 분석이 색상을 골라 두었는지(안내 문구 표시용).
+  bool get _colorsFromPhoto =>
+      _axisRank[_Axis.colors] == _Rank.photo && _draft.colors.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -76,12 +126,30 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
       _loading = true;
       _loadForEdit();
     }
+    // FR-515 — 기기 내 AI를 쓰는 사용자는 첫 분석 지연을 줄이려고 모델을 미리 깨운다.
+    final prefs = ref.read(preferencesStreamProvider).valueOrNull;
+    ref
+        .read(attributeSuggesterProvider)
+        .prewarm(useOnDeviceAi: prefs?.onDeviceAi ?? false);
   }
 
   @override
   void dispose() {
     _scroll.dispose();
+    // 분석이 만든 임시 배경 제거본을 정리한다. 저장한 것은 이미 sandbox로 복사됐다.
+    for (final path in _tempCutouts) {
+      _deleteTemp(File(path));
+    }
     super.dispose();
+  }
+
+  /// 임시 파일을 지운다(best-effort).
+  static void _deleteTemp(File? file) {
+    try {
+      if (file != null && file.existsSync()) file.deleteSync();
+    } catch (e) {
+      debugPrint('Failed to delete temp cutout: $e');
+    }
   }
 
   Future<void> _loadForEdit() async {
@@ -94,23 +162,37 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
     }
     final draft = NewItemDraft.fromItem(item);
     String? existingAbs;
+    String? cutoutAbs;
+    final store = ref.read(imageStoreProvider);
     final imagePath = item.imagePath;
     if (imagePath != null) {
-      existingAbs = await ref.read(imageStoreProvider).absolutePath(imagePath);
+      existingAbs = await store.absolutePath(imagePath);
     }
+    final cutoutPath = item.cutoutPath;
+    if (cutoutPath != null) cutoutAbs = await store.absolutePath(cutoutPath);
     if (!mounted) return;
     setState(() {
       _draft = draft;
       _initialDraft = draft;
       _existingImagePath = existingAbs;
+      _existingCutoutPath = cutoutAbs;
       _loading = false;
+      // 이미 저장된 속성은 사용자가 정한 값으로 보고 제안이 덮어쓰지 않는다.
+      if (draft.category != Category.uncategorized) {
+        _axisRank[_Axis.category] = _Rank.user;
+      }
+      if (draft.subType != null) _axisRank[_Axis.subType] = _Rank.user;
+      if (draft.colors.isNotEmpty) _axisRank[_Axis.colors] = _Rank.user;
+      if (draft.seasons.isNotEmpty) _axisRank[_Axis.seasons] = _Rank.user;
+      if (draft.material != null) _axisRank[_Axis.material] = _Rank.user;
+      if (draft.pattern != null) _axisRank[_Axis.pattern] = _Rank.user;
     });
   }
 
   /// 폼에 변경 사항이 있는지. 등록 모드는 빈 폼과 비교, 수정 모드는 원본과 비교.
   bool get _isDirty {
     if (!_isEdit) return _draft != _blankDraft;
-    return _draft != _initialDraft || _photoCleared;
+    return _draft != _initialDraft || _photoCleared || _cutoutCleared;
   }
 
   /// 저장 가능 여부. 수정 모드는 변경이 있을 때만 활성(#24, 등록 화면과 일관).
@@ -123,30 +205,278 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
 
   void _pickPhoto(File file) {
     setState(() {
-      _draft = _draft.copyWith(tempPhoto: file);
+      _photoSuggestion = AttributeSuggestion.empty;
+      _draft = _draft.copyWith(tempPhoto: file, tempCutout: null);
       _photoCleared = false;
+      _cutoutCleared = false;
+    });
+    _analyzePhoto(file);
+  }
+
+  /// 005 FR-504·513~515 — 사진을 분석해 배경 제거본과 속성 제안을 붙인다.
+  /// 실패해도 등록 흐름은 그대로다(SC-504).
+  Future<void> _analyzePhoto(File file) async {
+    final generation = ++_photoGeneration;
+    final prefs = ref.read(preferencesStreamProvider).valueOrNull;
+    setState(() => _analyzing = true);
+    final result = await ref
+        .read(attributeSuggesterProvider)
+        .analyzePhoto(
+          file,
+          removeBackground: prefs?.removeBackground ?? true,
+          useOnDeviceAi: prefs?.onDeviceAi ?? false,
+        );
+    // 화면을 떠났으면 임시 배경 제거본을 바로 지운다(dispose가 이미 지나갔다).
+    if (!mounted) {
+      _deleteTemp(result.cutout);
+      return;
+    }
+    if (result.cutout case final c?) _tempCutouts.add(c.path);
+    // 그사이 사진을 바꾸거나 지웠으면 이 결과는 버린다.
+    if (generation != _photoGeneration) return;
+    setState(() {
+      _analyzing = false;
+      if (_draft.tempPhoto?.path == file.path) {
+        _draft = _draft.copyWith(tempCutout: result.cutout);
+      }
+      _photoSuggestion = result.suggestion;
+      _applySuggestion(result.suggestion, _Rank.photo);
     });
   }
 
-  /// tempPhoto를 확실히 null로 되돌리기 위해 draft를 재구성한다
-  /// (freezed copyWith로는 nullable 필드를 null로 설정할 수 없다).
-  void _removePhoto() {
-    setState(() {
-      _draft = NewItemDraft(
-        name: _draft.name,
-        brand: _draft.brand,
-        category: _draft.category,
-        purposes: _draft.purposes,
-        washCycle: _draft.washCycle,
-        careMode: _draft.careMode,
-        careMethod: _draft.careMethod,
-        purchasedAt: _draft.purchasedAt,
-        tags: _draft.tags,
+  /// [s]를 순위 [rank]로 비어 있거나 더 낮은 순위의 축에만 적용한다. setState 안에서 부른다.
+  void _applySuggestion(AttributeSuggestion s, int rank) {
+    bool can(_Axis a) {
+      final current = _axisRank[a] ?? _Rank.none;
+      return current < _Rank.user && current <= rank;
+    }
+
+    var d = _draft;
+    // 사용자가 고른 세부 종류와 맞지 않는 종류로는 바꾸지 않는다(그 세부 종류가 지워진다).
+    final keepsUserSubType =
+        _axisRank[_Axis.subType] == _Rank.user && d.subType != null;
+    if (s.category case final c?
+        when can(_Axis.category) &&
+            c != d.category &&
+            (!keepsUserSubType ||
+                ItemAttributes.normalizeSubType(c, d.subType) != null)) {
+      d = d.copyWith(
+        category: c,
+        subType: ItemAttributes.normalizeSubType(c, d.subType),
       );
+      _axisRank[_Axis.category] = rank;
+    }
+    final sub = ItemAttributes.normalizeSubType(d.category, s.subType);
+    if (sub != null && can(_Axis.subType)) {
+      d = d.copyWith(subType: sub);
+      _axisRank[_Axis.subType] = rank;
+    }
+    if (s.colors.isNotEmpty && can(_Axis.colors)) {
+      d = d.copyWith(colors: s.colors);
+      _axisRank[_Axis.colors] = rank;
+    }
+    if (s.seasons.isNotEmpty && can(_Axis.seasons)) {
+      d = d.copyWith(seasons: s.seasons);
+      _axisRank[_Axis.seasons] = rank;
+    }
+    if (s.material != null && can(_Axis.material)) {
+      d = d.copyWith(material: s.material);
+      _axisRank[_Axis.material] = rank;
+    }
+    if (s.pattern != null && can(_Axis.pattern)) {
+      d = d.copyWith(pattern: s.pattern);
+      _axisRank[_Axis.pattern] = rank;
+    }
+    _draft = d;
+  }
+
+  /// 사용자가 직접 바꾼 축은 이후 제안이 덮어쓰지 않는다. 세부 종류를 고르면 그 종류도
+  /// 사용자가 정한 것으로 본다.
+  void _setByUser(_Axis axis, NewItemDraft next) {
+    setState(() {
+      _draft = next;
+      _axisRank[axis] = _Rank.user;
+      if (axis == _Axis.subType && next.subType != null) {
+        _axisRank[_Axis.category] = _Rank.user;
+      }
+    });
+  }
+
+  /// 이름에서만 채웠던 축 중 새 이름에 더는 근거가 없는 축을 비운다(이름을 고치거나 지울 때).
+  void _clearStaleNameAxes(AttributeSuggestion s) {
+    bool fromName(_Axis a) => _axisRank[a] == _Rank.name;
+    var d = _draft;
+    if (fromName(_Axis.category) && s.category == null) {
+      d = d.copyWith(
+        category: Category.uncategorized,
+        subType: _axisRank[_Axis.subType] == _Rank.user ? d.subType : null,
+      );
+      _axisRank.remove(_Axis.category);
+    }
+    if (fromName(_Axis.subType) && s.subType == null) {
+      d = d.copyWith(subType: null);
+      _axisRank.remove(_Axis.subType);
+    }
+    if (fromName(_Axis.colors) && s.colors.isEmpty) {
+      d = d.copyWith(colors: const []);
+      _axisRank.remove(_Axis.colors);
+    }
+    if (fromName(_Axis.material) && s.material == null) {
+      d = d.copyWith(material: null);
+      _axisRank.remove(_Axis.material);
+    }
+    if (fromName(_Axis.pattern) && s.pattern == null) {
+      d = d.copyWith(pattern: null);
+      _axisRank.remove(_Axis.pattern);
+    }
+    _draft = d;
+  }
+
+  void _onNameChanged(String v) {
+    setState(() {
+      _draft = _draft.copyWith(name: v);
+      // FR-503 — 등록 모드에서만 이름 키워드로 비어 있는 축을 채운다. 수정 모드는
+      // 이미 정리된 옷이라 이름만 고쳐도 속성이 바뀌면 의도치 않은 변경이 된다.
+      if (!_isEdit) {
+        final s = AttributeSuggestion.fromName(v);
+        _clearStaleNameAxes(s);
+        // 이름이 비운 축에는 사진 제안을 되살린다(이름 > 사진 순위는 그대로).
+        _applySuggestion(_photoSuggestion, _Rank.photo);
+        _applySuggestion(s, _Rank.name);
+      }
+    });
+  }
+
+  void _removePhoto() {
+    _photoGeneration++; // 진행 중인 분석 결과를 버린다.
+    setState(() {
+      _analyzing = false;
+      _photoSuggestion = AttributeSuggestion.empty;
+      _draft = _draft.copyWith(tempPhoto: null, tempCutout: null);
       // 원본 사진이 있었을 때만 "제거" 의도가 유의미하다. 원본이 없는데
       // 새로 골랐다 지운 경우는 순변화 없음이므로 dirty로 오판하지 않는다.
       _photoCleared = _existingImagePath != null;
     });
+  }
+
+  /// 005 FR-513 — 배경 제거본을 버리고 원본을 쓴다.
+  void _useOriginalPhoto() {
+    setState(() {
+      if (_draft.tempCutout != null) {
+        _draft = _draft.copyWith(tempCutout: null);
+      } else {
+        _cutoutCleared = _existingCutoutPath != null;
+      }
+    });
+  }
+
+  /// 005 FR-505 — 앨범에서 여러 장을 골라 옷을 한 번에 만들고 정리하기로 넘어간다.
+  /// 빠른 분석(배경 제거·색상·분류 힌트)만 쓰고 기기 내 AI는 쓰지 않는다(장당 수 초).
+  Future<void> _batchImport() async {
+    // 빠른 연속 탭으로 선택기가 두 번 열리지 않게 막는다(already_active 오류).
+    if (_pickingBatch || actionBusy) return;
+    _pickingBatch = true;
+    final List<XFile> picked;
+    try {
+      picked = await ImagePicker().pickMultiImage(
+        limit: maxBatchPhotos,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+    } on PlatformException catch (e) {
+      debugPrint('Batch photo picker failed: ${e.code}');
+      if (mounted) {
+        showClosetimoToast(
+          context,
+          '사진을 불러오지 못했어요. 사진 접근 권한을 확인해 주세요.',
+          isError: true,
+        );
+      }
+      return;
+    } finally {
+      _pickingBatch = false;
+    }
+    if (picked.isEmpty || !mounted) return;
+    final files = picked.take(maxBatchPhotos).map((x) => File(x.path)).toList();
+    final progress = ValueNotifier<int>(0);
+    final ids = <int>[];
+    final hints = <int, AttributeSuggestion>{};
+    var failed = 0;
+    await runGuarded(
+      () async {
+        // 진행 대화상자는 루프가 끝나면 직접 닫으므로 기다리지 않는다.
+        unawaited(
+          showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) =>
+                _BatchProgressDialog(progress: progress, total: files.length),
+          ),
+        );
+        final repo = ref.read(itemRepositoryProvider);
+        final suggester = ref.read(attributeSuggesterProvider);
+        final prefs = ref.read(preferencesStreamProvider).valueOrNull;
+        try {
+          for (final file in files) {
+            File? tempCutout;
+            try {
+              final analysis = await suggester.analyzePhoto(
+                file,
+                removeBackground: prefs?.removeBackground ?? true,
+                useOnDeviceAi: false,
+              );
+              tempCutout = analysis.cutout;
+              final s = analysis.suggestion;
+              // US2-1 — 미분류로 만든다(사진·배경 제거본·색상·자동 이름만). 종류 제안은 정리하기
+              // 카드가 미리 선택해 보여 주고, 사용자가 저장할 때만 반영한다(batch_suggestions.dart).
+              final draft = NewItemDraft(
+                category: Category.uncategorized,
+                colors: s.colors,
+                tempPhoto: file,
+                tempCutout: analysis.cutout,
+              ).forCreate();
+              final id = await repo.create(draft);
+              ids.add(id);
+              if (s.category != null) hints[id] = s;
+            } catch (e) {
+              failed++;
+              debugPrint('Batch import failed for ${file.path}: $e');
+            } finally {
+              // 성공하면 저장소가 sandbox로 복사했고, 실패하면 쓸 일이 없다.
+              _deleteTemp(tempCutout);
+            }
+            progress.value++;
+          }
+        } finally {
+          if (mounted) Navigator.of(context, rootNavigator: true).pop();
+        }
+      },
+      tag: _SaveAction.batch,
+      failureMessage: '사진을 등록하지 못했어요. 다시 시도해 주세요.',
+    );
+    progress.dispose();
+    if (hints.isNotEmpty) {
+      ref
+          .read(batchSuggestionsProvider.notifier)
+          .update((m) => {...m, ...hints});
+    }
+    if (!mounted) return;
+    if (ids.isEmpty) {
+      showClosetimoToast(context, '사진을 등록하지 못했어요. 다시 시도해 주세요.', isError: true);
+      return;
+    }
+    showClosetimoToast(
+      context,
+      failed == 0
+          ? '${ids.length}벌을 만들었어요. 하나씩 정리해 볼까요?'
+          : '${ids.length}벌을 만들었어요. $failed장은 등록하지 못했어요',
+      placement: ToastPlacement.top,
+    );
+    context.pushReplacementNamed(
+      Routes.sortItems,
+      queryParameters: {'ids': ids.join(',')},
+    );
   }
 
   Future<void> _pickPurchaseDate() async {
@@ -208,7 +538,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
     final repo = ref.read(itemRepositoryProvider);
     final String message;
     if (_isEdit) {
-      final photoChanged = _draft.tempPhoto != null || _photoCleared;
+      final photoChanged =
+          _draft.tempPhoto != null ||
+          _photoCleared ||
+          _cutoutCleared ||
+          _draft.tempCutout != null;
       await repo.update(
         widget.editId!,
         ItemPatch(
@@ -223,6 +557,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
           newPhoto: _draft.tempPhoto,
           removePhoto: _photoCleared,
           tags: _draft.tags,
+          attributes: _draft.attributes,
+          newCutout: _draft.tempCutout,
+          removeCutout: _cutoutCleared,
         ),
       );
       // 같은 경로(items/{id}.jpg)에 덮어쓰므로 FileImage 캐시가 이전
@@ -250,10 +587,16 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
       // FR-001a — 같은 입력이 다시 저장되지 않도록 성공 직후 폼을 비운다.
       // 직전 카테고리는 같은 종류를 연달아 등록하기 쉽게 유지한다.
       final blank = NewItemDraft(category: _draft.category);
+      _photoGeneration++;
       setState(() {
         _blankDraft = blank;
         _draft = blank;
         _formGeneration++;
+        _analyzing = false;
+        _photoSuggestion = AttributeSuggestion.empty;
+        final keepsCategory = _axisRank[_Axis.category] == _Rank.user;
+        _axisRank.clear();
+        if (keepsCategory) _axisRank[_Axis.category] = _Rank.user;
       });
       if (_scroll.hasClients) _scroll.jumpTo(0);
       // 하단 CTA 바를 가리지 않도록 상단에 띄운다.
@@ -269,6 +612,16 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
       placement: _isEdit ? ToastPlacement.top : ToastPlacement.bottom,
     );
     context.pop();
+  }
+
+  /// 이름 칸 안내. 등록 모드에서 이름을 비우면 자동 이름으로 저장됨을 알린다(FR-502).
+  String get _nameNote {
+    if (_isEdit) return '필수';
+    if (_draft.name.trim().isNotEmpty) return '';
+    final auto = _draft.autoName;
+    return auto == NewItemDraft.untitledName
+        ? '이름 또는 사진 중 하나만 있어도 돼요'
+        : "비워 두면 '$auto'(으)로 저장돼요";
   }
 
   @override
@@ -332,39 +685,107 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
                         children: [
                           PhotoPickerCard(
                             tempPhoto: _draft.tempPhoto,
+                            tempCutout: _draft.tempCutout,
                             existingImagePath:
                                 (_photoCleared || _draft.tempPhoto != null)
                                 ? null
                                 : _existingImagePath,
+                            existingCutoutPath:
+                                (_photoCleared ||
+                                    _cutoutCleared ||
+                                    _draft.tempPhoto != null)
+                                ? null
+                                : _existingCutoutPath,
+                            analyzing: _analyzing,
                             onPicked: _pickPhoto,
                             onRemove: _isEdit ? _removePhoto : null,
+                            onUseOriginal: _useOriginalPhoto,
                           ),
-                          const SizedBox(height: ClosetimoSpacing.space26),
-                          _FieldLabel(
-                            label: '의류 명칭',
-                            note: _isEdit ? '필수' : '이름 또는 사진 중 하나만 있어도 돼요',
-                          ),
+                          // FR-505 — 빈 폼에서만 여러 장 등록을 제안한다(입력 유실 방지).
+                          if (!_isEdit && !_isDirty)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: actionBusy ? null : _batchImport,
+                                icon: const Icon(
+                                  Icons.photo_library_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('여러 장 한 번에 등록'),
+                              ),
+                            )
+                          else
+                            const SizedBox(height: ClosetimoSpacing.lg),
+                          _FieldLabel(label: '의류 명칭', note: _nameNote),
                           _FieldInput(
                             key: ValueKey('name-$_formGeneration'),
                             label: '의류 명칭',
                             initial: _draft.name,
-                            hint: '예) 오버사이즈 캐시미어 코트',
-                            onChanged: (v) => setState(
-                              () => _draft = _draft.copyWith(name: v),
-                            ),
+                            hint: '예) 베이지 울 코트',
+                            onChanged: _onNameChanged,
                           ),
                           const SizedBox(height: ClosetimoSpacing.lg),
                           const _FieldLabel(label: '종류', note: '선택'),
                           CategoryPicker(
                             value: _draft.category,
-                            onChanged: (c) => setState(
-                              () => _draft = _draft.copyWith(category: c),
+                            onChanged: (c) => _setByUser(
+                              _Axis.category,
+                              _draft.copyWith(
+                                category: c,
+                                subType: ItemAttributes.normalizeSubType(
+                                  c,
+                                  _draft.subType,
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: ClosetimoSpacing.sm),
-                          const _FieldHint('아직 정하지 않았다면 미분류로 두어도 돼요.'),
+                          if (ItemAttributes.subTypesOf(
+                            _draft.category,
+                          ).isNotEmpty) ...[
+                            const SizedBox(height: ClosetimoSpacing.lg),
+                            const _FieldLabel(label: '세부 종류', note: '선택'),
+                            SubTypePicker(
+                              category: _draft.category,
+                              value: _draft.subType,
+                              onChanged: (v) => _setByUser(
+                                _Axis.subType,
+                                _draft.copyWith(subType: v),
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: ClosetimoSpacing.sm),
+                            const _FieldHint('아직 정하지 않았다면 미분류로 두어도 돼요.'),
+                          ],
                           const SizedBox(height: ClosetimoSpacing.lg),
-                          const _FieldLabel(label: '용도 (선택)'),
+                          _FieldLabel(
+                            label: '색상',
+                            note: _colorsFromPhoto
+                                ? '사진에서 골랐어요. 맞지 않으면 바꿔 주세요'
+                                : '최대 3개, 첫 색이 대표 색',
+                          ),
+                          ColorPicker(
+                            value: _draft.colors,
+                            onChanged: (v) => _setByUser(
+                              _Axis.colors,
+                              _draft.copyWith(colors: v),
+                            ),
+                          ),
+                          const SizedBox(height: ClosetimoSpacing.lg),
+                          const _FieldLabel(label: '계절', note: '선택'),
+                          SeasonPicker(
+                            value: _draft.seasons,
+                            suggested:
+                                ItemAttributes.subType(
+                                  _draft.subType,
+                                )?.seasons ??
+                                const {},
+                            onChanged: (v) => _setByUser(
+                              _Axis.seasons,
+                              _draft.copyWith(seasons: v),
+                            ),
+                          ),
+                          const SizedBox(height: ClosetimoSpacing.lg),
+                          const _FieldLabel(label: '용도', note: '선택'),
                           PurposePicker(
                             value: _draft.purposes,
                             onChanged: (p) => setState(
@@ -391,8 +812,31 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
                               ),
                             ),
                             const SizedBox(height: ClosetimoSpacing.lg),
+                            const _FieldLabel(label: '소재'),
+                            SingleAttributePicker(
+                              options: ItemAttributes.materials,
+                              value: _draft.material,
+                              onChanged: (v) => _setByUser(
+                                _Axis.material,
+                                _draft.copyWith(material: v),
+                              ),
+                            ),
+                            const SizedBox(height: ClosetimoSpacing.lg),
+                            const _FieldLabel(label: '패턴'),
+                            SingleAttributePicker(
+                              options: ItemAttributes.patterns,
+                              value: _draft.pattern,
+                              onChanged: (v) => _setByUser(
+                                _Axis.pattern,
+                                _draft.copyWith(pattern: v),
+                              ),
+                            ),
+                            const SizedBox(height: ClosetimoSpacing.lg),
                             // #46 — 사용자 태그(선택). 이미 쓴 태그를 제안한다.
-                            const _FieldLabel(label: '태그', note: '색상·계절 등'),
+                            const _FieldLabel(
+                              label: '태그',
+                              note: '장소·상황 등 자유롭게',
+                            ),
                             TagInput(
                               key: ValueKey('tags-$_formGeneration'),
                               value: _draft.tags,
@@ -603,7 +1047,7 @@ class _OptionalSectionHeader extends StatelessWidget {
                       ),
                       SizedBox(height: ClosetimoSpacing.space2),
                       Text(
-                        '브랜드 · 태그 · 세탁 주기 · 세탁 방법 · 구매일',
+                        '브랜드 · 소재 · 패턴 · 태그 · 세탁 주기 · 세탁 방법 · 구매일',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -797,6 +1241,50 @@ class _FieldInputState extends State<_FieldInput> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(ClosetimoRadius.lg),
             borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 005 FR-505 — 여러 장 등록 진행 표시(닫을 수 없음).
+class _BatchProgressDialog extends StatelessWidget {
+  const _BatchProgressDialog({required this.progress, required this.total});
+
+  final ValueNotifier<int> progress;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        content: ValueListenableBuilder<int>(
+          valueListenable: progress,
+          builder: (context, done, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(value: total == 0 ? null : done / total),
+              const SizedBox(height: ClosetimoSpacing.md),
+              Text(
+                '사진 정리 중… $done / $total',
+                style: const TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 14,
+                  color: ClosetimoColors.ink,
+                ),
+              ),
+              const SizedBox(height: ClosetimoSpacing.xs),
+              const Text(
+                '배경을 지우고 색상을 고르고 있어요',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  color: ClosetimoColors.muted,
+                ),
+              ),
+            ],
           ),
         ),
       ),

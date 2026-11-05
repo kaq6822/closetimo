@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../data/models/item.dart';
+import '../../data/models/item_attributes.dart';
 
 part 'new_item_draft.freezed.dart';
 
@@ -25,6 +26,14 @@ abstract class NewItemDraft with _$NewItemDraft {
     File? tempPhoto,
     // #46 — 사용자 태그(선택). 저장 시 repository가 정규화한다.
     @Default(<String>[]) List<String> tags,
+    // 005 — 구조화 속성(선택). 저장 시 repository가 카탈로그 기준으로 정규화한다.
+    String? subType,
+    @Default(<String>[]) List<String> colors,
+    @Default(<Season>[]) List<Season> seasons,
+    String? material,
+    String? pattern,
+    // 005 FR-513 — 사진 분석이 만든 배경 제거본 임시 파일(iOS 17+). 원본은 [tempPhoto].
+    File? tempCutout,
   }) = _NewItemDraft;
 
   const NewItemDraft._();
@@ -42,18 +51,38 @@ abstract class NewItemDraft with _$NewItemDraft {
     careMethod: item.careMethod,
     purchasedAt: item.purchasedAt,
     tags: List.unmodifiable(item.tags),
+    subType: item.subType,
+    colors: List.unmodifiable(item.colors),
+    seasons: List.unmodifiable(item.seasons),
+    material: item.material,
+    pattern: item.pattern,
   );
 
-  /// 사진만으로 등록할 때 채우는 기본 명칭(FR-002, 2026-10-16 #42).
-  static const untitledName = '이름 없는 옷';
+  /// 이름도 속성도 없을 때 채우는 기본 명칭(FR-002, 2026-10-16 #42).
+  static const untitledName = untitledItemName;
 
   /// FR-002 — 명칭이 비어 있으면 저장 불가(수정 모드 기준).
   bool get canSave => name.trim().isNotEmpty;
 
   /// FR-002 — 등록 모드는 명칭 또는 사진 중 하나만 있으면 저장할 수 있다.
-  bool get canQuickSave => canSave || tempPhoto != null;
+  /// 005 FR-502 — 자동 이름을 만들 속성(종류·세부 종류·색상)만 있어도 된다.
+  bool get canQuickSave =>
+      canSave || tempPhoto != null || autoName != untitledName;
 
-  /// 등록 저장용 draft. 명칭이 비어 있으면 [untitledName]으로 채운다.
+  /// 지금 속성으로 만든 자동 이름(005 FR-502).
+  String get autoName =>
+      autoItemName(category: category, subType: subType, colors: colors);
+
+  /// 등록 저장용 draft. 명칭이 비어 있으면 [autoName]으로 채운다.
   /// 저장소의 `name.isNotEmpty` 규칙은 그대로 유지된다.
-  NewItemDraft forCreate() => canSave ? this : copyWith(name: untitledName);
+  NewItemDraft forCreate() => canSave ? this : copyWith(name: autoName);
+
+  /// 속성 값만 모은 것. 수정 저장([ItemPatch.attributes])에 쓴다.
+  ItemAttributeValues get attributes => ItemAttributeValues(
+    subType: subType,
+    colors: colors,
+    seasons: seasons,
+    material: material,
+    pattern: pattern,
+  );
 }

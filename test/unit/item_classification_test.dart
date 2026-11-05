@@ -46,7 +46,22 @@ void main() {
         'unspecified',
       ]);
       expect(CareMode.values.map((m) => m.name), ['wearCycle', 'manual']);
-      expect(ItemPurpose.values.map((p) => p.name), ['sport']);
+      // 005 — 기존 sport 뒤에만 추가한다(ordinal 유지).
+      expect(ItemPurpose.values.map((p) => p.name), [
+        'sport',
+        'daily',
+        'work',
+        'outing',
+        'formal',
+        'travel',
+        'home',
+      ]);
+      expect(Season.values.map((s) => s.name), [
+        'spring',
+        'summer',
+        'autumn',
+        'winter',
+      ]);
     });
   });
 
