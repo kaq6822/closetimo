@@ -87,17 +87,18 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
 
   Future<void> _loadQueue() async {
     final repo = ref.read(itemRepositoryProvider);
-    final List<int> queue;
-    if (widget.ids case final ids?) {
-      queue = ids;
-    } else {
-      final all = await repo.watchAll().first;
-      final pending = [
-        for (final i in all)
-          if (!i.isArchived && i.category == Category.uncategorized) i,
-      ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      queue = [for (final i in pending) i.id];
-    }
+    final suggestions = ref.read(batchSuggestionsProvider.notifier);
+    final all = await repo.watchAll().first;
+    final pending = [
+      for (final i in all)
+        if (!i.isArchived && i.category == Category.uncategorized) i,
+    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    // 처리가 끝난 옷(삭제·보관·종류 변경)의 사진 제안은 더 쓸 일이 없으니 걷어 낸다.
+    // 넘겨받은 [SortItemsScreen.ids]는 지우지 않는다. 공유 스트림의 캐시 스냅샷이 방금
+    // 만든 옷을 아직 담지 못했을 수 있어, 그 옷의 제안까지 지우면 카드 미리 선택이 사라진다.
+    final pendingIds = {for (final i in pending) i.id, ...?widget.ids};
+    suggestions.update((m) => pruneBatchSuggestions(m, pendingIds));
+    final queue = widget.ids ?? [for (final i in pending) i.id];
     if (!mounted) return;
     setState(() => _queue = queue);
     // 정리할 옷이 없으면 빈 상태 안내를 보여 준다(바로 닫지 않는다).
@@ -162,6 +163,8 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
   Future<void> _saveAndNext() async {
     final item = _item;
     if (item == null) return;
+    // await 뒤에 화면이 사라져도 제안을 지울 수 있게 notifier를 먼저 받아 둔다.
+    final suggestions = ref.read(batchSuggestionsProvider.notifier);
     await runGuarded(() async {
       await ref
           .read(itemRepositoryProvider)
@@ -186,9 +189,7 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
             ),
           );
       _sorted++;
-      ref
-          .read(batchSuggestionsProvider.notifier)
-          .update((m) => {...m}..remove(item.id));
+      suggestions.update((m) => {...m}..remove(item.id));
       if (!mounted) return;
       if (_isLast) {
         _finish();
@@ -246,11 +247,7 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
                         ),
                         child: Text(
                           '${_index + 1} / $total',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            color: ClosetimoColors.muted,
-                          ),
+                          style: Theme.of(context).textTheme.labelMedium,
                         ),
                       ),
               ),
