@@ -239,7 +239,8 @@ void main() {
           caps: _iosCaps,
           analysisFor: (p) => NativeAnalysis(
             labels: [
-              if (p.path.endsWith('a.png')) const VisionLabel('jeans', 0.94),
+              if (p.path.endsWith('a.png') || p.path.endsWith('c.png'))
+                const VisionLabel('jeans', 0.94),
             ],
           ),
         ),
@@ -252,9 +253,18 @@ void main() {
     await _settleIo(tester, rounds: 20);
 
     expect(items.created, hasLength(3));
+    // US2-1 — 사진 제안과 무관하게 미분류로 만든다(색상·자동 이름만 저장).
+    for (final d in items.created) {
+      expect(d.category, Category.uncategorized);
+      expect(d.subType, isNull);
+      expect(d.material, isNull);
+      expect(d.colors, ['navy']);
+      expect(d.name, '네이비 옷');
+    }
     expect(find.byType(SortItemsScreen), findsOneWidget);
     expect(find.text('1 / 3'), findsOneWidget);
-    // 첫 장: 청바지 라벨 + 네이비 → 자동 이름.
+    // 첫 장: 청바지 라벨 제안을 카드에 미리 골라 보여 주고 자동 이름도 따라간다.
+    expect(find.text('사진에서 골랐어요. 맞지 않으면 바꿔 주세요'), findsOneWidget);
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('sort-preview-name'))).data,
       '네이비 청바지',
@@ -271,13 +281,21 @@ void main() {
     );
     await _tapText(tester, '저장하고 다음');
 
-    // 셋째 장은 나중에 → 끝나면 돌아가며 정리 수를 알린다.
+    // 셋째 장은 청바지 제안이 있어도 나중에 → 미분류로 남는다(US2-3). 끝나면 정리 수를 알린다.
     expect(find.text('3 / 3'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('sort-preview-name'))).data,
+      '네이비 청바지',
+    );
     await _tapText(tester, '나중에');
     expect(find.byType(SortItemsScreen), findsNothing);
     expect(find.text('2벌을 정리했어요'), findsOneWidget);
 
     expect(items.updated, hasLength(2));
+    final (_, first) = items.updated.first;
+    expect(first.name, '네이비 청바지');
+    expect(first.category, Category.bottom);
+    expect(first.attributes!.subType, 'jeans');
     final (_, second) = items.updated.last;
     expect(second.name, '네이비 티셔츠');
     expect(second.category, Category.top);

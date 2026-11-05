@@ -16,6 +16,7 @@ import '../../data/models/item.dart';
 import '../../data/models/item_attributes.dart';
 import '../../data/models/item_patch.dart';
 import '../../data/providers/app_providers.dart';
+import 'batch_suggestions.dart';
 import 'widgets/attribute_pickers.dart';
 import 'widgets/category_picker.dart';
 
@@ -63,6 +64,9 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
   List<String> _colors = const [];
   List<Season> _seasons = const [];
   List<ItemPurpose> _purposes = const [];
+
+  /// 종류·세부 종류를 여러 장 등록의 사진 제안으로 미리 골랐는지(사용자가 바꾸면 false).
+  bool _photoHint = false;
 
   final ScrollController _scroll = ScrollController();
 
@@ -123,11 +127,19 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
       return;
     }
     final found = item;
+    // 미분류 옷이면 여러 장 등록의 사진 제안을 미리 선택한다. 저장은 사용자가 누를 때만 한다.
+    final hint = found.category == Category.uncategorized
+        ? ref.read(batchSuggestionsProvider)[found.id]
+        : null;
+    final hintCategory = hint?.category;
     setState(() {
       _index = i;
       _item = found;
-      _category = found.category;
-      _subType = found.subType;
+      _photoHint = hintCategory != null;
+      _category = hintCategory ?? found.category;
+      _subType = hintCategory != null
+          ? ItemAttributes.normalizeSubType(hintCategory, hint!.subType)
+          : found.subType;
       _colors = found.colors;
       _seasons = found.seasons;
       _purposes = found.purposes;
@@ -174,6 +186,9 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
             ),
           );
       _sorted++;
+      ref
+          .read(batchSuggestionsProvider.notifier)
+          .update((m) => {...m}..remove(item.id));
       if (!mounted) return;
       if (_isLast) {
         _finish();
@@ -300,10 +315,14 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
             ),
           ),
           const SizedBox(height: ClosetimoSpacing.lg),
-          const _SectionLabel('종류'),
+          _SectionLabel(
+            '종류',
+            note: _photoHint ? '사진에서 골랐어요. 맞지 않으면 바꿔 주세요' : null,
+          ),
           CategoryPicker(
             value: _category,
             onChanged: (c) => setState(() {
+              _photoHint = false;
               _category = c;
               _subType = ItemAttributes.normalizeSubType(c, _subType);
             }),
@@ -314,7 +333,10 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
             SubTypePicker(
               category: _category,
               value: _subType,
-              onChanged: (v) => setState(() => _subType = v),
+              onChanged: (v) => setState(() {
+                _photoHint = false;
+                _subType = v;
+              }),
             ),
           ],
           const SizedBox(height: ClosetimoSpacing.lg),

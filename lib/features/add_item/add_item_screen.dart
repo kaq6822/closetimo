@@ -26,6 +26,7 @@ import '../../data/models/item_patch.dart';
 import '../../data/models/item_tags.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/suggestions/attribute_suggester.dart';
+import 'batch_suggestions.dart';
 import 'new_item_draft.dart';
 import 'widgets/attribute_pickers.dart';
 import 'widgets/care_method_picker.dart';
@@ -400,6 +401,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
     final files = picked.take(maxBatchPhotos).map((x) => File(x.path)).toList();
     final progress = ValueNotifier<int>(0);
     final ids = <int>[];
+    final hints = <int, AttributeSuggestion>{};
     var failed = 0;
     await runGuarded(
       () async {
@@ -426,18 +428,17 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
               );
               tempCutout = analysis.cutout;
               final s = analysis.suggestion;
-              final category = s.category ?? Category.uncategorized;
+              // US2-1 — 미분류로 만든다(사진·배경 제거본·색상·자동 이름만). 종류 제안은 정리하기
+              // 카드가 미리 선택해 보여 주고, 사용자가 저장할 때만 반영한다(batch_suggestions.dart).
               final draft = NewItemDraft(
-                category: category,
-                subType: ItemAttributes.normalizeSubType(category, s.subType),
+                category: Category.uncategorized,
                 colors: s.colors,
-                seasons: s.seasons,
-                material: s.material,
-                pattern: s.pattern,
                 tempPhoto: file,
                 tempCutout: analysis.cutout,
               ).forCreate();
-              ids.add(await repo.create(draft));
+              final id = await repo.create(draft);
+              ids.add(id);
+              if (s.category != null) hints[id] = s;
             } catch (e) {
               failed++;
               debugPrint('Batch import failed for ${file.path}: $e');
@@ -455,6 +456,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
       failureMessage: '사진을 등록하지 못했어요. 다시 시도해 주세요.',
     );
     progress.dispose();
+    if (hints.isNotEmpty) {
+      ref
+          .read(batchSuggestionsProvider.notifier)
+          .update((m) => {...m, ...hints});
+    }
     if (!mounted) return;
     if (ids.isEmpty) {
       showClosetimoToast(context, '사진을 등록하지 못했어요. 다시 시도해 주세요.', isError: true);
