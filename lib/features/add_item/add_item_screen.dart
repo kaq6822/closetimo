@@ -403,6 +403,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
     final ids = <int>[];
     final hints = <int, AttributeSuggestion>{};
     var failed = 0;
+    // 등록 중 화면이 사라져도(딥링크·라우터 리셋) 제안을 넘길 수 있게 notifier를 먼저 받아 둔다.
+    final suggestions = ref.read(batchSuggestionsProvider.notifier);
     await runGuarded(
       () async {
         // 진행 대화상자는 루프가 끝나면 직접 닫으므로 기다리지 않는다.
@@ -456,11 +458,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen>
       failureMessage: '사진을 등록하지 못했어요. 다시 시도해 주세요.',
     );
     progress.dispose();
-    if (hints.isNotEmpty) {
-      ref
-          .read(batchSuggestionsProvider.notifier)
-          .update((m) => {...m, ...hints});
-    }
+    if (hints.isNotEmpty) suggestions.update((m) => {...m, ...hints});
     if (!mounted) return;
     if (ids.isEmpty) {
       showClosetimoToast(context, '사진을 등록하지 못했어요. 다시 시도해 주세요.', isError: true);

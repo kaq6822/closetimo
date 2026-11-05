@@ -83,13 +83,14 @@ class ClosetimoVisionChannel(
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "capabilities" -> scope.launch {
+                val (status, detail) = aiStatus()
                 result.success(
                     mapOf(
                         "backgroundRemoval" to true,
                         "classification" to true,
-                        "onDeviceAi" to aiStatus(),
+                        "onDeviceAi" to status,
                         // 진단용(QA 측정 도구가 표시): Gemini Nano 원본 상태 또는 오류. 앱 UI는 쓰지 않는다.
-                        "onDeviceAiDetail" to aiDetail(),
+                        "onDeviceAiDetail" to detail,
                     ),
                 )
             }
@@ -131,26 +132,23 @@ class ClosetimoVisionChannel(
 
     // ── 기능 확인 ──
 
-    private suspend fun aiStatus(): String {
-        val model = model ?: return "unsupported"
+    /**
+     * Gemini Nano 상태를 한 번만 조회해 (앱용 상태, 진단 문자열)을 돌려준다.
+     * AICore 조회는 느린 기기에서 오래 걸리므로 두 값을 위해 두 번 부르지 않는다.
+     */
+    private suspend fun aiStatus(): Pair<String, String> {
+        val model = model ?: return "unsupported" to "no model (API ${Build.VERSION.SDK_INT})"
         return try {
-            when (model.checkStatus()) {
+            val raw = model.checkStatus()
+            val status = when (raw) {
                 FeatureStatus.AVAILABLE -> "available"
                 FeatureStatus.DOWNLOADABLE, FeatureStatus.DOWNLOADING -> "notReady"
                 else -> "unsupported"
             }
+            status to "status=$raw"
         } catch (e: Exception) {
             Log.w(TAG, "Gemini Nano status check failed: $e")
-            "unsupported"
-        }
-    }
-
-    private suspend fun aiDetail(): String {
-        val model = model ?: return "no model (API ${Build.VERSION.SDK_INT})"
-        return try {
-            "status=${model.checkStatus()}"
-        } catch (e: Exception) {
-            "error=$e"
+            "unsupported" to "error=$e"
         }
     }
 
@@ -308,7 +306,8 @@ class ClosetimoVisionChannel(
              "pattern": one of [${values("pattern")}, none]}
             subType hints: knit = any knitted sweater or pullover (British "jumper");
             jumper = casual zip-up outer jacket such as a bomber or windbreaker, never a sweater;
-            cardigan = knit top that opens at the front; hoodie = hooded sweatshirt.
+            cardigan = knit top that opens at the front; hoodie = hooded sweatshirt;
+            skirt and dress are not outerwear.
         """.trimIndent()
     }
 
