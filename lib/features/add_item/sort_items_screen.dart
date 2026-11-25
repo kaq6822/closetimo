@@ -1,6 +1,8 @@
 // 005 FR-506 — 정리하기: 옷을 한 벌씩 카드로 보여 주고 칩만 눌러 분류한다(SC-501).
 // 진입: 여러 장 등록 직후(`ids`), 홈 "정리 대기 N벌"(ids 없음 = 활성 미분류 전체).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +18,7 @@ import '../../data/models/item.dart';
 import '../../data/models/item_attributes.dart';
 import '../../data/models/item_patch.dart';
 import '../../data/providers/app_providers.dart';
+import '../../data/repositories/item_repository.dart';
 import 'batch_suggestions.dart';
 import 'widgets/attribute_pickers.dart';
 import 'widgets/category_picker.dart';
@@ -87,22 +90,52 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
 
   Future<void> _loadQueue() async {
     final repo = ref.read(itemRepositoryProvider);
-    final suggestions = ref.read(batchSuggestionsProvider.notifier);
-    final all = await repo.watchAll().first;
-    final pending = [
-      for (final i in all)
-        if (!i.isArchived && i.category == Category.uncategorized) i,
-    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    // 처리가 끝난 옷(삭제·보관·종류 변경)의 사진 제안은 더 쓸 일이 없으니 걷어 낸다.
-    // 넘겨받은 [SortItemsScreen.ids]는 지우지 않는다. 공유 스트림의 캐시 스냅샷이 방금
-    // 만든 옷을 아직 담지 못했을 수 있어, 그 옷의 제안까지 지우면 카드 미리 선택이 사라진다.
-    final pendingIds = {for (final i in pending) i.id, ...?widget.ids};
-    suggestions.update((m) => pruneBatchSuggestions(m, pendingIds));
-    final queue = widget.ids ?? [for (final i in pending) i.id];
+    unawaited(_prunePhotoSuggestions(repo));
+    final List<int> queue;
+    if (widget.ids case final ids?) {
+      queue = ids;
+    } else {
+      final all = await repo.watchAll().first;
+      final pending = [
+        for (final item in all)
+          if (!item.isArchived && item.category == Category.uncategorized) item,
+      ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      queue = [for (final item in pending) item.id];
+    }
     if (!mounted) return;
     setState(() => _queue = queue);
     // 정리할 옷이 없으면 빈 상태 안내를 보여 준다(바로 닫지 않는다).
     if (queue.isNotEmpty) await _show(0);
+  }
+
+  Future<void> _prunePhotoSuggestions(ItemRepository repo) async {
+    final suggestions = ref.read(batchSuggestionsProvider.notifier);
+    final snapshot = suggestions.state;
+    final obsoleteIds = <int>{};
+    try {
+      // 목록 캐시에는 최근 등록한 옷이 빠질 수 있어 제안이 있는 옷만 직접 확인한다.
+      for (final id in snapshot.keys) {
+        final item = await repo.get(id);
+        if (!mounted) return;
+        if (item == null ||
+            item.isArchived ||
+            item.category != Category.uncategorized) {
+          obsoleteIds.add(id);
+        }
+      }
+    } catch (error) {
+      debugPrint('Failed to check batch photo suggestions: $error');
+      return;
+    }
+    if (obsoleteIds.isEmpty) return;
+    suggestions.update(
+      (current) => pruneBatchSuggestions(current, {
+        for (final entry in current.entries)
+          if (!obsoleteIds.contains(entry.key) ||
+              !identical(entry.value, snapshot[entry.key]))
+            entry.key,
+      }),
+    );
   }
 
   /// [index]번째 옷을 불러온다. 사라졌거나 보관한 옷은 건너뛴다.

@@ -39,6 +39,19 @@ class _StaleWatchRepo extends FakeItemRepo {
   void freeze() => _snapshot = List.unmodifiable(items);
 }
 
+class _DelayedWatchRepo extends FakeItemRepo {
+  _DelayedWatchRepo(super.seed);
+
+  bool delaySnapshot = false;
+  final snapshotGate = Completer<void>();
+
+  @override
+  Stream<List<Item>> watchAll() async* {
+    if (delaySnapshot) await snapshotGate.future;
+    yield* super.watchAll();
+  }
+}
+
 File _png(String name) =>
     File('${_tmp.path}/$name')..writeAsBytesSync(onePixelPng);
 
@@ -431,7 +444,7 @@ void main() {
     await drainToasts(tester);
   });
 
-  testWidgets('정리하기에 들어오면 처리가 끝난 옷의 사진 제안을 걷어 낸다(#58)', (tester) async {
+  testWidgets('전체 목록을 기다리지 않고 첫 카드를 열며 최신 상태로 제안을 정리한다', (tester) async {
     phoneViewport(tester);
     final archived = testItem(3, '보관한 옷', category: Category.uncategorized)
       ..archivedAt = DateTime(2026, 10, 1);
@@ -439,34 +452,39 @@ void main() {
       category: Category.bottom,
       subType: 'jeans',
     );
+    final items = _DelayedWatchRepo([
+      testItem(1, '이름 없는 옷', category: Category.uncategorized),
+      testItem(2, '셔츠'),
+      archived,
+      testItem(4, '다른 미분류 옷', category: Category.uncategorized),
+    ]);
+    addTearDown(items.snapshotGate.complete);
     await tester.pumpWidget(
       testApp(
-        items: FakeItemRepo([
-          testItem(1, '이름 없는 옷', category: Category.uncategorized),
-          testItem(2, '셔츠'),
-          archived,
-        ]),
+        items: items,
         extra: [
           batchSuggestionsProvider.overrideWith(
-            // 1: 아직 미분류, 2: 종류를 바꿈, 3: 보관함, 9: 삭제함.
-            (ref) => const {1: hint, 2: hint, 3: hint, 9: hint},
+            // 1·4: 아직 미분류, 2: 종류를 바꿈, 3: 보관함, 9: 삭제함.
+            (ref) => const {1: hint, 2: hint, 3: hint, 4: hint, 9: hint},
           ),
         ],
       ),
     );
     await tester.pumpAndSettle();
+    items.delaySnapshot = true;
     unawaited(
       GoRouter.of(
         tester.element(find.byType(Navigator).first),
       ).pushNamed(Routes.sortItems, queryParameters: {'ids': '1'}),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(SortItemsScreen), findsOneWidget);
     final container = ProviderScope.containerOf(
       tester.element(find.byType(SortItemsScreen)),
     );
-    expect(container.read(batchSuggestionsProvider).keys, [1]);
+    expect(container.read(batchSuggestionsProvider).keys, [1, 4]);
     // 남은 제안은 그대로 카드에 미리 선택된다.
     expect(find.text('사진에서 골랐어요. 맞지 않으면 바꿔 주세요'), findsOneWidget);
   });
