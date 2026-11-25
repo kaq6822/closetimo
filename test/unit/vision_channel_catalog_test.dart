@@ -79,4 +79,24 @@ void main() {
     expect(_swift.contains('VNClassifyImageRequest'), isTrue);
     expect(visionLabelHints, isNotEmpty);
   });
+
+  test('세부 종류 힌트는 iOS·Android 지시문이 같다(#58)', () {
+    final kotlin = File(
+      'android/app/src/main/kotlin/com/closetimo/app/ClosetimoVisionChannel.kt',
+    ).readAsStringSync();
+    // 따옴표·구분자(. ;)·줄바꿈 차이는 무시하고 힌트 문장 단위로 비교한다.
+    Set<String> hints(String text) => text
+        .replaceAll('"', '')
+        .split(RegExp(r'[.;]\s*'))
+        .map((h) => h.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((h) => h.isNotEmpty)
+        .toSet();
+    const iosStart = 'Specific garment type, or none if unsure. ';
+    final iosAt = _swift.indexOf(iosStart) + iosStart.length;
+    final ios = hints(_swift.substring(iosAt, _swift.indexOf('",', iosAt)));
+    final ktAt = kotlin.indexOf('subType hints: ') + 'subType hints: '.length;
+    final android = hints(kotlin.substring(ktAt, kotlin.indexOf('"""', ktAt)));
+    expect(ios, contains('skirt and dress are not outerwear'));
+    expect(android, ios);
+  });
 }

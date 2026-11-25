@@ -1,6 +1,8 @@
 // 005 FR-506 — 정리하기: 옷을 한 벌씩 카드로 보여 주고 칩만 눌러 분류한다(SC-501).
 // 진입: 여러 장 등록 직후(`ids`), 홈 "정리 대기 N벌"(ids 없음 = 활성 미분류 전체).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +18,7 @@ import '../../data/models/item.dart';
 import '../../data/models/item_attributes.dart';
 import '../../data/models/item_patch.dart';
 import '../../data/providers/app_providers.dart';
+import '../../data/repositories/item_repository.dart';
 import 'batch_suggestions.dart';
 import 'widgets/attribute_pickers.dart';
 import 'widgets/category_picker.dart';
@@ -87,21 +90,52 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
 
   Future<void> _loadQueue() async {
     final repo = ref.read(itemRepositoryProvider);
+    unawaited(_prunePhotoSuggestions(repo));
     final List<int> queue;
     if (widget.ids case final ids?) {
       queue = ids;
     } else {
       final all = await repo.watchAll().first;
       final pending = [
-        for (final i in all)
-          if (!i.isArchived && i.category == Category.uncategorized) i,
+        for (final item in all)
+          if (!item.isArchived && item.category == Category.uncategorized) item,
       ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      queue = [for (final i in pending) i.id];
+      queue = [for (final item in pending) item.id];
     }
     if (!mounted) return;
     setState(() => _queue = queue);
     // 정리할 옷이 없으면 빈 상태 안내를 보여 준다(바로 닫지 않는다).
     if (queue.isNotEmpty) await _show(0);
+  }
+
+  Future<void> _prunePhotoSuggestions(ItemRepository repo) async {
+    final suggestions = ref.read(batchSuggestionsProvider.notifier);
+    final snapshot = suggestions.state;
+    final obsoleteIds = <int>{};
+    try {
+      // 목록 캐시에는 최근 등록한 옷이 빠질 수 있어 제안이 있는 옷만 직접 확인한다.
+      for (final id in snapshot.keys) {
+        final item = await repo.get(id);
+        if (!mounted) return;
+        if (item == null ||
+            item.isArchived ||
+            item.category != Category.uncategorized) {
+          obsoleteIds.add(id);
+        }
+      }
+    } catch (error) {
+      debugPrint('Failed to check batch photo suggestions: $error');
+      return;
+    }
+    if (obsoleteIds.isEmpty) return;
+    suggestions.update(
+      (current) => pruneBatchSuggestions(current, {
+        for (final entry in current.entries)
+          if (!obsoleteIds.contains(entry.key) ||
+              !identical(entry.value, snapshot[entry.key]))
+            entry.key,
+      }),
+    );
   }
 
   /// [index]번째 옷을 불러온다. 사라졌거나 보관한 옷은 건너뛴다.
@@ -162,6 +196,8 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
   Future<void> _saveAndNext() async {
     final item = _item;
     if (item == null) return;
+    // await 뒤에 화면이 사라져도 제안을 지울 수 있게 notifier를 먼저 받아 둔다.
+    final suggestions = ref.read(batchSuggestionsProvider.notifier);
     await runGuarded(() async {
       await ref
           .read(itemRepositoryProvider)
@@ -186,9 +222,7 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
             ),
           );
       _sorted++;
-      ref
-          .read(batchSuggestionsProvider.notifier)
-          .update((m) => {...m}..remove(item.id));
+      suggestions.update((m) => {...m}..remove(item.id));
       if (!mounted) return;
       if (_isLast) {
         _finish();
@@ -246,11 +280,7 @@ class _SortItemsScreenState extends ConsumerState<SortItemsScreen>
                         ),
                         child: Text(
                           '${_index + 1} / $total',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            color: ClosetimoColors.muted,
-                          ),
+                          style: Theme.of(context).textTheme.labelMedium,
                         ),
                       ),
               ),

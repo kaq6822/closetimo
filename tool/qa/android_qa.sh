@@ -59,10 +59,23 @@ guard() {
 # ── 관찰 ──────────────────────────────────────────────────
 # Android CLI 1.1+는 창별 묶음(`[{window-title, type, content:[…]}]`, 대문자 CLICKABLE)을 내보낸다.
 # 앱 창 요소만 평탄화하고 interactions/state를 소문자로 맞춰 예전 평탄 형식과 같게 만든다(시스템 바 제외).
+# `android layout`이 실패하거나 JSON이 아닌 출력을 내면 원인(stderr·출력 앞부분)을 보이고 1을 돌려준다.
 ui() {
-  android layout --flat --device="$ANDROID_SERIAL" 2>/dev/null | python3 -c '
+  local raw err errfile
+  errfile=$(mktemp)
+  if ! raw=$(android layout --flat --device="$ANDROID_SERIAL" 2>"$errfile"); then
+    err=$(cat "$errfile"); rm -f "$errfile"
+    echo "ui: android layout failed: ${err:-<no stderr>}" >&2
+    return 1
+  fi
+  rm -f "$errfile"
+  printf '%s' "$raw" | python3 -c '
 import json,sys
-d=json.load(sys.stdin); out=[]
+text=sys.stdin.read()
+try: d=json.loads(text)
+except ValueError:
+    sys.exit("ui: android layout returned non-JSON output: "+(text.strip()[:300] or "<empty>"))
+out=[]
 for w in d:
     if "content" in w:
         if w.get("type")=="SYSTEM": continue
@@ -74,10 +87,11 @@ for e in out:
 json.dump(out,sys.stdout,ensure_ascii=False)'
 }
 # 텍스트/설명이 있거나 클릭 가능한 요소를 한 줄씩: 'desc' [x,y] interactions state
-descs() { ui | python3 -c 'import json,sys;[print(repr(e.get("content-desc") or e.get("text") or ""), e["center"], ",".join(e.get("interactions",[])), ",".join(e.get("state",[]))) for e in json.load(sys.stdin) if e.get("content-desc") or e.get("text") or "clickable" in e.get("interactions",[])]'; }
+descs() { local j; j=$(ui) || return 1; printf '%s' "$j" | python3 -c 'import json,sys;[print(repr(e.get("content-desc") or e.get("text") or ""), e["center"], ",".join(e.get("interactions",[])), ",".join(e.get("state",[]))) for e in json.load(sys.stdin) if e.get("content-desc") or e.get("text") or "clickable" in e.get("interactions",[])]'; }
 # find_el <pattern> [exact|contains] [index] → "x y"
 find_el() {
-  ui | python3 -c '
+  local j; j=$(ui) || return 1
+  printf '%s' "$j" | python3 -c '
 import json,sys
 pat,mode,idx=sys.argv[1],sys.argv[2],int(sys.argv[3])
 hits=[]
@@ -139,7 +153,8 @@ qa_install_release() {
 # 그래서 입력 필드는 위치 규칙으로 찾는다:
 #   field_below <라벨>   화면의 필드 이름 텍스트 바로 아래 첫 입력 필드 → "x y"
 field_below() {
-  ui | python3 -c '
+  local j; j=$(ui) || return 1
+  printf '%s' "$j" | python3 -c '
 import json,sys
 arg=sys.argv[1]
 els=json.load(sys.stdin)

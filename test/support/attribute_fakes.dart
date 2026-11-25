@@ -241,6 +241,9 @@ class FakeVision implements NativeVision {
   VisionCapabilities caps;
   NativeAnalysis Function(File photo)? analysisFor;
   OnDeviceDescription? description;
+
+  /// 지정하면 [analyze]가 이 Future가 끝날 때까지 기다린다(분석 도중 화면 이탈 재현용).
+  Future<void>? analyzeGate;
   final List<String> analyzed = [];
   int prewarmCalls = 0;
   Map<String, List<String>>? lastSchema;
@@ -254,6 +257,7 @@ class FakeVision implements NativeVision {
     required bool removeBackground,
   }) async {
     analyzed.add(photo.path);
+    if (analyzeGate case final gate?) await gate;
     return analysisFor?.call(photo) ?? const NativeAnalysis();
   }
 

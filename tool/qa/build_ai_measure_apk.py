@@ -15,6 +15,18 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
+def dart_string(value: str) -> str:
+    """Dart 작은따옴표 문자열 리터럴로 바꾼다. 파일명의 `'`·`$`·`\\`·줄바꿈을 이스케이프한다."""
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("$", "\\$")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+    )
+    return f"'{escaped}'"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("photos", type=pathlib.Path)
@@ -29,7 +41,7 @@ def main() -> int:
     out = ROOT / "build" / "ai_measure"
     out.mkdir(parents=True, exist_ok=True)
     entries = "\n".join(
-        f"  '{p.name}': '{base64.b64encode(p.read_bytes()).decode()}',"
+        f"  {dart_string(p.name)}: {dart_string(base64.b64encode(p.read_bytes()).decode())},"
         for p in photos
     )
     (out / "photos.g.dart").write_text(

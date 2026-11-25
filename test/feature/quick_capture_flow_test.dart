@@ -6,8 +6,11 @@ import 'dart:io';
 import 'package:closetimo/app/router.dart';
 import 'package:closetimo/core/vision/native_vision.dart';
 import 'package:closetimo/data/models/item.dart';
+import 'package:closetimo/data/suggestions/attribute_suggester.dart';
+import 'package:closetimo/features/add_item/batch_suggestions.dart';
 import 'package:closetimo/features/add_item/sort_items_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,6 +22,35 @@ const _iosCaps = VisionCapabilities(
 );
 
 late Directory _tmp;
+
+/// 실기기 공유 스트림(`SharedItemsWatcher`)처럼 새 구독자에게 캐시된 옛 스냅샷을 먼저 주는 저장소.
+/// [freeze]로 굳힌 목록만 돌려준다.
+class _StaleWatchRepo extends FakeItemRepo {
+  _StaleWatchRepo() : super();
+
+  List<Item> _snapshot = const [];
+
+  @override
+  Stream<List<Item>> watchAll() async* {
+    yield _snapshot;
+  }
+
+  /// 지금 목록을 캐시로 굳힌다(이후 만든 옷은 첫 값에 빠진다).
+  void freeze() => _snapshot = List.unmodifiable(items);
+}
+
+class _DelayedWatchRepo extends FakeItemRepo {
+  _DelayedWatchRepo(super.seed);
+
+  bool delaySnapshot = false;
+  final snapshotGate = Completer<void>();
+
+  @override
+  Stream<List<Item>> watchAll() async* {
+    if (delaySnapshot) await snapshotGate.future;
+    yield* super.watchAll();
+  }
+}
 
 File _png(String name) =>
     File('${_tmp.path}/$name')..writeAsBytesSync(onePixelPng);
@@ -338,6 +370,123 @@ void main() {
     await tester.tap(find.text('돌아가기'));
     await tester.pumpAndSettle();
     expect(find.byType(SortItemsScreen), findsNothing);
+  });
+
+  testWidgets('여러 장 등록 도중 화면이 사라져도 사진 제안을 넘긴다(#58 회귀)', (tester) async {
+    phoneViewport(tester);
+    mockImagePicker(multi: [_png('a.png').path]);
+    final gate = Completer<void>();
+    final vision = FakeVision(
+      caps: _iosCaps,
+      analysisFor: (_) =>
+          const NativeAnalysis(labels: [VisionLabel('jeans', 0.94)]),
+    )..analyzeGate = gate.future;
+    final items = FakeItemRepo();
+    await tester.pumpWidget(
+      testApp(items: items, vision: vision, colors: FakeColors(['navy'])),
+    );
+    await _openAdd(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.text('신규 옷 등록')),
+    );
+
+    await tester.tap(find.text('여러 장 한 번에 등록'));
+    await _settleIo(tester);
+    expect(vision.analyzed, hasLength(1));
+    // 분석 도중 라우터가 홈으로 리셋돼 등록 화면이 사라진다.
+    GoRouter.of(
+      tester.element(find.byType(Navigator).first),
+    ).goNamed(Routes.home);
+    await tester.pumpAndSettle();
+    expect(find.text('신규 옷 등록'), findsNothing);
+
+    gate.complete();
+    await _settleIo(tester, rounds: 10);
+    expect(tester.takeException(), isNull);
+    expect(items.created, hasLength(1));
+    final id = items.items.single.id;
+    expect(
+      container.read(batchSuggestionsProvider)[id]?.category,
+      Category.bottom,
+    );
+    await drainToasts(tester);
+  });
+
+  testWidgets('캐시 스냅샷이 방금 만든 옷을 아직 못 담아도 넘겨받은 옷의 제안은 지우지 않는다(#58 리뷰)', (
+    tester,
+  ) async {
+    phoneViewport(tester);
+    mockImagePicker(multi: [_png('a.png').path]);
+    final items = _StaleWatchRepo()..freeze();
+    await tester.pumpWidget(
+      testApp(
+        items: items,
+        vision: FakeVision(
+          caps: _iosCaps,
+          analysisFor: (_) =>
+              const NativeAnalysis(labels: [VisionLabel('jeans', 0.94)]),
+        ),
+        colors: FakeColors(['navy']),
+      ),
+    );
+    await _openAdd(tester);
+
+    await tester.tap(find.text('여러 장 한 번에 등록'));
+    await _settleIo(tester, rounds: 20);
+
+    expect(items.created, hasLength(1));
+    expect(find.byType(SortItemsScreen), findsOneWidget);
+    expect(find.text('사진에서 골랐어요. 맞지 않으면 바꿔 주세요'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('sort-preview-name'))).data,
+      '네이비 청바지',
+    );
+    await drainToasts(tester);
+  });
+
+  testWidgets('전체 목록을 기다리지 않고 첫 카드를 열며 최신 상태로 제안을 정리한다', (tester) async {
+    phoneViewport(tester);
+    final archived = testItem(3, '보관한 옷', category: Category.uncategorized)
+      ..archivedAt = DateTime(2026, 10, 1);
+    const hint = AttributeSuggestion(
+      category: Category.bottom,
+      subType: 'jeans',
+    );
+    final items = _DelayedWatchRepo([
+      testItem(1, '이름 없는 옷', category: Category.uncategorized),
+      testItem(2, '셔츠'),
+      archived,
+      testItem(4, '다른 미분류 옷', category: Category.uncategorized),
+    ]);
+    addTearDown(items.snapshotGate.complete);
+    await tester.pumpWidget(
+      testApp(
+        items: items,
+        extra: [
+          batchSuggestionsProvider.overrideWith(
+            // 1·4: 아직 미분류, 2: 종류를 바꿈, 3: 보관함, 9: 삭제함.
+            (ref) => const {1: hint, 2: hint, 3: hint, 4: hint, 9: hint},
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    items.delaySnapshot = true;
+    unawaited(
+      GoRouter.of(
+        tester.element(find.byType(Navigator).first),
+      ).pushNamed(Routes.sortItems, queryParameters: {'ids': '1'}),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(SortItemsScreen), findsOneWidget);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SortItemsScreen)),
+    );
+    expect(container.read(batchSuggestionsProvider).keys, [1, 4]);
+    // 남은 제안은 그대로 카드에 미리 선택된다.
+    expect(find.text('사진에서 골랐어요. 맞지 않으면 바꿔 주세요'), findsOneWidget);
   });
 
   test('정리하기 쿼리·자동 이름 판정', () {
